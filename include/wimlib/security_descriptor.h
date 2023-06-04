@@ -60,29 +60,28 @@ typedef struct {
 	le32 dacl_offset;
 } __attribute__((packed)) wimlib_SECURITY_DESCRIPTOR_RELATIVE;
 
-#define wimlib_SE_OWNER_DEFAULTED		0x0001
-#define wimlib_SE_GROUP_DEFAULTED		0x0002
-#define wimlib_SE_DACL_PRESENT			0x0004
-#define wimlib_SE_DACL_DEFAULTED		0x0008
-#define wimlib_SE_SACL_PRESENT			0x0010
-#define wimlib_SE_SACL_DEFAULTED		0x0020
-#define wimlib_SE_DACL_AUTO_INHERIT_REQ		0x0100
-#define wimlib_SE_SACL_AUTO_INHERIT_REQ		0x0200
-#define wimlib_SE_DACL_AUTO_INHERITED		0x0400
-#define wimlib_SE_SACL_AUTO_INHERITED		0x0800
-#define wimlib_SE_DACL_PROTECTED		0x1000
-#define wimlib_SE_SACL_PROTECTED		0x2000
-#define wimlib_SE_RM_CONTROL_VALID		0x4000
-#define wimlib_SE_SELF_RELATIVE			0x8000
+#define wimlib_SE_OWNER_DEFAULTED       0x0001
+#define wimlib_SE_GROUP_DEFAULTED       0x0002
+#define wimlib_SE_DACL_PRESENT          0x0004
+#define wimlib_SE_DACL_DEFAULTED        0x0008
+#define wimlib_SE_SACL_PRESENT          0x0010
+#define wimlib_SE_SACL_DEFAULTED        0x0020
+#define wimlib_SE_DACL_AUTO_INHERIT_REQ 0x0100
+#define wimlib_SE_SACL_AUTO_INHERIT_REQ 0x0200
+#define wimlib_SE_DACL_AUTO_INHERITED   0x0400
+#define wimlib_SE_SACL_AUTO_INHERITED   0x0800
+#define wimlib_SE_DACL_PROTECTED        0x1000
+#define wimlib_SE_SACL_PROTECTED        0x2000
+#define wimlib_SE_RM_CONTROL_VALID      0x4000
+#define wimlib_SE_SELF_RELATIVE         0x8000
 
 /* Windows NT security identifier (user or group)  */
 typedef struct {
-
-	u8  revision;
-	u8  sub_authority_count;
+	u8 revision;
+	u8 sub_authority_count;
 
 	/* Identifies the authority that issued the SID  */
-	u8  identifier_authority[6];
+	u8 identifier_authority[6];
 
 	le32 sub_authority[];
 } __attribute__((packed)) wimlib_SID;
@@ -106,9 +105,9 @@ typedef struct {
 	le16 sbz2;
 } __attribute__((packed)) wimlib_ACL;
 
-#define wimlib_ACCESS_ALLOWED_ACE_TYPE		0
-#define wimlib_ACCESS_DENIED_ACE_TYPE		1
-#define wimlib_SYSTEM_AUDIT_ACE_TYPE		2
+#define wimlib_ACCESS_ALLOWED_ACE_TYPE 0
+#define wimlib_ACCESS_DENIED_ACE_TYPE  1
+#define wimlib_SYSTEM_AUDIT_ACE_TYPE   2
 
 /* Header of a Windows NT access control entry  */
 typedef struct {

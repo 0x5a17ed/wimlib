@@ -5,9 +5,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize);
+int
+LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize);
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
 	int fd;
 	struct stat stbuf;

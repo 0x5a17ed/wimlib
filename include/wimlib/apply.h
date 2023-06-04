@@ -82,10 +82,10 @@ struct apply_ctx {
  * handles that can be opened simultaneously to extract a blob to multiple
  * destinations.  */
 #ifndef __APPLE__
-#define MAX_OPEN_FILES 512
+#  define MAX_OPEN_FILES 512
 #else /* !__APPLE__ */
 /* With macOS, reduce to 128 because the default value for ulimit -n is 256 */
-#define MAX_OPEN_FILES 128
+#  define MAX_OPEN_FILES 128
 #endif /* __APPLE__ */
 
 static inline int
@@ -118,14 +118,16 @@ start_file_metadata_phase(struct apply_ctx *ctx, u64 end_file_count);
 static inline int
 report_file_created(struct apply_ctx *ctx)
 {
-	return maybe_do_file_progress(ctx, WIMLIB_PROGRESS_MSG_EXTRACT_FILE_STRUCTURE);
+	return maybe_do_file_progress(
+		ctx, WIMLIB_PROGRESS_MSG_EXTRACT_FILE_STRUCTURE);
 }
 
 /* Report that file metadata was applied, after blob extraction.  */
 static inline int
 report_file_metadata_applied(struct apply_ctx *ctx)
 {
-	return maybe_do_file_progress(ctx, WIMLIB_PROGRESS_MSG_EXTRACT_METADATA);
+	return maybe_do_file_progress(ctx,
+	                              WIMLIB_PROGRESS_MSG_EXTRACT_METADATA);
 }
 
 int
@@ -144,8 +146,10 @@ bool
 detect_sparse_region(const void *data, size_t size, size_t *len_ret);
 
 static inline bool
-maybe_detect_sparse_region(const void *data, size_t size, size_t *len_ret,
-			   bool enabled)
+maybe_detect_sparse_region(const void *data,
+                           size_t size,
+                           size_t *len_ret,
+                           bool enabled)
 {
 	if (!enabled) {
 		/* Force non-sparse without checking */
@@ -155,13 +159,11 @@ maybe_detect_sparse_region(const void *data, size_t size, size_t *len_ret,
 	return detect_sparse_region(data, size, len_ret);
 }
 
-#define inode_first_extraction_dentry(inode)				\
-	((inode)->i_first_extraction_alias)
+#define inode_first_extraction_dentry(inode) ((inode)->i_first_extraction_alias)
 
-#define inode_for_each_extraction_alias(dentry, inode)			\
-	for (dentry = inode_first_extraction_dentry(inode);		\
-	     dentry != NULL;						\
-	     dentry = dentry->d_next_extraction_alias)
+#define inode_for_each_extraction_alias(dentry, inode)                \
+  for (dentry = inode_first_extraction_dentry(inode); dentry != NULL; \
+       dentry = dentry->d_next_extraction_alias)
 
 int
 extract_blob_list(struct apply_ctx *ctx, const struct read_blob_callbacks *cbs);
@@ -170,7 +172,6 @@ extract_blob_list(struct apply_ctx *ctx, const struct read_blob_callbacks *cbs);
  * Represents an extraction backend.
  */
 struct apply_operations {
-
 	/* Name of the extraction backend.  */
 	const char *name;
 
@@ -191,7 +192,7 @@ struct apply_operations {
 	 * Return 0 if successful; otherwise a positive wimlib error code.
 	 */
 	int (*get_supported_features)(const tchar *target,
-				      struct wim_features *supported_features);
+	                              struct wim_features *supported_features);
 
 	/*
 	 * Main extraction routine.
@@ -253,7 +254,8 @@ struct apply_operations {
 	 *	= 0 if the file will be externally backed.
 	 *	> 0 (wimlib error code) if another error occurred.
 	 */
-	int (*will_back_from_wim)(struct wim_dentry *dentry, struct apply_ctx *ctx);
+	int (*will_back_from_wim)(struct wim_dentry *dentry,
+	                          struct apply_ctx *ctx);
 
 	/*
 	 * Size of the backend-specific extraction context.  It must contain
@@ -269,13 +271,13 @@ struct apply_operations {
 };
 
 #ifdef _WIN32
-  extern const struct apply_operations win32_apply_ops;
+extern const struct apply_operations win32_apply_ops;
 #else
-  extern const struct apply_operations unix_apply_ops;
+extern const struct apply_operations unix_apply_ops;
 #endif
 
 #ifdef WITH_NTFS_3G
-  extern const struct apply_operations ntfs_3g_apply_ops;
+extern const struct apply_operations ntfs_3g_apply_ops;
 #endif
 
 #endif /* _WIMLIB_APPLY_H */

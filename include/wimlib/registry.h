@@ -20,16 +20,21 @@ enum hive_status
 hive_validate(const void *hive_mem, size_t hive_size);
 
 enum hive_status
-hive_get_string(const struct regf *regf, const tchar *key_name,
-		const tchar *value_name, tchar **value_ret);
+hive_get_string(const struct regf *regf,
+                const tchar *key_name,
+                const tchar *value_name,
+                tchar **value_ret);
 
 enum hive_status
-hive_get_number(const struct regf *regf, const tchar *key_name,
-		const tchar *value_name, s64 *value_ret);
+hive_get_number(const struct regf *regf,
+                const tchar *key_name,
+                const tchar *value_name,
+                s64 *value_ret);
 
 enum hive_status
-hive_list_subkeys(const struct regf *regf, const tchar *key_name,
-		  tchar ***subkeys_ret);
+hive_list_subkeys(const struct regf *regf,
+                  const tchar *key_name,
+                  tchar ***subkeys_ret);
 
 void
 hive_free_subkeys_list(tchar **subkeys);

@@ -57,14 +57,13 @@ path_basename_with_len(const tchar *path, size_t len)
 	return ++p;
 }
 
-
 /* Returns a pointer to the part of @path following the first colon in the last
  * path component, or NULL if the last path component does not contain a colon
  * or has no characters following the first colon.  */
 const tchar *
 path_stream_name(const tchar *path)
 {
-	const tchar *base = path_basename(path);
+	const tchar *base        = path_basename(path);
 	const tchar *stream_name = tstrchr(base, T(':'));
 	if (stream_name == NULL || *(stream_name + 1) == T('\0'))
 		return NULL;

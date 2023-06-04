@@ -22,7 +22,6 @@
  * same wim_image_metadata.
  */
 struct wim_image_metadata {
-
 	/* Number of WIMStructs that reference this image.  This will always be
 	 * >= 1.  It may be > 1 if this image has been exported.  */
 	u32 refcnt;
@@ -100,7 +99,7 @@ is_image_dirty(const struct wim_image_metadata *imd)
  * specified backing WIM file.  */
 static inline bool
 is_image_unchanged_from_wim(const struct wim_image_metadata *imd,
-			    const WIMStruct *wim)
+                            const WIMStruct *wim)
 {
 	return !is_image_dirty(imd) && imd->metadata_blob->rdesc->wim == wim;
 }
@@ -135,20 +134,20 @@ can_unload_image(const struct wim_image_metadata *imd)
 
 /* Iterate over each inode in a WIM image  */
 #define image_for_each_inode(inode, imd) \
-	hlist_for_each_entry(inode, &(imd)->inode_list, i_hlist_node)
+  hlist_for_each_entry(inode, &(imd)->inode_list, i_hlist_node)
 
 /* Iterate over each inode in a WIM image (safe against inode removal)  */
 #define image_for_each_inode_safe(inode, tmp, imd) \
-	hlist_for_each_entry_safe(inode, tmp, &(imd)->inode_list, i_hlist_node)
+  hlist_for_each_entry_safe(inode, tmp, &(imd)->inode_list, i_hlist_node)
 
 /* Iterate over each blob in a WIM image that has not yet been hashed */
 #define image_for_each_unhashed_blob(blob, imd) \
-	list_for_each_entry(blob, &(imd)->unhashed_blobs, unhashed_list)
+  list_for_each_entry(blob, &(imd)->unhashed_blobs, unhashed_list)
 
 /* Iterate over each blob in a WIM image that has not yet been hashed (safe
  * against blob removal) */
 #define image_for_each_unhashed_blob_safe(blob, tmp, imd) \
-	list_for_each_entry_safe(blob, tmp, &(imd)->unhashed_blobs, unhashed_list)
+  list_for_each_entry_safe(blob, tmp, &(imd)->unhashed_blobs, unhashed_list)
 
 void
 put_image_metadata(struct wim_image_metadata *imd);

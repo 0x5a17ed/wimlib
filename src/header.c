@@ -90,21 +90,26 @@ read_wim_header(WIMStruct *wim, struct wim_header *hdr)
 			 * actually reading from a pipe.  */
 			if (!in_fd->is_pipe) {
 				ret = WIMLIB_ERR_READ;
-				if (-1 == lseek(in_fd->fd, -WIM_HEADER_DISK_SIZE, SEEK_END))
+				if (-1 == lseek(in_fd->fd,
+				                -WIM_HEADER_DISK_SIZE,
+				                SEEK_END))
 					goto read_error;
-				ret = full_read(in_fd, &disk_hdr, sizeof(disk_hdr));
+				ret = full_read(
+					in_fd, &disk_hdr, sizeof(disk_hdr));
 				if (ret)
 					goto read_error;
 			}
 		} else {
-			ERROR("\"%"TS"\": Invalid magic characters in header", filename);
+			ERROR("\"%" TS "\": Invalid magic characters in header",
+			      filename);
 			return WIMLIB_ERR_NOT_A_WIM_FILE;
 		}
 	}
 
 	if (le32_to_cpu(disk_hdr.hdr_size) != sizeof(struct wim_header_disk)) {
-		ERROR("\"%"TS"\": Header size is invalid (%u bytes)",
-		      filename, le32_to_cpu(disk_hdr.hdr_size));
+		ERROR("\"%" TS "\": Header size is invalid (%u bytes)",
+		      filename,
+		      le32_to_cpu(disk_hdr.hdr_size));
 		return WIMLIB_ERR_INVALID_HEADER;
 	}
 
@@ -112,12 +117,13 @@ read_wim_header(WIMStruct *wim, struct wim_header *hdr)
 	if (hdr->wim_version != WIM_VERSION_DEFAULT &&
 	    hdr->wim_version != WIM_VERSION_SOLID)
 	{
-		ERROR("\"%"TS"\": Unknown WIM version: %u",
-		      filename, hdr->wim_version);
+		ERROR("\"%" TS "\": Unknown WIM version: %u",
+		      filename,
+		      hdr->wim_version);
 		return WIMLIB_ERR_UNKNOWN_VERSION;
 	}
 
-	hdr->flags = le32_to_cpu(disk_hdr.wim_flags);
+	hdr->flags      = le32_to_cpu(disk_hdr.wim_flags);
 	hdr->chunk_size = le32_to_cpu(disk_hdr.chunk_size);
 	copy_guid(hdr->guid, disk_hdr.guid);
 	hdr->part_number = le16_to_cpu(disk_hdr.part_number);
@@ -126,24 +132,29 @@ read_wim_header(WIMStruct *wim, struct wim_header *hdr)
 	if (hdr->total_parts == 0 || hdr->part_number == 0 ||
 	    hdr->part_number > hdr->total_parts)
 	{
-		ERROR("\"%"TS"\": Invalid WIM part number: %hu of %hu",
-		      filename, hdr->part_number, hdr->total_parts);
+		ERROR("\"%" TS "\": Invalid WIM part number: %hu of %hu",
+		      filename,
+		      hdr->part_number,
+		      hdr->total_parts);
 		return WIMLIB_ERR_INVALID_PART_NUMBER;
 	}
 
 	hdr->image_count = le32_to_cpu(disk_hdr.image_count);
 
 	if (unlikely(hdr->image_count > MAX_IMAGES)) {
-		ERROR("\"%"TS"\": Invalid image count (%u)",
-		      filename, hdr->image_count);
+		ERROR("\"%" TS "\": Invalid image count (%u)",
+		      filename,
+		      hdr->image_count);
 		return WIMLIB_ERR_IMAGE_COUNT;
 	}
 
 	get_wim_reshdr(&disk_hdr.blob_table_reshdr, &hdr->blob_table_reshdr);
 	get_wim_reshdr(&disk_hdr.xml_data_reshdr, &hdr->xml_data_reshdr);
-	get_wim_reshdr(&disk_hdr.boot_metadata_reshdr, &hdr->boot_metadata_reshdr);
+	get_wim_reshdr(&disk_hdr.boot_metadata_reshdr,
+	               &hdr->boot_metadata_reshdr);
 	hdr->boot_idx = le32_to_cpu(disk_hdr.boot_idx);
-	get_wim_reshdr(&disk_hdr.integrity_table_reshdr, &hdr->integrity_table_reshdr);
+	get_wim_reshdr(&disk_hdr.integrity_table_reshdr,
+	               &hdr->integrity_table_reshdr);
 
 	/*
 	 * Prevent huge memory allocations when processing fuzzed files.  The
@@ -159,7 +170,7 @@ read_wim_header(WIMStruct *wim, struct wim_header *hdr)
 	return 0;
 
 read_error:
-	ERROR_WITH_ERRNO("\"%"TS"\": Error reading header", filename);
+	ERROR_WITH_ERRNO("\"%" TS "\": Error reading header", filename);
 	return ret;
 }
 
@@ -167,26 +178,29 @@ read_error:
  * specified is the current one, the position is advanced by the size of the
  * header.  */
 int
-write_wim_header(const struct wim_header *hdr, struct filedes *out_fd,
-		 off_t offset)
+write_wim_header(const struct wim_header *hdr,
+                 struct filedes *out_fd,
+                 off_t offset)
 {
 	struct wim_header_disk disk_hdr __attribute__((aligned(8)));
 	int ret;
 
-	disk_hdr.magic = cpu_to_le64(hdr->magic);
-	disk_hdr.hdr_size = cpu_to_le32(sizeof(struct wim_header_disk));
+	disk_hdr.magic       = cpu_to_le64(hdr->magic);
+	disk_hdr.hdr_size    = cpu_to_le32(sizeof(struct wim_header_disk));
 	disk_hdr.wim_version = cpu_to_le32(hdr->wim_version);
-	disk_hdr.wim_flags = cpu_to_le32(hdr->flags);
-	disk_hdr.chunk_size = cpu_to_le32(hdr->chunk_size);
+	disk_hdr.wim_flags   = cpu_to_le32(hdr->flags);
+	disk_hdr.chunk_size  = cpu_to_le32(hdr->chunk_size);
 	copy_guid(disk_hdr.guid, hdr->guid);
 	disk_hdr.part_number = cpu_to_le16(hdr->part_number);
 	disk_hdr.total_parts = cpu_to_le16(hdr->total_parts);
 	disk_hdr.image_count = cpu_to_le32(hdr->image_count);
 	put_wim_reshdr(&hdr->blob_table_reshdr, &disk_hdr.blob_table_reshdr);
 	put_wim_reshdr(&hdr->xml_data_reshdr, &disk_hdr.xml_data_reshdr);
-	put_wim_reshdr(&hdr->boot_metadata_reshdr, &disk_hdr.boot_metadata_reshdr);
+	put_wim_reshdr(&hdr->boot_metadata_reshdr,
+	               &disk_hdr.boot_metadata_reshdr);
 	disk_hdr.boot_idx = cpu_to_le32(hdr->boot_idx);
-	put_wim_reshdr(&hdr->integrity_table_reshdr, &disk_hdr.integrity_table_reshdr);
+	put_wim_reshdr(&hdr->integrity_table_reshdr,
+	               &disk_hdr.integrity_table_reshdr);
 	memset(disk_hdr.unused, 0, sizeof(disk_hdr.unused));
 
 	if (offset == out_fd->offset)
@@ -204,27 +218,29 @@ write_wim_header_flags(u32 hdr_flags, struct filedes *out_fd)
 {
 	le32 flags = cpu_to_le32(hdr_flags);
 
-	return full_pwrite(out_fd, &flags, sizeof(flags),
-			   offsetof(struct wim_header_disk, wim_flags));
+	return full_pwrite(out_fd,
+	                   &flags,
+	                   sizeof(flags),
+	                   offsetof(struct wim_header_disk, wim_flags));
 }
 
 static const struct {
 	u32 flag;
 	const char *name;
 } hdr_flags[] = {
-	{WIM_HDR_FLAG_RESERVED,		"RESERVED"},
-	{WIM_HDR_FLAG_COMPRESSION,	"COMPRESSION"},
-	{WIM_HDR_FLAG_READONLY,		"READONLY"},
-	{WIM_HDR_FLAG_SPANNED,		"SPANNED"},
-	{WIM_HDR_FLAG_RESOURCE_ONLY,	"RESOURCE_ONLY"},
-	{WIM_HDR_FLAG_METADATA_ONLY,	"METADATA_ONLY"},
-	{WIM_HDR_FLAG_WRITE_IN_PROGRESS,"WRITE_IN_PROGRESS"},
-	{WIM_HDR_FLAG_RP_FIX,		"RP_FIX"},
-	{WIM_HDR_FLAG_COMPRESS_RESERVED,"COMPRESS_RESERVED"},
-	{WIM_HDR_FLAG_COMPRESS_LZX,	"COMPRESS_LZX"},
-	{WIM_HDR_FLAG_COMPRESS_XPRESS,	"COMPRESS_XPRESS"},
-	{WIM_HDR_FLAG_COMPRESS_LZMS,	"COMPRESS_LZMS"},
-	{WIM_HDR_FLAG_COMPRESS_XPRESS_2,"COMPRESS_XPRESS_2"},
+	{ WIM_HDR_FLAG_RESERVED, "RESERVED" },
+	{ WIM_HDR_FLAG_COMPRESSION, "COMPRESSION" },
+	{ WIM_HDR_FLAG_READONLY, "READONLY" },
+	{ WIM_HDR_FLAG_SPANNED, "SPANNED" },
+	{ WIM_HDR_FLAG_RESOURCE_ONLY, "RESOURCE_ONLY" },
+	{ WIM_HDR_FLAG_METADATA_ONLY, "METADATA_ONLY" },
+	{ WIM_HDR_FLAG_WRITE_IN_PROGRESS, "WRITE_IN_PROGRESS" },
+	{ WIM_HDR_FLAG_RP_FIX, "RP_FIX" },
+	{ WIM_HDR_FLAG_COMPRESS_RESERVED, "COMPRESS_RESERVED" },
+	{ WIM_HDR_FLAG_COMPRESS_LZX, "COMPRESS_LZX" },
+	{ WIM_HDR_FLAG_COMPRESS_XPRESS, "COMPRESS_XPRESS" },
+	{ WIM_HDR_FLAG_COMPRESS_LZMS, "COMPRESS_LZMS" },
+	{ WIM_HDR_FLAG_COMPRESS_XPRESS_2, "COMPRESS_XPRESS_2" },
 };
 
 /* API function documented in wimlib.h  */
@@ -248,46 +264,47 @@ wimlib_print_header(const WIMStruct *wim)
 	tprintf(T("Flags                       = 0x%x\n"), hdr->flags);
 	for (size_t i = 0; i < ARRAY_LEN(hdr_flags); i++)
 		if (hdr_flags[i].flag & hdr->flags)
-			tprintf(T("    WIM_HDR_FLAG_%s is set\n"), hdr_flags[i].name);
+			tprintf(T("    WIM_HDR_FLAG_%s is set\n"),
+			        hdr_flags[i].name);
 
 	tprintf(T("Chunk Size                  = %u\n"), hdr->chunk_size);
-	tfputs (T("GUID                        = "), stdout);
+	tfputs(T("GUID                        = "), stdout);
 	print_byte_field(hdr->guid, GUID_SIZE, stdout);
 	tputchar(T('\n'));
 	tprintf(T("Part Number                 = %hu\n"), hdr->part_number);
 	tprintf(T("Total Parts                 = %hu\n"), hdr->total_parts);
 	tprintf(T("Image Count                 = %u\n"), hdr->image_count);
-	tprintf(T("Blob Table Size             = %"PRIu64"\n"),
-				(u64)hdr->blob_table_reshdr.size_in_wim);
+	tprintf(T("Blob Table Size             = %" PRIu64 "\n"),
+	        (u64)hdr->blob_table_reshdr.size_in_wim);
 	tprintf(T("Blob Table Flags            = 0x%hhx\n"),
-				(u8)hdr->blob_table_reshdr.flags);
-	tprintf(T("Blob Table Offset           = %"PRIu64"\n"),
-				hdr->blob_table_reshdr.offset_in_wim);
-	tprintf(T("Blob Table Original_size    = %"PRIu64"\n"),
-				hdr->blob_table_reshdr.uncompressed_size);
-	tprintf(T("XML Data Size               = %"PRIu64"\n"),
-				(u64)hdr->xml_data_reshdr.size_in_wim);
+	        (u8)hdr->blob_table_reshdr.flags);
+	tprintf(T("Blob Table Offset           = %" PRIu64 "\n"),
+	        hdr->blob_table_reshdr.offset_in_wim);
+	tprintf(T("Blob Table Original_size    = %" PRIu64 "\n"),
+	        hdr->blob_table_reshdr.uncompressed_size);
+	tprintf(T("XML Data Size               = %" PRIu64 "\n"),
+	        (u64)hdr->xml_data_reshdr.size_in_wim);
 	tprintf(T("XML Data Flags              = 0x%hhx\n"),
-				(u8)hdr->xml_data_reshdr.flags);
-	tprintf(T("XML Data Offset             = %"PRIu64"\n"),
-				hdr->xml_data_reshdr.offset_in_wim);
-	tprintf(T("XML Data Original Size      = %"PRIu64"\n"),
-				hdr->xml_data_reshdr.uncompressed_size);
-	tprintf(T("Boot Metadata Size          = %"PRIu64"\n"),
-				(u64)hdr->boot_metadata_reshdr.size_in_wim);
+	        (u8)hdr->xml_data_reshdr.flags);
+	tprintf(T("XML Data Offset             = %" PRIu64 "\n"),
+	        hdr->xml_data_reshdr.offset_in_wim);
+	tprintf(T("XML Data Original Size      = %" PRIu64 "\n"),
+	        hdr->xml_data_reshdr.uncompressed_size);
+	tprintf(T("Boot Metadata Size          = %" PRIu64 "\n"),
+	        (u64)hdr->boot_metadata_reshdr.size_in_wim);
 	tprintf(T("Boot Metadata Flags         = 0x%hhx\n"),
-				(u8)hdr->boot_metadata_reshdr.flags);
-	tprintf(T("Boot Metadata Offset        = %"PRIu64"\n"),
-				hdr->boot_metadata_reshdr.offset_in_wim);
-	tprintf(T("Boot Metadata Original Size = %"PRIu64"\n"),
-				hdr->boot_metadata_reshdr.uncompressed_size);
+	        (u8)hdr->boot_metadata_reshdr.flags);
+	tprintf(T("Boot Metadata Offset        = %" PRIu64 "\n"),
+	        hdr->boot_metadata_reshdr.offset_in_wim);
+	tprintf(T("Boot Metadata Original Size = %" PRIu64 "\n"),
+	        hdr->boot_metadata_reshdr.uncompressed_size);
 	tprintf(T("Boot Index                  = %u\n"), hdr->boot_idx);
-	tprintf(T("Integrity Size              = %"PRIu64"\n"),
-				(u64)hdr->integrity_table_reshdr.size_in_wim);
+	tprintf(T("Integrity Size              = %" PRIu64 "\n"),
+	        (u64)hdr->integrity_table_reshdr.size_in_wim);
 	tprintf(T("Integrity Flags             = 0x%hhx\n"),
-				(u8)hdr->integrity_table_reshdr.flags);
-	tprintf(T("Integrity Offset            = %"PRIu64"\n"),
-				hdr->integrity_table_reshdr.offset_in_wim);
-	tprintf(T("Integrity Original_size     = %"PRIu64"\n"),
-				hdr->integrity_table_reshdr.uncompressed_size);
+	        (u8)hdr->integrity_table_reshdr.flags);
+	tprintf(T("Integrity Offset            = %" PRIu64 "\n"),
+	        hdr->integrity_table_reshdr.offset_in_wim);
+	tprintf(T("Integrity Original_size     = %" PRIu64 "\n"),
+	        hdr->integrity_table_reshdr.uncompressed_size);
 }

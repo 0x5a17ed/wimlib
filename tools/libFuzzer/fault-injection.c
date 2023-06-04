@@ -32,8 +32,8 @@ setup_fault_nth(const uint8_t **in, size_t *insize, uint16_t *fault_nth)
 	if (*insize < 2)
 		return false;
 	memcpy(&n, *in, 2);
-	wimlib_set_memory_allocator(faultinject_malloc, faultinject_free,
-				    faultinject_realloc);
+	wimlib_set_memory_allocator(
+		faultinject_malloc, faultinject_free, faultinject_realloc);
 	num_allocs_remaining = n ?: INT64_MAX;
 	*in += 2;
 	*insize -= 2;

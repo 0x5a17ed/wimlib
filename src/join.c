@@ -39,7 +39,7 @@
  * Return: 0 on success; WIMLIB_ERR_SPLIT_INVALID if the set is not valid.
  */
 static int
-verify_swm_set(WIMStruct * const *swms, unsigned num_swms)
+verify_swm_set(WIMStruct *const *swms, unsigned num_swms)
 {
 	for (unsigned i = 0; i < num_swms; i++) {
 		if (!guids_equal(swms[i]->hdr.guid, swms[0]->hdr.guid)) {
@@ -48,17 +48,22 @@ verify_swm_set(WIMStruct * const *swms, unsigned num_swms)
 			return WIMLIB_ERR_SPLIT_INVALID;
 		}
 		if (swms[i]->hdr.total_parts != num_swms) {
-			ERROR("\"%"TS"\" says there are %u parts in the split "
+			ERROR("\"%" TS
+			      "\" says there are %u parts in the split "
 			      "WIM, but %s%u part%s provided",
-			      swms[i]->filename, swms[i]->hdr.total_parts,
-			      num_swms < swms[i]->hdr.total_parts ? "only ":"",
-			      num_swms, num_swms > 1 ? "s were" : " was");
+			      swms[i]->filename,
+			      swms[i]->hdr.total_parts,
+			      num_swms < swms[i]->hdr.total_parts ? "only " :
+			                                            "",
+			      num_swms,
+			      num_swms > 1 ? "s were" : " was");
 			return WIMLIB_ERR_SPLIT_INVALID;
 		}
 		if (swms[i]->hdr.part_number != i + 1) {
 			ERROR("The parts of the split WIM are not numbered "
 			      "1..%u as expected.  Did you specify duplicate "
-			      "parts?", num_swms);
+			      "parts?",
+			      num_swms);
 			return WIMLIB_ERR_SPLIT_INVALID;
 		}
 	}
@@ -75,13 +80,13 @@ cmp_swms_by_part_number(const void *p1, const void *p2)
 }
 
 WIMLIBAPI int
-wimlib_join_with_progress(const tchar * const *swm_names,
-			  unsigned num_swms,
-			  const tchar *output_path,
-			  int swm_open_flags,
-			  int wim_write_flags,
-			  wimlib_progress_func_t progfunc,
-			  void *progctx)
+wimlib_join_with_progress(const tchar *const *swm_names,
+                          unsigned num_swms,
+                          const tchar *output_path,
+                          int swm_open_flags,
+                          int wim_write_flags,
+                          wimlib_progress_func_t progfunc,
+                          void *progctx)
 {
 	WIMStruct **swms;
 	unsigned i;
@@ -96,10 +101,10 @@ wimlib_join_with_progress(const tchar * const *swm_names,
 
 	for (i = 0; i < num_swms; i++) {
 		ret = wimlib_open_wim_with_progress(swm_names[i],
-						    swm_open_flags,
-						    &swms[i],
-						    progfunc,
-						    progctx);
+		                                    swm_open_flags,
+		                                    &swms[i],
+		                                    progfunc,
+		                                    progctx);
 		if (ret)
 			goto out;
 	}
@@ -117,11 +122,12 @@ wimlib_join_with_progress(const tchar * const *swm_names,
 	/* It is reasonably safe to provide WIMLIB_WRITE_FLAG_STREAMS_OK, as we
 	 * have verified that the specified split WIM parts form a spanned set.
 	 */
-	ret = wimlib_write(swms[0], output_path, WIMLIB_ALL_IMAGES,
-			   wim_write_flags |
-				WIMLIB_WRITE_FLAG_STREAMS_OK |
-				WIMLIB_WRITE_FLAG_RETAIN_GUID,
-			   1);
+	ret = wimlib_write(swms[0],
+	                   output_path,
+	                   WIMLIB_ALL_IMAGES,
+	                   wim_write_flags | WIMLIB_WRITE_FLAG_STREAMS_OK |
+	                           WIMLIB_WRITE_FLAG_RETAIN_GUID,
+	                   1);
 out:
 	for (i = 0; i < num_swms; i++)
 		wimlib_free(swms[i]);
@@ -131,13 +137,17 @@ out:
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
-wimlib_join(const tchar * const *swm_names,
-	    unsigned num_swms,
-	    const tchar *output_path,
-	    int swm_open_flags,
-	    int wim_write_flags)
+wimlib_join(const tchar *const *swm_names,
+            unsigned num_swms,
+            const tchar *output_path,
+            int swm_open_flags,
+            int wim_write_flags)
 {
-	return wimlib_join_with_progress(swm_names, num_swms, output_path,
-					 swm_open_flags, wim_write_flags,
-					 NULL, NULL);
+	return wimlib_join_with_progress(swm_names,
+	                                 num_swms,
+	                                 output_path,
+	                                 swm_open_flags,
+	                                 wim_write_flags,
+	                                 NULL,
+	                                 NULL);
 }

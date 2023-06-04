@@ -52,14 +52,16 @@
  * to create a valid UTF-8 sequence, thus breaking the bijection by mapping
  * multiple Windows filenames to a single UNIX filename.
  */
-#define ALLOW_UNPAIRED_SURROGATES	1
+#define ALLOW_UNPAIRED_SURROGATES 1
 
-#define INVALID_CODEPOINT	0xFFFFFFFF
-#define VALIDATE(expr)		if (validate && unlikely(!(expr))) goto invalid
-#define IS_SURROGATE(c)		((c) >= 0xD800 && (c) < 0xE000)
-#define IS_HIGH_SURROGATE(c)	((c) >= 0xD800 && (c) < 0xDC00)
-#define IS_LOW_SURROGATE(c)	((c) >= 0xDC00 && (c) < 0xE000)
-#define IS_UTF8_TAIL(c)		(((c) & 0xC0) == 0x80)
+#define INVALID_CODEPOINT 0xFFFFFFFF
+#define VALIDATE(expr)               \
+  if (validate && unlikely(!(expr))) \
+  goto invalid
+#define IS_SURROGATE(c)      ((c) >= 0xD800 && (c) < 0xE000)
+#define IS_HIGH_SURROGATE(c) ((c) >= 0xD800 && (c) < 0xDC00)
+#define IS_LOW_SURROGATE(c)  ((c) >= 0xDC00 && (c) < 0xE000)
+#define IS_UTF8_TAIL(c)      (((c)&0xC0) == 0x80)
 
 /*
  * Decode the next Unicode codepoint from the string at @in, which has
@@ -71,8 +73,10 @@
  * consumes at least one byte and sets *c_ret to INVALID_CODEPOINT.  If the
  * input is guaranteed to be valid, then @validate may be specified as %false.
  */
-typedef unsigned (*decode_codepoint_fn)(const u8 *in, size_t remaining,
-					bool validate, u32 *c_ret);
+typedef unsigned (*decode_codepoint_fn)(const u8 *in,
+                                        size_t remaining,
+                                        bool validate,
+                                        u32 *c_ret);
 
 /* Encode the Unicode codepoint @c and return the number of bytes used. */
 typedef unsigned (*encode_codepoint_fn)(u32 c, u8 *out);
@@ -87,35 +91,30 @@ utf8_decode_codepoint(const u8 *in, size_t remaining, bool validate, u32 *c_ret)
 
 	if (in[0] < 0xE0) { /* U+80...U+7FF */
 		VALIDATE(in[0] >= 0xC2 && remaining >= 2 &&
-			 IS_UTF8_TAIL(in[1]));
+		         IS_UTF8_TAIL(in[1]));
 		*c_ret = ((u32)(in[0] & 0x1F) << 6) |
-			 ((u32)(in[1] & 0x3F) << 0);
+		         ((u32)(in[1] & 0x3F) << 0);
 		return 2;
 	}
 
 	if (in[0] < 0xF0) { /* U+800...U+FFFF, possibly excluding surrogates */
-		VALIDATE(remaining >= 3 &&
-			 IS_UTF8_TAIL(in[1]) &&
-			 IS_UTF8_TAIL(in[2]));
+		VALIDATE(remaining >= 3 && IS_UTF8_TAIL(in[1]) &&
+		         IS_UTF8_TAIL(in[2]));
 		*c_ret = ((u32)(in[0] & 0x0F) << 12) |
-			 ((u32)(in[1] & 0x3F) << 6) |
-			 ((u32)(in[2] & 0x3F) << 0);
+		         ((u32)(in[1] & 0x3F) << 6) |
+		         ((u32)(in[2] & 0x3F) << 0);
 		VALIDATE(*c_ret >= 0x800);
-	#if !ALLOW_UNPAIRED_SURROGATES
+#if !ALLOW_UNPAIRED_SURROGATES
 		VALIDATE(!IS_SURROGATE(*c_ret));
-	#endif
+#endif
 		return 3;
 	}
 
 	/* U+10000...U+10FFFF */
-	VALIDATE(in[0] < 0xF8 && remaining >= 4 &&
-		 IS_UTF8_TAIL(in[1]) &&
-		 IS_UTF8_TAIL(in[2]) &&
-		 IS_UTF8_TAIL(in[3]));
-	*c_ret = ((u32)(in[0] & 0x07) << 18) |
-		 ((u32)(in[1] & 0x3F) << 12) |
-		 ((u32)(in[2] & 0x3F) << 6) |
-		 ((u32)(in[3] & 0x3F) << 0);
+	VALIDATE(in[0] < 0xF8 && remaining >= 4 && IS_UTF8_TAIL(in[1]) &&
+	         IS_UTF8_TAIL(in[2]) && IS_UTF8_TAIL(in[3]));
+	*c_ret = ((u32)(in[0] & 0x07) << 18) | ((u32)(in[1] & 0x3F) << 12) |
+	         ((u32)(in[2] & 0x3F) << 6) | ((u32)(in[3] & 0x3F) << 0);
 	VALIDATE(*c_ret >= 0x10000 && *c_ret <= 0x10FFFF);
 	return 4;
 
@@ -153,8 +152,10 @@ utf8_encode_codepoint(u32 c, u8 *out)
 }
 
 static forceinline unsigned
-utf16le_decode_codepoint(const u8 *in, size_t remaining, bool validate,
-			 u32 *c_ret)
+utf16le_decode_codepoint(const u8 *in,
+                         size_t remaining,
+                         bool validate,
+                         u32 *c_ret)
 {
 	u32 h, l;
 
@@ -163,17 +164,17 @@ utf16le_decode_codepoint(const u8 *in, size_t remaining, bool validate,
 	if (unlikely(IS_SURROGATE(h))) {
 		/* Surrogate pairs are U+10000...U+10FFFF.
 		 * Unpaired surrogates are U+D800...U+DFFF. */
-	#if ALLOW_UNPAIRED_SURROGATES
+#if ALLOW_UNPAIRED_SURROGATES
 		if (unlikely(!IS_HIGH_SURROGATE(h) || remaining < 4))
 			goto unpaired;
 		l = get_unaligned_le16(in + 2);
 		if (unlikely(!IS_LOW_SURROGATE(l)))
 			goto unpaired;
-	#else
+#else
 		VALIDATE(IS_HIGH_SURROGATE(h) && remaining >= 4);
 		l = get_unaligned_le16(in + 2);
 		VALIDATE(IS_LOW_SURROGATE(l));
-	#endif
+#endif
 		*c_ret = 0x10000 + ((h - 0xD800) << 10) + (l - 0xDC00);
 		return 4;
 	}
@@ -214,11 +215,13 @@ utf16le_encode_codepoint(u32 c, u8 *out)
  * If out of memory, return WIMLIB_ERR_NOMEM with errno set to ENOMEM.
  */
 static forceinline int
-convert_string(const u8 * const in, const size_t in_nbytes,
-	       u8 **out_ret, size_t *out_nbytes_ret,
-	       int ilseq_err,
-	       decode_codepoint_fn decode_codepoint,
-	       encode_codepoint_fn encode_codepoint)
+convert_string(const u8 *const in,
+               const size_t in_nbytes,
+               u8 **out_ret,
+               size_t *out_nbytes_ret,
+               int ilseq_err,
+               decode_codepoint_fn decode_codepoint,
+               encode_codepoint_fn encode_codepoint)
 {
 	size_t i;
 	u8 *p_out;
@@ -228,7 +231,7 @@ convert_string(const u8 * const in, const size_t in_nbytes,
 	u32 c;
 
 	/* Validate the input string and compute the output size. */
-	for (i = 0; i < in_nbytes; ) {
+	for (i = 0; i < in_nbytes;) {
 		i += (*decode_codepoint)(&in[i], in_nbytes - i, true, &c);
 		if (unlikely(c == INVALID_CODEPOINT)) {
 			errno = EILSEQ;
@@ -244,7 +247,7 @@ convert_string(const u8 * const in, const size_t in_nbytes,
 
 	/* Do the conversion. */
 	p_out = out;
-	for (i = 0; i < in_nbytes; ) {
+	for (i = 0; i < in_nbytes;) {
 		i += (*decode_codepoint)(&in[i], in_nbytes - i, false, &c);
 		p_out += (*encode_codepoint)(c, p_out);
 	}
@@ -260,23 +263,33 @@ convert_string(const u8 * const in, const size_t in_nbytes,
 }
 
 int
-utf8_to_utf16le(const char *in, size_t in_nbytes,
-		utf16lechar **out_ret, size_t *out_nbytes_ret)
+utf8_to_utf16le(const char *in,
+                size_t in_nbytes,
+                utf16lechar **out_ret,
+                size_t *out_nbytes_ret)
 {
-	return convert_string((const u8 *)in, in_nbytes,
-			      (u8 **)out_ret, out_nbytes_ret,
-			      WIMLIB_ERR_INVALID_UTF8_STRING,
-			      utf8_decode_codepoint, utf16le_encode_codepoint);
+	return convert_string((const u8 *)in,
+	                      in_nbytes,
+	                      (u8 **)out_ret,
+	                      out_nbytes_ret,
+	                      WIMLIB_ERR_INVALID_UTF8_STRING,
+	                      utf8_decode_codepoint,
+	                      utf16le_encode_codepoint);
 }
 
 int
-utf16le_to_utf8(const utf16lechar *in, size_t in_nbytes,
-		char **out_ret, size_t *out_nbytes_ret)
+utf16le_to_utf8(const utf16lechar *in,
+                size_t in_nbytes,
+                char **out_ret,
+                size_t *out_nbytes_ret)
 {
-	return convert_string((const u8 *)in, in_nbytes,
-			      (u8 **)out_ret, out_nbytes_ret,
-			      WIMLIB_ERR_INVALID_UTF16_STRING,
-			      utf16le_decode_codepoint, utf8_encode_codepoint);
+	return convert_string((const u8 *)in,
+	                      in_nbytes,
+	                      (u8 **)out_ret,
+	                      out_nbytes_ret,
+	                      WIMLIB_ERR_INVALID_UTF16_STRING,
+	                      utf16le_decode_codepoint,
+	                      utf8_encode_codepoint);
 }
 
 /*
@@ -344,8 +357,8 @@ init_upcase(void)
 
 	/* Simple LZ decoder  */
 	const u16 *in_next = upcase_compressed;
-	for (u32 i = 0; i < ARRAY_LEN(upcase); ) {
-		u16 length = *in_next++;
+	for (u32 i = 0; i < ARRAY_LEN(upcase);) {
+		u16 length  = *in_next++;
 		u16 src_pos = *in_next++;
 		if (length == 0) {
 			/* Literal */
@@ -373,9 +386,11 @@ init_upcase(void)
  * It hopefully does the right thing most of the time though.
  */
 int
-cmp_utf16le_strings(const utf16lechar *s1, size_t n1,
-		    const utf16lechar *s2, size_t n2,
-		    bool ignore_case)
+cmp_utf16le_strings(const utf16lechar *s1,
+                    size_t n1,
+                    const utf16lechar *s2,
+                    size_t n2,
+                    bool ignore_case)
 {
 	size_t n = min(n1, n2);
 
@@ -401,8 +416,9 @@ cmp_utf16le_strings(const utf16lechar *s1, size_t n1,
 
 /* Like cmp_utf16le_strings(), but assumes the strings are null terminated.  */
 int
-cmp_utf16le_strings_z(const utf16lechar *s1, const utf16lechar *s2,
-		      bool ignore_case)
+cmp_utf16le_strings_z(const utf16lechar *s1,
+                      const utf16lechar *s2,
+                      bool ignore_case)
 {
 	if (ignore_case) {
 		for (;;) {
@@ -465,18 +481,22 @@ utf16le_len_chars(const utf16lechar *s)
 
 #ifdef ENABLE_TEST_SUPPORT
 
-#include "wimlib/test_support.h"
+#  include "wimlib/test_support.h"
 
 WIMLIBAPI int
-wimlib_utf8_to_utf16le(const char *in, size_t in_nbytes,
-		       utf16lechar **out_ret, size_t *out_nbytes_ret)
+wimlib_utf8_to_utf16le(const char *in,
+                       size_t in_nbytes,
+                       utf16lechar **out_ret,
+                       size_t *out_nbytes_ret)
 {
 	return utf8_to_utf16le(in, in_nbytes, out_ret, out_nbytes_ret);
 }
 
 WIMLIBAPI int
-wimlib_utf16le_to_utf8(const utf16lechar *in, size_t in_nbytes,
-		       char **out_ret, size_t *out_nbytes_ret)
+wimlib_utf16le_to_utf8(const utf16lechar *in,
+                       size_t in_nbytes,
+                       char **out_ret,
+                       size_t *out_nbytes_ret)
 {
 	return utf16le_to_utf8(in, in_nbytes, out_ret, out_nbytes_ret);
 }

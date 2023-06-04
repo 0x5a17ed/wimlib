@@ -22,21 +22,21 @@
 
 #ifdef _WIN32
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#  ifdef HAVE_CONFIG_H
+#    include "config.h"
+#  endif
 
-#include <errno.h>
-#include <io.h>	/* for _get_osfhandle()  */
-#include <fcntl.h>
+#  include <errno.h>
+#  include <io.h> /* for _get_osfhandle()  */
+#  include <fcntl.h>
 
-#include "wimlib/win32_common.h"
+#  include "wimlib/win32_common.h"
 
-#include "wimlib/assert.h"
-#include "wimlib/glob.h"
-#include "wimlib/error.h"
-#include "wimlib/timestamp.h"
-#include "wimlib/util.h"
+#  include "wimlib/assert.h"
+#  include "wimlib/glob.h"
+#  include "wimlib/error.h"
+#  include "wimlib/timestamp.h"
+#  include "wimlib/util.h"
 
 static int
 win32_error_to_errno(DWORD err_code)
@@ -100,16 +100,16 @@ win32_error_to_errno(DWORD err_code)
 		return EIO;
 	case ERROR_DISK_FULL:
 		return ENOSPC;
-#ifdef ENOTUNIQ
+#  ifdef ENOTUNIQ
 	case ERROR_DUP_NAME:
 		return ENOTUNIQ;
-#endif
+#  endif
 	case ERROR_EAS_DIDNT_FIT:
 		return ENOSPC;
-#ifdef ENOTSUP
+#  ifdef ENOTSUP
 	case ERROR_EAS_NOT_SUPPORTED:
 		return ENOTSUP;
-#endif
+#  endif
 	case ERROR_EA_LIST_INCONSISTENT:
 		return EINVAL;
 	case ERROR_EA_TABLE_FULL:
@@ -136,10 +136,10 @@ win32_error_to_errno(DWORD err_code)
 		return ENOENT;
 	case ERROR_HANDLE_DISK_FULL:
 		return ENOSPC;
-#ifdef ENODATA
+#  ifdef ENODATA
 	case ERROR_HANDLE_EOF:
 		return ENODATA;
-#endif
+#  endif
 	case ERROR_INVALID_ADDRESS:
 		return EINVAL;
 	case ERROR_INVALID_AT_INTERRUPT_TIME:
@@ -154,10 +154,10 @@ win32_error_to_errno(DWORD err_code)
 		return EINVAL;
 	case ERROR_INVALID_EXE_SIGNATURE:
 		return ENOEXEC;
-#ifdef EBADRQC
+#  ifdef EBADRQC
 	case ERROR_INVALID_FUNCTION:
 		return EBADRQC;
-#endif
+#  endif
 	case ERROR_INVALID_HANDLE:
 		return EBADF;
 	case ERROR_INVALID_NAME:
@@ -182,10 +182,10 @@ win32_error_to_errno(DWORD err_code)
 		return EINVAL;
 	case ERROR_MOD_NOT_FOUND:
 		return ENOENT;
-#ifdef EMSGSIZE
+#  ifdef EMSGSIZE
 	case ERROR_MORE_DATA:
 		return EMSGSIZE;
-#endif
+#  endif
 	case ERROR_NEGATIVE_SEEK:
 		return EINVAL;
 	case ERROR_NETNAME_DELETED:
@@ -196,18 +196,18 @@ win32_error_to_errno(DWORD err_code)
 		return EINVAL;
 	case ERROR_NONPAGED_SYSTEM_RESOURCES:
 		return EAGAIN;
-#ifdef ENOLINK
+#  ifdef ENOLINK
 	case ERROR_NOT_CONNECTED:
 		return ENOLINK;
-#endif
+#  endif
 	case ERROR_NOT_ENOUGH_MEMORY:
 		return ENOMEM;
 	case ERROR_NOT_OWNER:
 		return EPERM;
-#ifdef ENOMEDIUM
+#  ifdef ENOMEDIUM
 	case ERROR_NOT_READY:
 		return ENOMEDIUM;
-#endif
+#  endif
 	case ERROR_NOT_SAME_DEVICE:
 		return EXDEV;
 	case ERROR_NOT_SUPPORTED:
@@ -216,18 +216,18 @@ win32_error_to_errno(DWORD err_code)
 		return EPIPE;
 	case ERROR_NO_DATA_DETECTED:
 		return EIO;
-#ifdef ENOMEDIUM
+#  ifdef ENOMEDIUM
 	case ERROR_NO_MEDIA_IN_DRIVE:
 		return ENOMEDIUM;
-#endif
-#ifdef ENMFILE
+#  endif
+#  ifdef ENMFILE
 	case ERROR_NO_MORE_FILES:
 		return ENMFILE;
-#endif
-#ifdef ENMFILE
+#  endif
+#  ifdef ENMFILE
 	case ERROR_NO_MORE_ITEMS:
 		return ENMFILE;
-#endif
+#  endif
 	case ERROR_NO_MORE_SEARCH_HANDLES:
 		return ENFILE;
 	case ERROR_NO_PROC_SLOTS:
@@ -254,12 +254,12 @@ win32_error_to_errno(DWORD err_code)
 		return EBUSY;
 	case ERROR_PIPE_CONNECTED:
 		return EBUSY;
-#ifdef ECOMM
+#  ifdef ECOMM
 	case ERROR_PIPE_LISTENING:
 		return ECOMM;
 	case ERROR_PIPE_NOT_CONNECTED:
 		return ECOMM;
-#endif
+#  endif
 	case ERROR_POSSIBLE_DEADLOCK:
 		return EDEADLOCK;
 	case ERROR_PRIVILEGE_NOT_HELD:
@@ -268,10 +268,10 @@ win32_error_to_errno(DWORD err_code)
 		return EFAULT;
 	case ERROR_PROC_NOT_FOUND:
 		return ESRCH;
-#ifdef ENONET
+#  ifdef ENONET
 	case ERROR_REM_NOT_LIST:
 		return ENONET;
-#endif
+#  endif
 	case ERROR_SECTOR_NOT_FOUND:
 		return EINVAL;
 	case ERROR_SEEK:
@@ -286,10 +286,10 @@ win32_error_to_errno(DWORD err_code)
 		return EBUSY;
 	case ERROR_SIGNAL_REFUSED:
 		return EIO;
-#ifdef ELIBBAD
+#  ifdef ELIBBAD
 	case ERROR_SXS_CANT_GEN_ACTCTX:
 		return ELIBBAD;
-#endif
+#  endif
 	case ERROR_THREAD_1_INACTIVE:
 		return EINVAL;
 	case ERROR_TOO_MANY_LINKS:
@@ -429,13 +429,14 @@ win32_rename_replacement(const wchar_t *srcpath, const wchar_t *dstpath)
 	 * rather mark it for deletion when the last handle to it is closed.  */
 	{
 		static const wchar_t orig_suffix[5] = L".orig";
-		const size_t num_rand_chars = 9;
+		const size_t num_rand_chars         = 9;
 		wchar_t *p;
 
 		size_t dstlen = wcslen(dstpath);
 
-		tmpname = alloca(sizeof(wchar_t) *
-				 (dstlen + ARRAY_LEN(orig_suffix) + num_rand_chars + 1));
+		tmpname = alloca(
+			sizeof(wchar_t) *
+			(dstlen + ARRAY_LEN(orig_suffix) + num_rand_chars + 1));
 		p = tmpname;
 		p = wmempcpy(p, dstpath, dstlen);
 		p = wmempcpy(p, orig_suffix, ARRAY_LEN(orig_suffix));
@@ -450,14 +451,15 @@ win32_rename_replacement(const wchar_t *srcpath, const wchar_t *dstpath)
 	if (!DeleteFile(tmpname)) {
 		set_errno_from_GetLastError();
 		WARNING_WITH_ERRNO("Failed to delete original file "
-				   "(moved to \"%ls\")", tmpname);
+		                   "(moved to \"%ls\")",
+		                   tmpname);
 	}
 
 	if (!MoveFile(srcpath, dstpath)) {
 		set_errno_from_GetLastError();
 		WARNING_WITH_ERRNO("Atomic semantics not respected in "
-				   "failed rename() (new file is at \"%ls\")",
-				   srcpath);
+		                   "failed rename() (new file is at \"%ls\")",
+		                   srcpath);
 		return 1;
 	}
 
@@ -468,11 +470,10 @@ err_set_errno:
 	return -1;
 }
 
-#define MAX_IO_AMOUNT 1048576
+#  define MAX_IO_AMOUNT 1048576
 
 static int
-do_pread_or_pwrite(int fd, void *buf, size_t count, off_t offset,
-		   bool is_pwrite)
+do_pread_or_pwrite(int fd, void *buf, size_t count, off_t offset, bool is_pwrite)
 {
 	HANDLE h;
 	LARGE_INTEGER orig_offset;
@@ -500,7 +501,7 @@ do_pread_or_pwrite(int fd, void *buf, size_t count, off_t offset,
 	}
 
 	memset(&overlapped, 0, sizeof(overlapped));
-	overlapped.Offset = offset;
+	overlapped.Offset     = offset;
 	overlapped.OffsetHigh = offset >> 32;
 
 	/* Do the read or write at the specified offset */
@@ -512,8 +513,11 @@ do_pread_or_pwrite(int fd, void *buf, size_t count, off_t offset,
 		bret = ReadFile(h, buf, count, &result, &overlapped);
 	if (!bret) {
 		err = GetLastError();
-		win32_error(err, L"Failed to %s %zu bytes at offset %"PRIu64,
-			    (is_pwrite ? "write" : "read"), count, offset);
+		win32_error(err,
+		            L"Failed to %s %zu bytes at offset %" PRIu64,
+		            (is_pwrite ? "write" : "read"),
+		            count,
+		            offset);
 		goto error;
 	}
 
@@ -522,8 +526,9 @@ do_pread_or_pwrite(int fd, void *buf, size_t count, off_t offset,
 	/* Restore the original position */
 	if (!SetFilePointerEx(h, orig_offset, NULL, FILE_BEGIN)) {
 		err = GetLastError();
-		win32_error(err, L"Failed to restore file position to %"PRIu64,
-			    offset);
+		win32_error(err,
+		            L"Failed to restore file position to %" PRIu64,
+		            offset);
 		goto error;
 	}
 
@@ -550,14 +555,14 @@ win32_pread(int fd, void *buf, size_t count, off_t offset)
 ssize_t
 win32_pwrite(int fd, const void *buf, size_t count, off_t offset)
 {
-	return do_pread_or_pwrite(fd, (void*)buf, count, offset, true);
+	return do_pread_or_pwrite(fd, (void *)buf, count, offset, true);
 }
 
 /* Replacement for read() which doesn't hide the Win32 error code */
 ssize_t
 win32_read(int fd, void *buf, size_t count)
 {
-	HANDLE h = (HANDLE)_get_osfhandle(fd);
+	HANDLE h     = (HANDLE)_get_osfhandle(fd);
 	DWORD result = 0xFFFFFFFF;
 
 	if (h == INVALID_HANDLE_VALUE)
@@ -567,8 +572,8 @@ win32_read(int fd, void *buf, size_t count)
 	SetLastError(0);
 	if (!ReadFile(h, buf, count, &result, NULL)) {
 		DWORD err = GetLastError();
-		win32_error(err,
-			    L"Error reading %zu bytes from fd %d", count, fd);
+		win32_error(
+			err, L"Error reading %zu bytes from fd %d", count, fd);
 		set_errno_from_win32_error(err);
 		return -1;
 	}
@@ -581,7 +586,7 @@ win32_read(int fd, void *buf, size_t count)
 ssize_t
 win32_write(int fd, const void *buf, size_t count)
 {
-	HANDLE h = (HANDLE)_get_osfhandle(fd);
+	HANDLE h     = (HANDLE)_get_osfhandle(fd);
 	DWORD result = 0xFFFFFFFF;
 
 	if (h == INVALID_HANDLE_VALUE)
@@ -591,8 +596,8 @@ win32_write(int fd, const void *buf, size_t count)
 	SetLastError(0);
 	if (!WriteFile(h, buf, count, &result, NULL)) {
 		DWORD err = GetLastError();
-		win32_error(err,
-			    L"Error writing %zu bytes to fd %d", count, fd);
+		win32_error(
+			err, L"Error writing %zu bytes to fd %d", count, fd);
 		set_errno_from_win32_error(err);
 		return -1;
 	}
@@ -604,9 +609,10 @@ win32_write(int fd, const void *buf, size_t count)
 /* Replacement for glob() in Windows native builds that operates on wide
  * characters.  */
 int
-win32_wglob(const wchar_t *pattern, int flags,
-	    int (*errfunc)(const wchar_t *epath, int eerrno),
-	    glob_t *pglob)
+win32_wglob(const wchar_t *pattern,
+            int flags,
+            int (*errfunc)(const wchar_t *epath, int eerrno),
+            glob_t *pglob)
 {
 	WIN32_FIND_DATAW dat;
 	DWORD err;
@@ -649,7 +655,7 @@ win32_wglob(const wchar_t *pattern, int flags,
 	}
 	pglob->gl_pathc = 0;
 	pglob->gl_pathv = NULL;
-	nspaces = 0;
+	nspaces         = 0;
 	do {
 		wchar_t *path;
 		if (pglob->gl_pathc == nspaces) {
@@ -657,15 +663,16 @@ win32_wglob(const wchar_t *pattern, int flags,
 			wchar_t **pathv;
 
 			new_nspaces = nspaces * 2 + 1;
-			pathv = REALLOC(pglob->gl_pathv,
-					new_nspaces * sizeof(pglob->gl_pathv[0]));
+			pathv       = REALLOC(pglob->gl_pathv,
+                                        new_nspaces *
+                                                sizeof(pglob->gl_pathv[0]));
 			if (!pathv)
 				goto oom;
 			pglob->gl_pathv = pathv;
-			nspaces = new_nspaces;
+			nspaces         = new_nspaces;
 		}
 		size_t filename_len = wcslen(dat.cFileName);
-		size_t len_needed = prefix_len + filename_len;
+		size_t len_needed   = prefix_len + filename_len;
 
 		path = MALLOC((len_needed + 1) * sizeof(wchar_t));
 		if (!path)
@@ -687,7 +694,7 @@ win32_wglob(const wchar_t *pattern, int flags,
 oom:
 	FindClose(hFind);
 	errno = ENOMEM;
-	ret = GLOB_NOSPACE;
+	ret   = GLOB_NOSPACE;
 fail_globfree:
 	errno_save = errno;
 	globfree(pglob);
@@ -713,8 +720,13 @@ win32_open_logfile(const wchar_t *path)
 	int fd;
 	FILE *fp;
 
-	h = CreateFile(path, FILE_APPEND_DATA, FILE_SHARE_VALID_FLAGS,
-		       NULL, OPEN_ALWAYS, 0, NULL);
+	h = CreateFile(path,
+	               FILE_APPEND_DATA,
+	               FILE_SHARE_VALID_FLAGS,
+	               NULL,
+	               OPEN_ALWAYS,
+	               0,
+	               NULL);
 	if (h == INVALID_HANDLE_VALUE)
 		return NULL;
 
@@ -733,8 +745,9 @@ win32_open_logfile(const wchar_t *path)
 	return fp;
 }
 
-#define RtlGenRandom SystemFunction036
-BOOLEAN WINAPI RtlGenRandom(PVOID RandomBuffer, ULONG RandomBufferLength);
+#  define RtlGenRandom SystemFunction036
+BOOLEAN WINAPI
+RtlGenRandom(PVOID RandomBuffer, ULONG RandomBufferLength);
 
 /*
  * Generate @n cryptographically secure random bytes (thread-safe)
@@ -750,7 +763,8 @@ get_random_bytes(void *p, size_t n)
 
 		if (!RtlGenRandom(p, count)) {
 			win32_error(GetLastError(),
-				    L"RtlGenRandom() failed (count=%u)", count);
+			            L"RtlGenRandom() failed (count=%u)",
+			            count);
 			wimlib_assert(0);
 			count = 0;
 		}

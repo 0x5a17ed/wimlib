@@ -42,32 +42,25 @@
 /* Mapping: offset slot => first match offset that uses that offset slot.
  * The offset slots for repeat offsets map to "fake" offsets < 1.  */
 const s32 lzx_offset_slot_base[LZX_MAX_OFFSET_SLOTS + 1] = {
-        -2     , -1     , 0      , 1      , 2      ,    /* 0  --- 4  */
-        4      , 6      , 10     , 14     , 22     ,    /* 5  --- 9  */
-        30     , 46     , 62     , 94     , 126    ,    /* 10 --- 14 */
-        190    , 254    , 382    , 510    , 766    ,    /* 15 --- 19 */
-        1022   , 1534   , 2046   , 3070   , 4094   ,    /* 20 --- 24 */
-        6142   , 8190   , 12286  , 16382  , 24574  ,    /* 25 --- 29 */
-        32766  , 49150  , 65534  , 98302  , 131070 ,    /* 30 --- 34 */
-        196606 , 262142 , 393214 , 524286 , 655358 ,    /* 35 --- 39 */
-        786430 , 917502 , 1048574, 1179646, 1310718,    /* 40 --- 44 */
-        1441790, 1572862, 1703934, 1835006, 1966078,    /* 45 --- 49 */
-        2097150                                         /* extra     */
+	-2,      -1,      0,       1,       2, /* 0  --- 4  */
+	4,       6,       10,      14,      22, /* 5  --- 9  */
+	30,      46,      62,      94,      126, /* 10 --- 14 */
+	190,     254,     382,     510,     766, /* 15 --- 19 */
+	1022,    1534,    2046,    3070,    4094, /* 20 --- 24 */
+	6142,    8190,    12286,   16382,   24574, /* 25 --- 29 */
+	32766,   49150,   65534,   98302,   131070, /* 30 --- 34 */
+	196606,  262142,  393214,  524286,  655358, /* 35 --- 39 */
+	786430,  917502,  1048574, 1179646, 1310718, /* 40 --- 44 */
+	1441790, 1572862, 1703934, 1835006, 1966078, /* 45 --- 49 */
+	2097150 /* extra     */
 };
 
 /* Mapping: offset slot => how many extra bits must be read and added to the
  * corresponding offset slot base to decode the match offset.  */
 const u8 lzx_extra_offset_bits[LZX_MAX_OFFSET_SLOTS] = {
-	0 , 0 , 0 , 0 , 1 ,
-	1 , 2 , 2 , 3 , 3 ,
-	4 , 4 , 5 , 5 , 6 ,
-	6 , 7 , 7 , 8 , 8 ,
-	9 , 9 , 10, 10, 11,
-	11, 12, 12, 13, 13,
-	14, 14, 15, 15, 16,
-	16, 17, 17, 17, 17,
-	17, 17, 17, 17, 17,
-	17, 17, 17, 17, 17,
+	0,  0,  0,  0,  1,  1,  2,  2,  3,  3,  4,  4,  5,  5,  6,  6,  7,
+	7,  8,  8,  9,  9,  10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15,
+	16, 16, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
 };
 
 /* Round the specified buffer size up to the next valid LZX window size, and
@@ -92,8 +85,8 @@ lzx_get_num_main_syms(unsigned window_order)
 	 * bytes were to match the last two bytes.  However, the format
 	 * disallows this case.  This reduces the number of needed offset slots
 	 * by 1.  */
-	u32 window_size = (u32)1 << window_order;
-	u32 max_offset = window_size - LZX_MIN_MATCH_LEN - 1;
+	u32 window_size           = (u32)1 << window_order;
+	u32 max_offset            = window_size - LZX_MIN_MATCH_LEN - 1;
 	unsigned num_offset_slots = 30;
 	while (max_offset >= lzx_offset_slot_base[num_offset_slots])
 		num_offset_slots++;
@@ -169,7 +162,6 @@ undo_translate_target(void *target, s32 input_pos)
 static void
 lzx_e8_filter(u8 *data, u32 size, void (*process_target)(void *, s32))
 {
-
 #if !defined(__SSE2__) && !defined(__AVX2__)
 	/*
 	 * A worthwhile optimization is to push the end-of-buffer check into the
@@ -204,16 +196,16 @@ lzx_e8_filter(u8 *data, u32 size, void (*process_target)(void *, s32))
 #else
 	/* SSE2 or AVX-2 optimized version for x86_64  */
 
-	u8 *p = data;
+	u8 *p          = data;
 	u64 valid_mask = ~0;
 
 	if (size <= 10)
 		return;
-#ifdef __AVX2__
-#  define ALIGNMENT_REQUIRED 32
-#else
-#  define ALIGNMENT_REQUIRED 16
-#endif
+#  ifdef __AVX2__
+#    define ALIGNMENT_REQUIRED 32
+#  else
+#    define ALIGNMENT_REQUIRED 16
+#  endif
 
 	/* Process one byte at a time until the pointer is properly aligned.  */
 	while ((uintptr_t)p % ALIGNMENT_REQUIRED != 0) {
@@ -229,7 +221,6 @@ lzx_e8_filter(u8 *data, u32 size, void (*process_target)(void *, s32))
 	}
 
 	if (data + size - p >= 64) {
-
 		/* Vectorized processing  */
 
 		/* Note: we use a "trap" E8 byte to eliminate the need to check
@@ -237,32 +228,35 @@ lzx_e8_filter(u8 *data, u32 size, void (*process_target)(void *, s32))
 		 * positioned so that it will never be changed by a previous
 		 * translation before it is detected.  */
 
-		u8 *trap = p + ((data + size - p) & ~31) - 32 + 4;
+		u8 *trap      = p + ((data + size - p) & ~31) - 32 + 4;
 		u8 saved_byte = *trap;
-		*trap = 0xE8;
+		*trap         = 0xE8;
 
 		for (;;) {
 			u32 e8_mask;
-			u8 *orig_p = p;
-		#ifdef __AVX2__
+			u8 *orig_p             = p;
+#  ifdef __AVX2__
 			const __m256i e8_bytes = _mm256_set1_epi8(0xE8);
 			for (;;) {
 				__m256i bytes = *(const __m256i *)p;
-				__m256i cmpresult = _mm256_cmpeq_epi8(bytes, e8_bytes);
+				__m256i cmpresult =
+					_mm256_cmpeq_epi8(bytes, e8_bytes);
 				e8_mask = _mm256_movemask_epi8(cmpresult);
 				if (e8_mask)
 					break;
 				p += 32;
 			}
-		#else
+#  else
 			const __m128i e8_bytes = _mm_set1_epi8(0xE8);
 			for (;;) {
 				/* Read the next 32 bytes of data and test them
 				 * for E8 bytes.  */
 				__m128i bytes1 = *(const __m128i *)p;
 				__m128i bytes2 = *(const __m128i *)(p + 16);
-				__m128i cmpresult1 = _mm_cmpeq_epi8(bytes1, e8_bytes);
-				__m128i cmpresult2 = _mm_cmpeq_epi8(bytes2, e8_bytes);
+				__m128i cmpresult1 =
+					_mm_cmpeq_epi8(bytes1, e8_bytes);
+				__m128i cmpresult2 =
+					_mm_cmpeq_epi8(bytes2, e8_bytes);
 				u32 mask1 = _mm_movemask_epi8(cmpresult1);
 				u32 mask2 = _mm_movemask_epi8(cmpresult2);
 				/* The masks have a bit set for each E8 byte.
@@ -274,7 +268,7 @@ lzx_e8_filter(u8 *data, u32 size, void (*process_target)(void *, s32))
 				}
 				p += 32;
 			}
-		#endif
+#  endif
 
 			/* Did we pass over data with no E8 bytes?  */
 			if (p != orig_p)

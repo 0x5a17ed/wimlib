@@ -17,14 +17,14 @@ set_fd_to_binary_mode(int fd);
 
 #include "wgetopt.h"
 
-#define optarg			woptarg
-#define optind			woptind
-#define opterr			wopterr
-#define optopt			woptopt
-#define option			woption
+#define optarg woptarg
+#define optind woptind
+#define opterr wopterr
+#define optopt woptopt
+#define option woption
 
-#define getopt_long_only	wgetopt_long_only
-#define getopt_long		wgetopt_long
-#define getopt			wgetopt
+#define getopt_long_only wgetopt_long_only
+#define getopt_long      wgetopt_long
+#define getopt           wgetopt
 
 #endif

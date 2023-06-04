@@ -33,17 +33,23 @@
 #include "wimlib/pattern.h"
 
 static bool
-string_matches_pattern(const tchar *string, const tchar * const string_end,
-		       const tchar *pattern, const tchar * const pattern_end)
+string_matches_pattern(const tchar *string,
+                       const tchar *const string_end,
+                       const tchar *pattern,
+                       const tchar *const pattern_end)
 {
 	for (; string != string_end; string++, pattern++) {
 		if (pattern == pattern_end)
 			return false;
 		if (*pattern == T('*')) {
-			return string_matches_pattern(string, string_end,
-						      pattern + 1, pattern_end) ||
-			       string_matches_pattern(string + 1, string_end,
-						      pattern, pattern_end);
+			return string_matches_pattern(string,
+			                              string_end,
+			                              pattern + 1,
+			                              pattern_end) ||
+			       string_matches_pattern(string + 1,
+			                              string_end,
+			                              pattern,
+			                              pattern_end);
 		}
 		if (*string != *pattern && *pattern != T('?') &&
 		    !(default_ignore_case &&
@@ -111,7 +117,7 @@ match_path(const tchar *path, const tchar *pattern, int match_flags)
 		const tchar *path_component_end;
 		const tchar *pattern_component_end;
 
-		path = advance_to_next_component(path);
+		path    = advance_to_next_component(path);
 		pattern = advance_to_next_component(pattern);
 
 		/* Is the pattern exhausted?  */
@@ -122,15 +128,17 @@ match_path(const tchar *path, const tchar *pattern, int match_flags)
 		if (!*path)
 			return (match_flags & MATCH_ANCESTORS);
 
-		path_component_end = advance_through_component(path);
+		path_component_end    = advance_through_component(path);
 		pattern_component_end = advance_through_component(pattern);
 
 		/* Do the components match?  */
-		if (!string_matches_pattern(path, path_component_end,
-					    pattern, pattern_component_end))
+		if (!string_matches_pattern(path,
+		                            path_component_end,
+		                            pattern,
+		                            pattern_component_end))
 			return false;
 
-		path = path_component_end;
+		path    = path_component_end;
 		pattern = pattern_component_end;
 	}
 }
@@ -154,9 +162,10 @@ match_path(const tchar *path, const tchar *pattern, int match_flags)
  * value returned by @consume_dentry.
  */
 int
-expand_path_pattern(struct wim_dentry *root, const tchar *pattern,
-		    int (*consume_dentry)(struct wim_dentry *, void *),
-		    void *ctx)
+expand_path_pattern(struct wim_dentry *root,
+                    const tchar *pattern,
+                    int (*consume_dentry)(struct wim_dentry *, void *),
+                    void *ctx)
 {
 	const tchar *pattern_component_end;
 	struct wim_dentry *child;
@@ -174,20 +183,27 @@ expand_path_pattern(struct wim_dentry *root, const tchar *pattern,
 
 	/* For each child dentry that matches the current pattern component,
 	 * recurse with the remainder of the pattern.  */
-	for_dentry_child(child, root) {
+	for_dentry_child(child, root)
+	{
 		const tchar *name;
 		size_t name_nbytes;
 		int ret;
 
-		ret = utf16le_get_tstr(child->d_name, child->d_name_nbytes,
-				       &name, &name_nbytes);
+		ret = utf16le_get_tstr(child->d_name,
+		                       child->d_name_nbytes,
+		                       &name,
+		                       &name_nbytes);
 		if (ret)
 			return ret;
 
-		if (string_matches_pattern(name, &name[name_nbytes / sizeof(tchar)],
-					   pattern, pattern_component_end))
-			ret = expand_path_pattern(child, pattern_component_end,
-						  consume_dentry, ctx);
+		if (string_matches_pattern(name,
+		                           &name[name_nbytes / sizeof(tchar)],
+		                           pattern,
+		                           pattern_component_end))
+			ret = expand_path_pattern(child,
+			                          pattern_component_end,
+			                          consume_dentry,
+			                          ctx);
 		utf16le_put_tstr(name);
 		if (ret)
 			return ret;

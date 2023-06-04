@@ -37,7 +37,6 @@
  * metadata resource
  */
 struct tagged_item_header {
-
 	/* identifies the type of metadata item (see TAG_* constants) */
 	le32 tag;
 
@@ -57,8 +56,10 @@ struct tagged_item_header {
  * not found, return NULL.
  */
 void *
-inode_get_tagged_item(const struct wim_inode *inode, u32 tag, u32 min_len,
-		      u32 *actual_len_ret)
+inode_get_tagged_item(const struct wim_inode *inode,
+                      u32 tag,
+                      u32 min_len,
+                      u32 *actual_len_ret)
 {
 	struct tagged_item_header *hdr;
 	size_t len_remaining;
@@ -68,12 +69,12 @@ inode_get_tagged_item(const struct wim_inode *inode, u32 tag, u32 min_len,
 	if (!inode->i_extra)
 		return NULL;
 
-	hdr = (struct tagged_item_header *)inode->i_extra->data;
+	hdr           = (struct tagged_item_header *)inode->i_extra->data;
 	len_remaining = inode->i_extra->size;
 
 	/* Iterate through the tagged items. */
 	while (len_remaining >= sizeof(*hdr) + min_len) {
-		u32 len = le32_to_cpu(hdr->length);
+		u32 len      = le32_to_cpu(hdr->length);
 		u32 full_len = sizeof(*hdr) + ALIGN(len, 8);
 
 		/* Length overflow (corrupted item list)? */
@@ -112,10 +113,10 @@ inode_add_tagged_item(struct wim_inode *inode, u32 tag, u32 len)
 	if (!extra)
 		return NULL;
 	inode->i_extra = extra;
-	extra->size = newsize;
-	hdr = (struct tagged_item_header *)&extra->data[oldsize];
-	hdr->tag = cpu_to_le32(tag);
-	hdr->length = cpu_to_le32(len);
+	extra->size    = newsize;
+	hdr            = (struct tagged_item_header *)&extra->data[oldsize];
+	hdr->tag       = cpu_to_le32(tag);
+	hdr->length    = cpu_to_le32(len);
 	memset(hdr->data + len, 0, -len & 7); /* pad to next 8-byte boundary */
 	return hdr->data;
 }
@@ -126,8 +127,10 @@ inode_add_tagged_item(struct wim_inode *inode, u32 tag, u32 len)
  * %false if failed (out of memory).
  */
 bool
-inode_set_tagged_item(struct wim_inode *inode, u32 tag,
-		      const void *data, u32 len)
+inode_set_tagged_item(struct wim_inode *inode,
+                      u32 tag,
+                      const void *data,
+                      u32 len)
 {
 	u8 *p;
 	u32 old_len;
@@ -137,8 +140,10 @@ inode_set_tagged_item(struct wim_inode *inode, u32 tag,
 		p -= sizeof(struct tagged_item_header);
 		old_len += sizeof(struct tagged_item_header);
 		old_len = ALIGN(old_len, 8);
-		memmove(p, p + old_len, (inode->i_extra->data +
-					 inode->i_extra->size) - (p + old_len));
+		memmove(p,
+		        p + old_len,
+		        (inode->i_extra->data + inode->i_extra->size) -
+		                (p + old_len));
 		inode->i_extra->size -= old_len;
 	}
 
@@ -160,9 +165,10 @@ struct wimlib_unix_data_disk {
 static inline struct wimlib_unix_data_disk *
 inode_get_unix_data_disk(const struct wim_inode *inode)
 {
-	return inode_get_tagged_item(inode, TAG_WIMLIB_UNIX_DATA,
-				     sizeof(struct wimlib_unix_data_disk),
-				     NULL);
+	return inode_get_tagged_item(inode,
+	                             TAG_WIMLIB_UNIX_DATA,
+	                             sizeof(struct wimlib_unix_data_disk),
+	                             NULL);
 }
 
 /* Return %true iff the specified inode has standard UNIX metadata. */
@@ -180,7 +186,7 @@ inode_has_unix_data(const struct wim_inode *inode)
  */
 bool
 inode_get_unix_data(const struct wim_inode *inode,
-		    struct wimlib_unix_data *unix_data)
+                    struct wimlib_unix_data *unix_data)
 {
 	const struct wimlib_unix_data_disk *p;
 
@@ -188,8 +194,8 @@ inode_get_unix_data(const struct wim_inode *inode,
 	if (!p)
 		return false;
 
-	unix_data->uid = le32_to_cpu(p->uid);
-	unix_data->gid = le32_to_cpu(p->gid);
+	unix_data->uid  = le32_to_cpu(p->uid);
+	unix_data->gid  = le32_to_cpu(p->gid);
 	unix_data->mode = le32_to_cpu(p->mode);
 	unix_data->rdev = le32_to_cpu(p->rdev);
 	return true;
@@ -205,15 +211,16 @@ inode_get_unix_data(const struct wim_inode *inode,
  * Returns %true if successful, %false if failed (out of memory).
  */
 bool
-inode_set_unix_data(struct wim_inode *inode, struct wimlib_unix_data *unix_data,
-		    int which)
+inode_set_unix_data(struct wim_inode *inode,
+                    struct wimlib_unix_data *unix_data,
+                    int which)
 {
 	struct wimlib_unix_data_disk *p;
 
 	p = inode_get_unix_data_disk(inode);
 	if (!p) {
-		p = inode_add_tagged_item(inode, TAG_WIMLIB_UNIX_DATA,
-					  sizeof(*p));
+		p = inode_add_tagged_item(
+			inode, TAG_WIMLIB_UNIX_DATA, sizeof(*p));
 		if (!p)
 			return false;
 		which = UNIX_DATA_ALL;

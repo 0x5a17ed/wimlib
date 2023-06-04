@@ -36,15 +36,16 @@
  * just use their platform's convention directly.
  */
 #ifdef _WIN32
-#  define main		wmain
-   typedef wchar_t	tchar;
-#  define TS		"ls"
+#  define main wmain
+typedef wchar_t tchar;
+#  define TS "ls"
 #else
-   typedef char		tchar;
-#  define TS		"s"
+typedef char tchar;
+#  define TS "s"
 #endif
 
-int main(int argc, tchar **argv)
+int
+main(int argc, tchar **argv)
 {
 	int ret;
 	tchar *wimfile;
@@ -55,17 +56,18 @@ int main(int argc, tchar **argv)
 
 	/* Check for the correct number of arguments.  */
 	if (argc != 4) {
-		fprintf(stderr, "Usage: updatewim WIMFILE WIM_PATH EXTERNAL_PATH\n");
+		fprintf(stderr,
+		        "Usage: updatewim WIMFILE WIM_PATH EXTERNAL_PATH\n");
 		return 2;
 	}
 
-	wimfile = argv[1];
+	wimfile         = argv[1];
 	wim_target_path = argv[2];
-	fs_source_path = argv[3];
+	fs_source_path  = argv[3];
 
 	/* Open the WIM file.  */
 	ret = wimlib_open_wim(wimfile, 0, &wim);
-	if (ret != 0)  /* Always should check the error codes.  */
+	if (ret != 0) /* Always should check the error codes.  */
 		goto out;
 
 	/* Update the WIM image.  In this simple example, we add a single file
@@ -89,17 +91,18 @@ int main(int argc, tchar **argv)
 	 * Make sure to fill in 'rename' or 'delete_' instead of 'add' if doing
 	 * a rename or delete operation instead!  */
 	cmds[0].add.wim_target_path = wim_target_path;
-	cmds[0].add.fs_source_path = fs_source_path;
+	cmds[0].add.fs_source_path  = fs_source_path;
 
 	/* Note: we don't need to explicitly set 'cmds[0].add.config_file' and
 	 * 'cmds[0].add.add_flags' because we zeroed the 'struct
 	 * wimlib_update_command', and zero means use the defaults.  */
 
-	ret = wimlib_update_image(wim,  /* WIMStruct to update  */
-				  1,	/* 1-based index of the image to update  */
-				  cmds, /* Array of command structures  */
-				  1,    /* Number of command structures in array  */
-				  0);   /* WIMLIB_UPDATE_FLAG_* flags (0 for defaults)  */
+	ret = wimlib_update_image(
+		wim, /* WIMStruct to update  */
+		1, /* 1-based index of the image to update  */
+		cmds, /* Array of command structures  */
+		1, /* Number of command structures in array  */
+		0); /* WIMLIB_UPDATE_FLAG_* flags (0 for defaults)  */
 	if (ret != 0)
 		goto out;
 
@@ -110,9 +113,10 @@ int main(int argc, tchar **argv)
 	 *
 	 * Changes do not take effect on-disk until this is done.  */
 
-	ret = wimlib_overwrite(wim, /* WIMStruct to commit to the underlying file  */
-			       0,   /* WIMLIB_WRITE_FLAG_* flags (0 for defaults)   */
-			       0);  /* Number of compressor threads (0 means default)  */
+	ret = wimlib_overwrite(
+		wim, /* WIMStruct to commit to the underlying file  */
+		0, /* WIMLIB_WRITE_FLAG_* flags (0 for defaults)   */
+		0); /* Number of compressor threads (0 means default)  */
 
 out:
 	/* Free the WIMStruct.  Has no effect if the pointer to it is NULL.  */
@@ -120,8 +124,10 @@ out:
 
 	/* Check for error status.  */
 	if (ret != 0) {
-		fprintf(stderr, "wimlib error %d: %" TS"\n",
-			ret, wimlib_get_error_string((enum wimlib_error_code)ret));
+		fprintf(stderr,
+		        "wimlib error %d: %" TS "\n",
+		        ret,
+		        wimlib_get_error_string((enum wimlib_error_code)ret));
 	}
 
 	/* Free global memory (optional).  */

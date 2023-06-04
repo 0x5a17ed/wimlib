@@ -47,13 +47,14 @@ win32_thrproc(LPVOID lpParameter)
 	return 0;
 }
 
-bool thread_create(struct thread *t, void *(*thrproc)(void *), void *arg)
+bool
+thread_create(struct thread *t, void *(*thrproc)(void *), void *arg)
 {
 	HANDLE h;
 
 	t->thrproc = thrproc;
-	t->arg = arg;
-	h = CreateThread(NULL, 0, win32_thrproc, (LPVOID)t, 0, NULL);
+	t->arg     = arg;
+	h          = CreateThread(NULL, 0, win32_thrproc, (LPVOID)t, 0, NULL);
 	if (h == NULL) {
 		win32_error(GetLastError(), L"Failed to create thread");
 		return false;
@@ -62,14 +63,16 @@ bool thread_create(struct thread *t, void *(*thrproc)(void *), void *arg)
 	return true;
 }
 
-void thread_join(struct thread *t)
+void
+thread_join(struct thread *t)
 {
 	DWORD res = WaitForSingleObject((HANDLE)t->win32_thread, INFINITE);
 
 	wimlib_assert(res == WAIT_OBJECT_0);
 }
 
-bool mutex_init(struct mutex *m)
+bool
+mutex_init(struct mutex *m)
 {
 	CRITICAL_SECTION *crit = MALLOC(sizeof(*crit));
 
@@ -80,14 +83,16 @@ bool mutex_init(struct mutex *m)
 	return true;
 }
 
-void mutex_destroy(struct mutex *m)
+void
+mutex_destroy(struct mutex *m)
 {
 	DeleteCriticalSection(m->win32_crit);
 	FREE(m->win32_crit);
 	m->win32_crit = NULL;
 }
 
-void mutex_lock(struct mutex *m)
+void
+mutex_lock(struct mutex *m)
 {
 	CRITICAL_SECTION *crit = m->win32_crit;
 
@@ -97,8 +102,8 @@ void mutex_lock(struct mutex *m)
 		crit = MALLOC(sizeof(*crit));
 		wimlib_assert(crit != NULL);
 		InitializeCriticalSection(crit);
-		old = InterlockedCompareExchangePointer(&m->win32_crit, crit,
-							NULL);
+		old = InterlockedCompareExchangePointer(
+			&m->win32_crit, crit, NULL);
 		if (old) {
 			DeleteCriticalSection(crit);
 			FREE(crit);
@@ -108,12 +113,14 @@ void mutex_lock(struct mutex *m)
 	EnterCriticalSection(crit);
 }
 
-void mutex_unlock(struct mutex *m)
+void
+mutex_unlock(struct mutex *m)
 {
 	LeaveCriticalSection(m->win32_crit);
 }
 
-bool condvar_init(struct condvar *c)
+bool
+condvar_init(struct condvar *c)
 {
 	CONDITION_VARIABLE *cond = MALLOC(sizeof(*cond));
 
@@ -124,32 +131,37 @@ bool condvar_init(struct condvar *c)
 	return true;
 }
 
-void condvar_destroy(struct condvar *c)
+void
+condvar_destroy(struct condvar *c)
 {
 	FREE(c->win32_cond);
 	c->win32_cond = NULL;
 }
 
-void condvar_wait(struct condvar *c, struct mutex *m)
+void
+condvar_wait(struct condvar *c, struct mutex *m)
 {
-	BOOL ok = SleepConditionVariableCS(c->win32_cond, m->win32_crit,
-					   INFINITE);
+	BOOL ok = SleepConditionVariableCS(
+		c->win32_cond, m->win32_crit, INFINITE);
 	wimlib_assert(ok);
 }
 
-void condvar_signal(struct condvar *c)
+void
+condvar_signal(struct condvar *c)
 {
 	WakeConditionVariable(c->win32_cond);
 }
 
-void condvar_broadcast(struct condvar *c)
+void
+condvar_broadcast(struct condvar *c)
 {
 	WakeAllConditionVariable(c->win32_cond);
 }
 
 #else /* _WIN32 */
 
-bool thread_create(struct thread *t, void *(*thrproc)(void *), void *arg)
+bool
+thread_create(struct thread *t, void *(*thrproc)(void *), void *arg)
 {
 	int err = pthread_create(&t->pthread, NULL, thrproc, arg);
 
@@ -161,14 +173,16 @@ bool thread_create(struct thread *t, void *(*thrproc)(void *), void *arg)
 	return true;
 }
 
-void thread_join(struct thread *t)
+void
+thread_join(struct thread *t)
 {
 	int err = pthread_join(t->pthread, NULL);
 
 	wimlib_assert(err == 0);
 }
 
-bool mutex_init(struct mutex *m)
+bool
+mutex_init(struct mutex *m)
 {
 	int err = pthread_mutex_init(&m->pthread_mutex, NULL);
 
@@ -180,28 +194,32 @@ bool mutex_init(struct mutex *m)
 	return true;
 }
 
-void mutex_destroy(struct mutex *m)
+void
+mutex_destroy(struct mutex *m)
 {
 	int err = pthread_mutex_destroy(&m->pthread_mutex);
 
 	wimlib_assert(err == 0);
 }
 
-void mutex_lock(struct mutex *m)
+void
+mutex_lock(struct mutex *m)
 {
 	int err = pthread_mutex_lock(&m->pthread_mutex);
 
 	wimlib_assert(err == 0);
 }
 
-void mutex_unlock(struct mutex *m)
+void
+mutex_unlock(struct mutex *m)
 {
 	int err = pthread_mutex_unlock(&m->pthread_mutex);
 
 	wimlib_assert(err == 0);
 }
 
-bool condvar_init(struct condvar *c)
+bool
+condvar_init(struct condvar *c)
 {
 	int err = pthread_cond_init(&c->pthread_cond, NULL);
 
@@ -213,28 +231,32 @@ bool condvar_init(struct condvar *c)
 	return true;
 }
 
-void condvar_destroy(struct condvar *c)
+void
+condvar_destroy(struct condvar *c)
 {
 	int err = pthread_cond_destroy(&c->pthread_cond);
 
 	wimlib_assert(err == 0);
 }
 
-void condvar_wait(struct condvar *c, struct mutex *m)
+void
+condvar_wait(struct condvar *c, struct mutex *m)
 {
 	int err = pthread_cond_wait(&c->pthread_cond, &m->pthread_mutex);
 
 	wimlib_assert(err == 0);
 }
 
-void condvar_signal(struct condvar *c)
+void
+condvar_signal(struct condvar *c)
 {
 	int err = pthread_cond_signal(&c->pthread_cond);
 
 	wimlib_assert(err == 0);
 }
 
-void condvar_broadcast(struct condvar *c)
+void
+condvar_broadcast(struct condvar *c)
 {
 	int err = pthread_cond_broadcast(&c->pthread_cond);
 

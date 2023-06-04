@@ -38,7 +38,7 @@ wimlib_add_empty_image(WIMStruct *wim, const tchar *name, int *new_idx_ret)
 	int ret;
 
 	if (wimlib_image_name_in_use(wim, name)) {
-		ERROR("There is already an image named \"%"TS"\" in the WIM!",
+		ERROR("There is already an image named \"%" TS "\" in the WIM!",
 		      name);
 		return WIMLIB_ERR_IMAGE_NAME_COLLISION;
 	}
@@ -71,9 +71,9 @@ err_put_imd:
  * wimlib_update_image().  */
 static struct wimlib_update_command *
 capture_sources_to_add_cmds(const struct wimlib_capture_source *sources,
-			    size_t num_sources,
-			    int add_flags,
-			    const tchar *config_file)
+                            size_t num_sources,
+                            int add_flags,
+                            const tchar *config_file)
 {
 	struct wimlib_update_command *add_cmds;
 
@@ -88,11 +88,11 @@ capture_sources_to_add_cmds(const struct wimlib_capture_source *sources,
 	add_flags &= ~WIMLIB_ADD_FLAG_BOOT;
 
 	for (size_t i = 0; i < num_sources; i++) {
-		add_cmds[i].op = WIMLIB_UPDATE_OP_ADD;
-		add_cmds[i].add.fs_source_path = sources[i].fs_source_path;
+		add_cmds[i].op                  = WIMLIB_UPDATE_OP_ADD;
+		add_cmds[i].add.fs_source_path  = sources[i].fs_source_path;
 		add_cmds[i].add.wim_target_path = sources[i].wim_target_path;
-		add_cmds[i].add.add_flags = add_flags;
-		add_cmds[i].add.config_file = (tchar *)config_file;
+		add_cmds[i].add.add_flags       = add_flags;
+		add_cmds[i].add.config_file     = (tchar *)config_file;
 	}
 	return add_cmds;
 }
@@ -100,11 +100,11 @@ capture_sources_to_add_cmds(const struct wimlib_capture_source *sources,
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_add_image_multisource(WIMStruct *wim,
-			     const struct wimlib_capture_source *sources,
-			     size_t num_sources,
-			     const tchar *name,
-			     const tchar *config_file,
-			     int add_flags)
+                             const struct wimlib_capture_source *sources,
+                             size_t num_sources,
+                             const tchar *name,
+                             const tchar *config_file,
+                             int add_flags)
 {
 	int ret;
 	struct wimlib_update_command *add_cmds;
@@ -120,15 +120,15 @@ wimlib_add_image_multisource(WIMStruct *wim,
 		return ret;
 
 	/* Translate the "capture sources" into generic update commands.  */
-	ret = WIMLIB_ERR_NOMEM;
-	add_cmds = capture_sources_to_add_cmds(sources, num_sources,
-					       add_flags, config_file);
+	ret      = WIMLIB_ERR_NOMEM;
+	add_cmds = capture_sources_to_add_cmds(
+		sources, num_sources, add_flags, config_file);
 	if (!add_cmds)
 		goto out_delete_image;
 
 	/* Delegate the work to wimlib_update_image().  */
-	ret = wimlib_update_image(wim, wim->hdr.image_count, add_cmds,
-				  num_sources, 0);
+	ret = wimlib_update_image(
+		wim, wim->hdr.image_count, add_cmds, num_sources, 0);
 	FREE(add_cmds);
 	if (ret)
 		goto out_delete_image;
@@ -155,17 +155,17 @@ out_delete_image:
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_add_image(WIMStruct *wim,
-		 const tchar *source,
-		 const tchar *name,
-		 const tchar *config_file,
-		 int add_flags)
+                 const tchar *source,
+                 const tchar *name,
+                 const tchar *config_file,
+                 int add_flags)
 {
 	/* Use the more general wimlib_add_image_multisource().  */
 	const struct wimlib_capture_source capture_src = {
-		.fs_source_path = (tchar *)source,
+		.fs_source_path  = (tchar *)source,
 		.wim_target_path = WIMLIB_WIM_ROOT_PATH,
-		.reserved = 0,
+		.reserved        = 0,
 	};
-	return wimlib_add_image_multisource(wim, &capture_src, 1, name,
-					    config_file, add_flags);
+	return wimlib_add_image_multisource(
+		wim, &capture_src, 1, name, config_file, add_flags);
 }

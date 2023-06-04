@@ -48,8 +48,8 @@
  * Memory allocation
  *******************/
 
-static void *(*wimlib_malloc_func) (size_t)	    = malloc;
-static void  (*wimlib_free_func)   (void *)	    = free;
+static void *(*wimlib_malloc_func)(size_t)          = malloc;
+static void (*wimlib_free_func)(void *)             = free;
 static void *(*wimlib_realloc_func)(void *, size_t) = realloc;
 
 void *
@@ -146,11 +146,11 @@ memdup(const void *mem, size_t size)
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_set_memory_allocator(void *(*malloc_func)(size_t),
-			    void (*free_func)(void *),
-			    void *(*realloc_func)(void *, size_t))
+                            void (*free_func)(void *),
+                            void *(*realloc_func)(void *, size_t))
 {
-	wimlib_malloc_func  = malloc_func  ? malloc_func  : malloc;
-	wimlib_free_func    = free_func    ? free_func    : free;
+	wimlib_malloc_func  = malloc_func ? malloc_func : malloc;
+	wimlib_free_func    = free_func ? free_func : free;
 	wimlib_realloc_func = realloc_func ? realloc_func : realloc;
 	return 0;
 }
@@ -160,7 +160,8 @@ wimlib_set_memory_allocator(void *(*malloc_func)(size_t),
  *******************/
 
 #ifndef HAVE_MEMPCPY
-void *mempcpy(void *dst, const void *src, size_t n)
+void *
+mempcpy(void *dst, const void *src, size_t n)
 {
 	return memcpy(dst, src, n) + n;
 }
@@ -182,7 +183,7 @@ get_random_bytes(void *p, size_t n)
 {
 	if (n == 0)
 		return;
-#ifdef __NR_getrandom
+#  ifdef __NR_getrandom
 	static bool getrandom_unavailable;
 
 	if (getrandom_unavailable)
@@ -205,9 +206,8 @@ get_random_bytes(void *p, size_t n)
 	} while (n != 0);
 	return;
 
-try_dev_urandom:
-	;
-#endif /* __NR_getrandom */
+try_dev_urandom:;
+#  endif /* __NR_getrandom */
 	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0) {
 		ERROR_WITH_ERRNO("Unable to open /dev/urandom");
@@ -288,20 +288,21 @@ get_available_cpus(void)
 u64
 get_available_memory(void)
 {
-#if defined(_SC_PAGESIZE) && defined(_SC_PHYS_PAGES)
+#  if defined(_SC_PAGESIZE) && defined(_SC_PHYS_PAGES)
 	long page_size = sysconf(_SC_PAGESIZE);
 	long num_pages = sysconf(_SC_PHYS_PAGES);
 	if (page_size <= 0 || num_pages <= 0)
 		goto default_size;
 	return ((u64)page_size * (u64)num_pages);
-#else
-	int mib[2] = {CTL_HW, HW_MEMSIZE};
+#  else
+	int mib[2] = { CTL_HW, HW_MEMSIZE };
 	u64 memsize;
 	size_t len = sizeof(memsize);
-	if (sysctl(mib, ARRAY_LEN(mib), &memsize, &len, NULL, 0) < 0 || len != 8)
+	if (sysctl(mib, ARRAY_LEN(mib), &memsize, &len, NULL, 0) < 0 ||
+	    len != 8)
 		goto default_size;
 	return memsize;
-#endif
+#  endif
 
 default_size:
 	WARNING("Failed to determine available memory; assuming 1 GiB");

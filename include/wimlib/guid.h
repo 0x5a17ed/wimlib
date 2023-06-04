@@ -11,7 +11,7 @@
 
 #include "wimlib/util.h"
 
-#define GUID_SIZE    16
+#define GUID_SIZE 16
 
 static inline void
 copy_guid(u8 dest[GUID_SIZE], const u8 src[GUID_SIZE])

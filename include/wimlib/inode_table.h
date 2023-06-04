@@ -19,7 +19,6 @@ struct wim_inode_table {
 	struct hlist_head extra_inodes;
 };
 
-
 /* Compute the index of the hash bucket to use for the given inode number and
  * device number.  */
 static inline size_t
@@ -32,16 +31,19 @@ int
 init_inode_table(struct wim_inode_table *table, size_t capacity);
 
 int
-inode_table_new_dentry(struct wim_inode_table *table, const tchar *name,
-		       u64 ino, u64 devno, bool noshare,
-		       struct wim_dentry **dentry_ret);
+inode_table_new_dentry(struct wim_inode_table *table,
+                       const tchar *name,
+                       u64 ino,
+                       u64 devno,
+                       bool noshare,
+                       struct wim_dentry **dentry_ret);
 
 void
 enlarge_inode_table(struct wim_inode_table *table);
 
 void
 inode_table_prepare_inode_list(struct wim_inode_table *table,
-			       struct hlist_head *head);
+                               struct hlist_head *head);
 
 void
 destroy_inode_table(struct wim_inode_table *table);

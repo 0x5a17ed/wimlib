@@ -21,16 +21,16 @@
 
 #ifdef _WIN32
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#  ifdef HAVE_CONFIG_H
+#    include "config.h"
+#  endif
 
-#include "wimlib/win32_common.h"
+#  include "wimlib/win32_common.h"
 
-#include "wimlib/assert.h"
-#include "wimlib/error.h"
-#include "wimlib/util.h"
-#include "wimlib/win32_vss.h"
+#  include "wimlib/assert.h"
+#  include "wimlib/error.h"
+#  include "wimlib/util.h"
+#  include "wimlib/win32_vss.h"
 
 static bool
 win32_modify_privilege(const wchar_t *privilege, bool enable)
@@ -41,15 +41,15 @@ win32_modify_privilege(const wchar_t *privilege, bool enable)
 	bool ret = FALSE;
 
 	if (!OpenProcessToken(GetCurrentProcess(),
-			      TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
-			      &hToken))
+	                      TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+	                      &hToken))
 		goto out;
 
 	if (!LookupPrivilegeValue(NULL, privilege, &luid))
 		goto out_close_handle;
 
-	newState.PrivilegeCount = 1;
-	newState.Privileges[0].Luid = luid;
+	newState.PrivilegeCount           = 1;
+	newState.Privileges[0].Luid       = luid;
 	newState.Privileges[0].Attributes = (enable ? SE_PRIVILEGE_ENABLED : 0);
 	SetLastError(ERROR_SUCCESS);
 	ret = AdjustTokenPrivileges(hToken, FALSE, &newState, 0, NULL, NULL);
@@ -90,14 +90,14 @@ win32_release_capture_and_apply_privileges(void)
 
 /* Pointers to dynamically loaded functions  */
 
-NTSTATUS (WINAPI *func_RtlDosPathNameToNtPathName_U_WithStatus)
-		(IN PCWSTR DosName,
-		 OUT PUNICODE_STRING NtName,
-		 OUT PCWSTR *PartName,
-		 OUT PRTL_RELATIVE_NAME_U RelativeName);
+NTSTATUS(WINAPI *func_RtlDosPathNameToNtPathName_U_WithStatus)
+(IN PCWSTR DosName,
+ OUT PUNICODE_STRING NtName,
+ OUT PCWSTR *PartName,
+ OUT PRTL_RELATIVE_NAME_U RelativeName);
 
-NTSTATUS (WINAPI *func_RtlCreateSystemVolumeInformationFolder)
-		(PCUNICODE_STRING VolumeRootPath);
+NTSTATUS(WINAPI *func_RtlCreateSystemVolumeInformationFolder)
+(PCUNICODE_STRING VolumeRootPath);
 
 static bool acquired_privileges = false;
 
@@ -113,13 +113,11 @@ init_ntdll(void)
 		return WIMLIB_ERR_UNSUPPORTED;
 	}
 
-	func_RtlDosPathNameToNtPathName_U_WithStatus =
-		(void *)GetProcAddress(ntdll_handle,
-				       "RtlDosPathNameToNtPathName_U_WithStatus");
+	func_RtlDosPathNameToNtPathName_U_WithStatus = (void *)GetProcAddress(
+		ntdll_handle, "RtlDosPathNameToNtPathName_U_WithStatus");
 
-	func_RtlCreateSystemVolumeInformationFolder =
-		(void *)GetProcAddress(ntdll_handle,
-				       "RtlCreateSystemVolumeInformationFolder");
+	func_RtlCreateSystemVolumeInformationFolder = (void *)GetProcAddress(
+		ntdll_handle, "RtlCreateSystemVolumeInformationFolder");
 	return 0;
 }
 
@@ -133,10 +131,12 @@ win32_global_init(int init_flags)
 	if (!(init_flags & WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES)) {
 		ret = WIMLIB_ERR_INSUFFICIENT_PRIVILEGES;
 		if (!win32_modify_capture_privileges(true))
-			if (init_flags & WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES)
+			if (init_flags &
+			    WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES)
 				goto out_drop_privs;
 		if (!win32_modify_apply_privileges(true))
-			if (init_flags & WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES)
+			if (init_flags &
+			    WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES)
 				goto out_drop_privs;
 		acquired_privileges = true;
 	}
@@ -180,11 +180,11 @@ win32_path_to_nt_path(const wchar_t *win32_path, UNICODE_STRING *nt_path)
 	NTSTATUS status;
 
 	if (func_RtlDosPathNameToNtPathName_U_WithStatus) {
-		status = (*func_RtlDosPathNameToNtPathName_U_WithStatus)(win32_path,
-									 nt_path,
-									 NULL, NULL);
+		status = (*func_RtlDosPathNameToNtPathName_U_WithStatus)(
+			win32_path, nt_path, NULL, NULL);
 	} else {
-		if (RtlDosPathNameToNtPathName_U(win32_path, nt_path, NULL, NULL))
+		if (RtlDosPathNameToNtPathName_U(
+			    win32_path, nt_path, NULL, NULL))
 			status = STATUS_SUCCESS;
 		else
 			status = STATUS_NO_MEMORY;
@@ -237,11 +237,12 @@ win32_try_to_attach_wof(const wchar_t *drive)
 		return retval;
 	}
 
-	HRESULT (WINAPI *func_FilterAttach)(LPCWSTR lpFilterName,
-					    LPCWSTR lpVolumeName,
-					    LPCWSTR lpInstanceName,
-					    DWORD dwCreatedInstanceNameLength,
-					    LPWSTR lpCreatedInstanceName);
+	HRESULT(WINAPI * func_FilterAttach)
+	(LPCWSTR lpFilterName,
+	 LPCWSTR lpVolumeName,
+	 LPCWSTR lpInstanceName,
+	 DWORD dwCreatedInstanceNameLength,
+	 LPWSTR lpCreatedInstanceName);
 
 	func_FilterAttach = (void *)GetProcAddress(fltlib, "FilterAttach");
 
@@ -251,7 +252,8 @@ win32_try_to_attach_wof(const wchar_t *drive)
 		res = (*func_FilterAttach)(L"wof", drive, NULL, 0, NULL);
 
 		if (res != S_OK)
-			res = (*func_FilterAttach)(L"wofadk", drive, NULL, 0, NULL);
+			res = (*func_FilterAttach)(
+				L"wofadk", drive, NULL, 0, NULL);
 
 		if (res == S_OK)
 			retval = true;
@@ -264,13 +266,15 @@ win32_try_to_attach_wof(const wchar_t *drive)
 	return retval;
 }
 
-
 static void
-windows_msg(u32 code, const wchar_t *format, va_list va,
-	    bool is_ntstatus, bool is_error)
+windows_msg(u32 code,
+            const wchar_t *format,
+            va_list va,
+            bool is_ntstatus,
+            bool is_error)
 {
 	wchar_t _buf[STACK_MAX / 8];
-	wchar_t *buf = _buf;
+	wchar_t *buf  = _buf;
 	size_t buflen = ARRAY_LEN(_buf);
 	size_t ret;
 	size_t n;
@@ -284,34 +288,35 @@ retry:
 	if (n >= buflen)
 		goto realloc;
 
-	n += snwprintf(&buf[n], buflen - n,
-		       (is_ntstatus ?
-			L" (status=%08"PRIx32"): " :
-			L" (err=%"PRIu32"): "),
-		       code);
+	n += snwprintf(&buf[n],
+	               buflen - n,
+	               (is_ntstatus ? L" (status=%08" PRIx32 "): " :
+	                              L" (err=%" PRIu32 "): "),
+	               code);
 
 	if (n >= buflen)
 		goto realloc;
 
-	ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-				FORMAT_MESSAGE_IGNORE_INSERTS |
-				(is_ntstatus ? FORMAT_MESSAGE_FROM_HMODULE : 0),
-			    (is_ntstatus ? ntdll_handle : NULL),
-			    code,
-			    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			    &buf[n],
-			    buflen - n,
-			    NULL);
+	ret = FormatMessage(
+		FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS |
+			(is_ntstatus ? FORMAT_MESSAGE_FROM_HMODULE : 0),
+		(is_ntstatus ? ntdll_handle : NULL),
+		code,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		&buf[n],
+		buflen - n,
+		NULL);
 	n += ret;
 
-	if (n >= buflen || (ret == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER))
+	if (n >= buflen ||
+	    (ret == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER))
 		goto realloc;
 
-        if (buf[n - 1] == L'\n')
+	if (buf[n - 1] == L'\n')
 		buf[--n] = L'\0';
-        if (buf[n - 1] == L'\r')
+	if (buf[n - 1] == L'\r')
 		buf[--n] = L'\0';
-        if (buf[n - 1] == L'.')
+	if (buf[n - 1] == L'.')
 		buf[--n] = L'\0';
 
 	if (is_error)
@@ -378,14 +383,27 @@ winnt_error(NTSTATUS status, const wchar_t *format, ...)
  * permission is, in general, required on the handle.
  */
 NTSTATUS
-winnt_fsctl(HANDLE h, u32 code, const void *in, u32 in_size,
-	    void *out, u32 out_size_avail, u32 *actual_out_size_ret)
+winnt_fsctl(HANDLE h,
+            u32 code,
+            const void *in,
+            u32 in_size,
+            void *out,
+            u32 out_size_avail,
+            u32 *actual_out_size_ret)
 {
 	IO_STATUS_BLOCK iosb;
 	NTSTATUS status;
 
-	status = NtFsControlFile(h, NULL, NULL, NULL, &iosb, code,
-				 (void *)in, in_size, out, out_size_avail);
+	status = NtFsControlFile(h,
+	                         NULL,
+	                         NULL,
+	                         NULL,
+	                         &iosb,
+	                         code,
+	                         (void *)in,
+	                         in_size,
+	                         out,
+	                         out_size_avail);
 	if (status == STATUS_PENDING) {
 		/* Beware: this case is often encountered with remote
 		 * filesystems, but rarely with local filesystems.  */

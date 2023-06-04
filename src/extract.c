@@ -66,68 +66,66 @@
 #include "wimlib/xattr.h"
 #include "wimlib/xml.h"
 
-#define WIMLIB_EXTRACT_FLAG_FROM_PIPE   0x80000000
-#define WIMLIB_EXTRACT_FLAG_IMAGEMODE   0x40000000
+#define WIMLIB_EXTRACT_FLAG_FROM_PIPE 0x80000000
+#define WIMLIB_EXTRACT_FLAG_IMAGEMODE 0x40000000
 
 /* Keep in sync with wimlib.h  */
-#define WIMLIB_EXTRACT_MASK_PUBLIC				\
-	(WIMLIB_EXTRACT_FLAG_NTFS			|	\
-	 WIMLIB_EXTRACT_FLAG_RECOVER_DATA		|	\
-	 WIMLIB_EXTRACT_FLAG_UNIX_DATA			|	\
-	 WIMLIB_EXTRACT_FLAG_NO_ACLS			|	\
-	 WIMLIB_EXTRACT_FLAG_STRICT_ACLS		|	\
-	 WIMLIB_EXTRACT_FLAG_RPFIX			|	\
-	 WIMLIB_EXTRACT_FLAG_NORPFIX			|	\
-	 WIMLIB_EXTRACT_FLAG_TO_STDOUT			|	\
-	 WIMLIB_EXTRACT_FLAG_REPLACE_INVALID_FILENAMES	|	\
-	 WIMLIB_EXTRACT_FLAG_ALL_CASE_CONFLICTS		|	\
-	 WIMLIB_EXTRACT_FLAG_STRICT_TIMESTAMPS		|	\
-	 WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES		|	\
-	 WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS		|	\
-	 WIMLIB_EXTRACT_FLAG_GLOB_PATHS			|	\
-	 WIMLIB_EXTRACT_FLAG_STRICT_GLOB		|	\
-	 WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES		|	\
-	 WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE  |	\
-	 WIMLIB_EXTRACT_FLAG_WIMBOOT			|	\
-	 WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K		|	\
-	 WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K		|	\
-	 WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K		|	\
-	 WIMLIB_EXTRACT_FLAG_COMPACT_LZX			\
-	 )
+#define WIMLIB_EXTRACT_MASK_PUBLIC                                        \
+  (WIMLIB_EXTRACT_FLAG_NTFS | WIMLIB_EXTRACT_FLAG_RECOVER_DATA |          \
+   WIMLIB_EXTRACT_FLAG_UNIX_DATA | WIMLIB_EXTRACT_FLAG_NO_ACLS |          \
+   WIMLIB_EXTRACT_FLAG_STRICT_ACLS | WIMLIB_EXTRACT_FLAG_RPFIX |          \
+   WIMLIB_EXTRACT_FLAG_NORPFIX | WIMLIB_EXTRACT_FLAG_TO_STDOUT |          \
+   WIMLIB_EXTRACT_FLAG_REPLACE_INVALID_FILENAMES |                        \
+   WIMLIB_EXTRACT_FLAG_ALL_CASE_CONFLICTS |                               \
+   WIMLIB_EXTRACT_FLAG_STRICT_TIMESTAMPS |                                \
+   WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES |                               \
+   WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS | WIMLIB_EXTRACT_FLAG_GLOB_PATHS | \
+   WIMLIB_EXTRACT_FLAG_STRICT_GLOB | WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES |  \
+   WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE |                        \
+   WIMLIB_EXTRACT_FLAG_WIMBOOT | WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K |   \
+   WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K |                                 \
+   WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K | WIMLIB_EXTRACT_FLAG_COMPACT_LZX)
 
 /* Send WIMLIB_PROGRESS_MSG_EXTRACT_FILE_STRUCTURE or
  * WIMLIB_PROGRESS_MSG_EXTRACT_METADATA.  */
 int
 do_file_extract_progress(struct apply_ctx *ctx, enum wimlib_progress_msg msg)
 {
-	ctx->count_until_file_progress = 500;  /* Arbitrary value to limit calls  */
+	ctx->count_until_file_progress =
+		500; /* Arbitrary value to limit calls  */
 	return extract_progress(ctx, msg);
 }
 
 static int
-start_file_phase(struct apply_ctx *ctx, u64 end_file_count, enum wimlib_progress_msg msg)
+start_file_phase(struct apply_ctx *ctx,
+                 u64 end_file_count,
+                 enum wimlib_progress_msg msg)
 {
 	ctx->progress.extract.current_file_count = 0;
-	ctx->progress.extract.end_file_count = end_file_count;
+	ctx->progress.extract.end_file_count     = end_file_count;
 	return do_file_extract_progress(ctx, msg);
 }
 
 int
 start_file_structure_phase(struct apply_ctx *ctx, u64 end_file_count)
 {
-	return start_file_phase(ctx, end_file_count, WIMLIB_PROGRESS_MSG_EXTRACT_FILE_STRUCTURE);
+	return start_file_phase(ctx,
+	                        end_file_count,
+	                        WIMLIB_PROGRESS_MSG_EXTRACT_FILE_STRUCTURE);
 }
 
 int
 start_file_metadata_phase(struct apply_ctx *ctx, u64 end_file_count)
 {
-	return start_file_phase(ctx, end_file_count, WIMLIB_PROGRESS_MSG_EXTRACT_METADATA);
+	return start_file_phase(
+		ctx, end_file_count, WIMLIB_PROGRESS_MSG_EXTRACT_METADATA);
 }
 
 static int
 end_file_phase(struct apply_ctx *ctx, enum wimlib_progress_msg msg)
 {
-	ctx->progress.extract.current_file_count = ctx->progress.extract.end_file_count;
+	ctx->progress.extract.current_file_count =
+		ctx->progress.extract.end_file_count;
 	return do_file_extract_progress(ctx, msg);
 }
 
@@ -147,7 +145,7 @@ end_file_metadata_phase(struct apply_ctx *ctx)
 static bool
 is_all_zeroes(const u8 *p, const size_t size)
 {
-	const u8 * const end = p + size;
+	const u8 *const end = p + size;
 
 	for (; (uintptr_t)p % WORDBYTES && p != end; p++)
 		if (*p)
@@ -187,14 +185,14 @@ is_all_zeroes(const u8 *p, const size_t size)
 bool
 detect_sparse_region(const void *data, size_t size, size_t *len_ret)
 {
-	const void *p = data;
-	const void * const end = data + size;
-	size_t len = 0;
-	bool zeroes = false;
+	const void *p         = data;
+	const void *const end = data + size;
+	size_t len            = 0;
+	bool zeroes           = false;
 
 	while (p != end) {
 		size_t n = min(end - p, SPARSE_UNIT);
-		bool z = is_all_zeroes(p, n);
+		bool z   = is_all_zeroes(p, n);
 
 		if (len != 0 && z != zeroes)
 			break;
@@ -212,9 +210,10 @@ detect_sparse_region(const void *data, size_t size, size_t *len_ret)
 /* Read the header for a blob in a pipable WIM.  If @pwm_hdr_ret is not NULL,
  * also look for a pipable WIM header and return PWM_FOUND_WIM_HDR if found.  */
 static int
-read_pwm_blob_header(WIMStruct *pwm, u8 hash_ret[SHA1_HASH_SIZE],
-		     struct wim_reshdr *reshdr_ret,
-		     struct wim_header_disk *pwm_hdr_ret)
+read_pwm_blob_header(WIMStruct *pwm,
+                     u8 hash_ret[SHA1_HASH_SIZE],
+                     struct wim_reshdr *reshdr_ret,
+                     struct wim_header_disk *pwm_hdr_ret)
 {
 	int ret;
 	struct pwm_blob_hdr blob_hdr;
@@ -229,8 +228,8 @@ read_pwm_blob_header(WIMStruct *pwm, u8 hash_ret[SHA1_HASH_SIZE],
 	if (magic == PWM_MAGIC && pwm_hdr_ret != NULL) {
 		memcpy(pwm_hdr_ret, &blob_hdr, sizeof(blob_hdr));
 		ret = full_read(&pwm->in_fd,
-				(u8 *)pwm_hdr_ret + sizeof(blob_hdr),
-				sizeof(*pwm_hdr_ret) - sizeof(blob_hdr));
+		                (u8 *)pwm_hdr_ret + sizeof(blob_hdr),
+		                sizeof(*pwm_hdr_ret) - sizeof(blob_hdr));
 		if (unlikely(ret))
 			goto read_error;
 		return PWM_FOUND_WIM_HDR;
@@ -243,9 +242,9 @@ read_pwm_blob_header(WIMStruct *pwm, u8 hash_ret[SHA1_HASH_SIZE],
 
 	copy_hash(hash_ret, blob_hdr.hash);
 
-	reshdr_ret->size_in_wim = 0; /* Not available  */
-	reshdr_ret->flags = le32_to_cpu(blob_hdr.flags);
-	reshdr_ret->offset_in_wim = pwm->in_fd.offset;
+	reshdr_ret->size_in_wim       = 0; /* Not available  */
+	reshdr_ret->flags             = le32_to_cpu(blob_hdr.flags);
+	reshdr_ret->offset_in_wim     = pwm->in_fd.offset;
 	reshdr_ret->uncompressed_size = le64_to_cpu(blob_hdr.uncompressed_size);
 
 	if (unlikely(reshdr_ret->uncompressed_size == 0)) {
@@ -264,7 +263,8 @@ read_error:
 }
 
 static int
-read_blobs_from_pipe(struct apply_ctx *ctx, const struct read_blob_callbacks *cbs)
+read_blobs_from_pipe(struct apply_ctx *ctx,
+                     const struct read_blob_callbacks *cbs)
 {
 	int ret;
 	u8 hash[SHA1_HASH_SIZE];
@@ -276,12 +276,12 @@ read_blobs_from_pipe(struct apply_ctx *ctx, const struct read_blob_callbacks *cb
 	copy_guid(ctx->progress.extract.guid, ctx->wim->hdr.guid);
 	ctx->progress.extract.part_number = ctx->wim->hdr.part_number;
 	ctx->progress.extract.total_parts = ctx->wim->hdr.total_parts;
-	ret = extract_progress(ctx, WIMLIB_PROGRESS_MSG_EXTRACT_SPWM_PART_BEGIN);
+	ret                               = extract_progress(ctx,
+                               WIMLIB_PROGRESS_MSG_EXTRACT_SPWM_PART_BEGIN);
 	if (ret)
 		return ret;
 
 	while (ctx->num_blobs_remaining) {
-
 		ret = read_pwm_blob_header(ctx->wim, hash, &reshdr, &pwm_hdr);
 
 		if (ret == PWM_FOUND_WIM_HDR) {
@@ -290,13 +290,16 @@ read_blobs_from_pipe(struct apply_ctx *ctx, const struct read_blob_callbacks *cb
 
 			if (part_number == ctx->progress.extract.part_number &&
 			    total_parts == ctx->progress.extract.total_parts &&
-			    guids_equal(pwm_hdr.guid, ctx->progress.extract.guid))
+			    guids_equal(pwm_hdr.guid,
+			                ctx->progress.extract.guid))
 				continue;
 
 			copy_guid(ctx->progress.extract.guid, pwm_hdr.guid);
 			ctx->progress.extract.part_number = part_number;
 			ctx->progress.extract.total_parts = total_parts;
-			ret = extract_progress(ctx, WIMLIB_PROGRESS_MSG_EXTRACT_SPWM_PART_BEGIN);
+			ret                               = extract_progress(
+                                ctx,
+                                WIMLIB_PROGRESS_MSG_EXTRACT_SPWM_PART_BEGIN);
 			if (ret)
 				return ret;
 
@@ -306,14 +309,17 @@ read_blobs_from_pipe(struct apply_ctx *ctx, const struct read_blob_callbacks *cb
 		if (ret)
 			return ret;
 
-		if (!(reshdr.flags & WIM_RESHDR_FLAG_METADATA)
-		    && (blob = lookup_blob(ctx->wim->blob_table, hash))
-		    && (blob->out_refcnt))
+		if (!(reshdr.flags & WIM_RESHDR_FLAG_METADATA) &&
+		    (blob = lookup_blob(ctx->wim->blob_table, hash)) &&
+		    (blob->out_refcnt))
 		{
-			wim_reshdr_to_desc_and_blob(&reshdr, ctx->wim, &rdesc, blob);
-			ret = read_blob_with_sha1(blob, cbs,
-						  ctx->extract_flags &
-						  WIMLIB_EXTRACT_FLAG_RECOVER_DATA);
+			wim_reshdr_to_desc_and_blob(
+				&reshdr, ctx->wim, &rdesc, blob);
+			ret = read_blob_with_sha1(
+				blob,
+				cbs,
+				ctx->extract_flags &
+					WIMLIB_EXTRACT_FLAG_RECOVER_DATA);
 			blob_unset_is_located_in_wim_resource(blob);
 			if (ret)
 				return ret;
@@ -337,7 +343,7 @@ handle_pwm_metadata_resource(WIMStruct *pwm, int image, bool is_needed)
 	struct wim_resource_descriptor *rdesc;
 	int ret;
 
-	ret = WIMLIB_ERR_NOMEM;
+	ret  = WIMLIB_ERR_NOMEM;
 	blob = new_blob_descriptor();
 	if (!blob)
 		goto out;
@@ -353,7 +359,7 @@ handle_pwm_metadata_resource(WIMStruct *pwm, int image, bool is_needed)
 		goto out;
 	}
 
-	ret = WIMLIB_ERR_NOMEM;
+	ret   = WIMLIB_ERR_NOMEM;
 	rdesc = MALLOC(sizeof(*rdesc));
 	if (!rdesc)
 		goto out;
@@ -361,7 +367,7 @@ handle_pwm_metadata_resource(WIMStruct *pwm, int image, bool is_needed)
 	wim_reshdr_to_desc_and_blob(&reshdr, pwm, rdesc, blob);
 	pwm->refcnt++;
 
-	ret = WIMLIB_ERR_NOMEM;
+	ret                            = WIMLIB_ERR_NOMEM;
 	pwm->image_metadata[image - 1] = new_unloaded_image_metadata(blob);
 	if (!pwm->image_metadata[image - 1])
 		goto out;
@@ -394,8 +400,9 @@ retry:
 		ERROR_WITH_ERRNO("Failed to create temporary filename");
 		return WIMLIB_ERR_NOMEM;
 	}
-	raw_fd = _wopen(name, O_WRONLY | O_CREAT | O_EXCL | O_BINARY |
-			_O_SHORT_LIVED, 0600);
+	raw_fd = _wopen(name,
+	                O_WRONLY | O_CREAT | O_EXCL | O_BINARY | _O_SHORT_LIVED,
+	                0600);
 	if (raw_fd < 0 && errno == EEXIST) {
 		FREE(name);
 		goto retry;
@@ -413,7 +420,8 @@ retry:
 
 	if (raw_fd < 0) {
 		ERROR_WITH_ERRNO("Failed to create temporary file "
-				 "\"%"TS"\"", name);
+		                 "\"%" TS "\"",
+		                 name);
 		FREE(name);
 		return WIMLIB_ERR_OPEN;
 	}
@@ -429,18 +437,22 @@ begin_extract_blob(struct blob_descriptor *blob, void *_ctx)
 	struct apply_ctx *ctx = _ctx;
 
 	if (unlikely(blob->out_refcnt > MAX_OPEN_FILES))
-		return create_temporary_file(&ctx->tmpfile_fd, &ctx->tmpfile_name);
+		return create_temporary_file(&ctx->tmpfile_fd,
+		                             &ctx->tmpfile_name);
 
 	return call_begin_blob(blob, ctx->saved_cbs);
 }
 
 static int
-extract_chunk(const struct blob_descriptor *blob, u64 offset,
-	      const void *chunk, size_t size, void *_ctx)
+extract_chunk(const struct blob_descriptor *blob,
+              u64 offset,
+              const void *chunk,
+              size_t size,
+              void *_ctx)
 {
-	struct apply_ctx *ctx = _ctx;
+	struct apply_ctx *ctx                = _ctx;
 	union wimlib_progress_info *progress = &ctx->progress;
-	bool last = (offset + size == blob->size);
+	bool last                            = (offset + size == blob->size);
 	int ret;
 
 	if (likely(ctx->supported_features.hard_links)) {
@@ -463,14 +475,14 @@ extract_chunk(const struct blob_descriptor *blob, u64 offset,
 		}
 	}
 	if (progress->extract.completed_bytes >= ctx->next_progress) {
-
-		ret = extract_progress(ctx, WIMLIB_PROGRESS_MSG_EXTRACT_STREAMS);
+		ret = extract_progress(ctx,
+		                       WIMLIB_PROGRESS_MSG_EXTRACT_STREAMS);
 		if (ret)
 			return ret;
 
 		set_next_progress(progress->extract.completed_bytes,
-				  progress->extract.total_bytes,
-				  &ctx->next_progress);
+		                  progress->extract.total_bytes,
+		                  &ctx->next_progress);
 	}
 
 	if (unlikely(filedes_valid(&ctx->tmpfile_fd))) {
@@ -478,8 +490,8 @@ extract_chunk(const struct blob_descriptor *blob, u64 offset,
 		ret = full_write(&ctx->tmpfile_fd, chunk, size);
 		if (ret) {
 			ERROR_WITH_ERRNO("Error writing data to "
-					 "temporary file \"%"TS"\"",
-					 ctx->tmpfile_name);
+			                 "temporary file \"%" TS "\"",
+			                 ctx->tmpfile_name);
 		}
 		return ret;
 	}
@@ -493,17 +505,18 @@ extract_chunk(const struct blob_descriptor *blob, u64 offset,
  * extracted to more than MAX_OPEN_FILES targets!  */
 static int
 extract_from_tmpfile(const tchar *tmpfile_name,
-		     const struct blob_descriptor *orig_blob,
-		     const struct read_blob_callbacks *cbs)
+                     const struct blob_descriptor *orig_blob,
+                     const struct read_blob_callbacks *cbs)
 {
 	struct blob_descriptor tmpfile_blob;
-	const struct blob_extraction_target *targets = blob_extraction_targets(orig_blob);
+	const struct blob_extraction_target *targets =
+		blob_extraction_targets(orig_blob);
 	int ret;
 
 	memcpy(&tmpfile_blob, orig_blob, sizeof(struct blob_descriptor));
 	tmpfile_blob.blob_location = BLOB_IN_FILE_ON_DISK;
-	tmpfile_blob.file_on_disk = (tchar *)tmpfile_name;
-	tmpfile_blob.out_refcnt = 1;
+	tmpfile_blob.file_on_disk  = (tchar *)tmpfile_name;
+	tmpfile_blob.out_refcnt    = 1;
 
 	for (u32 i = 0; i < orig_blob->out_refcnt; i++) {
 		tmpfile_blob.inline_blob_extraction_targets[0] = targets[i];
@@ -516,11 +529,13 @@ extract_from_tmpfile(const tchar *tmpfile_name,
 
 static void
 warn_about_corrupted_file(struct wim_dentry *dentry,
-			  const struct wim_inode_stream *stream)
+                          const struct wim_inode_stream *stream)
 {
-	WARNING("Corruption in %s\"%"TS"\"!  Extracting anyway since data recovery mode is enabled.",
-		stream_is_unnamed_data_stream(stream) ? "" : "alternate stream of ",
-		dentry_full_path(dentry));
+	WARNING("Corruption in %s\"%" TS
+	        "\"!  Extracting anyway since data recovery mode is enabled.",
+	        stream_is_unnamed_data_stream(stream) ? "" :
+	                                                "alternate stream of ",
+	        dentry_full_path(dentry));
 }
 
 static int
@@ -529,7 +544,8 @@ end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 	struct apply_ctx *ctx = _ctx;
 
 	if ((ctx->extract_flags & WIMLIB_EXTRACT_FLAG_RECOVER_DATA) &&
-	    !status && blob->corrupted) {
+	    !status && blob->corrupted)
+	{
 		const struct blob_extraction_target *targets =
 			blob_extraction_targets(blob);
 		for (u32 i = 0; i < blob->out_refcnt; i++) {
@@ -543,8 +559,8 @@ end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 	if (unlikely(filedes_valid(&ctx->tmpfile_fd))) {
 		filedes_close(&ctx->tmpfile_fd);
 		if (!status)
-			status = extract_from_tmpfile(ctx->tmpfile_name, blob,
-						      ctx->saved_cbs);
+			status = extract_from_tmpfile(
+				ctx->tmpfile_name, blob, ctx->saved_cbs);
 		filedes_invalidate(&ctx->tmpfile_fd);
 		tunlink(ctx->tmpfile_name);
 		FREE(ctx->tmpfile_name);
@@ -575,10 +591,10 @@ int
 extract_blob_list(struct apply_ctx *ctx, const struct read_blob_callbacks *cbs)
 {
 	struct read_blob_callbacks wrapper_cbs = {
-		.begin_blob	= begin_extract_blob,
-		.continue_blob	= extract_chunk,
-		.end_blob	= end_extract_blob,
-		.ctx		= ctx,
+		.begin_blob    = begin_extract_blob,
+		.continue_blob = extract_chunk,
+		.end_blob      = end_extract_blob,
+		.ctx           = ctx,
 	};
 	ctx->saved_cbs = cbs;
 	if (ctx->extract_flags & WIMLIB_EXTRACT_FLAG_FROM_PIPE) {
@@ -590,9 +606,10 @@ extract_blob_list(struct apply_ctx *ctx, const struct read_blob_callbacks *cbs)
 			flags |= RECOVER_DATA;
 
 		return read_blob_list(&ctx->blob_list,
-				      offsetof(struct blob_descriptor,
-					       extraction_list),
-				      &wrapper_cbs, flags);
+		                      offsetof(struct blob_descriptor,
+		                               extraction_list),
+		                      &wrapper_cbs,
+		                      flags);
 	}
 }
 
@@ -603,7 +620,8 @@ extract_blob_list(struct apply_ctx *ctx, const struct read_blob_callbacks *cbs)
  * unnamed data stream only.  */
 static int
 extract_dentry_to_stdout(struct wim_dentry *dentry,
-			 const struct blob_table *blob_table, int extract_flags)
+                         const struct blob_table *blob_table,
+                         int extract_flags)
 {
 	struct wim_inode *inode = dentry->d_inode;
 	struct blob_descriptor *blob;
@@ -611,12 +629,14 @@ extract_dentry_to_stdout(struct wim_dentry *dentry,
 	bool recover = (extract_flags & WIMLIB_EXTRACT_FLAG_RECOVER_DATA);
 	int ret;
 
-	if (inode->i_attributes & (FILE_ATTRIBUTE_REPARSE_POINT |
-				   FILE_ATTRIBUTE_DIRECTORY |
-				   FILE_ATTRIBUTE_ENCRYPTED))
+	if (inode->i_attributes &
+	    (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY |
+	     FILE_ATTRIBUTE_ENCRYPTED))
 	{
-		ERROR("\"%"TS"\" is not a regular file and therefore cannot be "
-		      "extracted to standard output", dentry_full_path(dentry));
+		ERROR("\"%" TS
+		      "\" is not a regular file and therefore cannot be "
+		      "extracted to standard output",
+		      dentry_full_path(dentry));
 		return WIMLIB_ERR_NOT_A_REGULAR_FILE;
 	}
 
@@ -634,18 +654,19 @@ extract_dentry_to_stdout(struct wim_dentry *dentry,
 		return ret;
 	if (recover && blob->corrupted)
 		warn_about_corrupted_file(dentry,
-					  inode_get_unnamed_data_stream(inode));
+		                          inode_get_unnamed_data_stream(inode));
 	return 0;
 }
 
 static int
-extract_dentries_to_stdout(struct wim_dentry **dentries, size_t num_dentries,
-			   const struct blob_table *blob_table,
-			   int extract_flags)
+extract_dentries_to_stdout(struct wim_dentry **dentries,
+                           size_t num_dentries,
+                           const struct blob_table *blob_table,
+                           int extract_flags)
 {
 	for (size_t i = 0; i < num_dentries; i++) {
-		int ret = extract_dentry_to_stdout(dentries[i], blob_table,
-						   extract_flags);
+		int ret = extract_dentry_to_stdout(
+			dentries[i], blob_table, extract_flags);
 		if (ret)
 			return ret;
 	}
@@ -667,7 +688,7 @@ remove_duplicate_trees(struct wim_dentry **trees, size_t num_trees)
 		if (!trees[i]->d_tmp_flag) {
 			/* Found distinct dentry.  */
 			trees[i]->d_tmp_flag = 1;
-			trees[j++] = trees[i];
+			trees[j++]           = trees[i];
 		}
 	}
 	for (i = 0; i < j; i++)
@@ -696,7 +717,7 @@ remove_contained_trees(struct wim_dentry **trees, size_t num_trees)
 		trees[j++] = trees[i];
 		continue;
 
-	tree_contained:
+tree_contained:
 		trees[i]->d_tmp_flag = 0;
 	}
 
@@ -716,7 +737,7 @@ dentry_append_to_list(struct wim_dentry *dentry, void *_dentry_list)
 static void
 dentry_reset_extraction_list_node(struct wim_dentry *dentry)
 {
-	dentry->d_extraction_list_node = (struct list_head){NULL, NULL};
+	dentry->d_extraction_list_node = (struct list_head){ NULL, NULL };
 }
 
 static int
@@ -736,14 +757,17 @@ dentry_delete_from_list(struct wim_dentry *dentry, void *_ignore)
  * an ancestor of d2, then d1 appears before d2 in the list.
  */
 static void
-build_dentry_list(struct list_head *dentry_list, struct wim_dentry **trees,
-		  size_t num_trees, bool add_ancestors)
+build_dentry_list(struct list_head *dentry_list,
+                  struct wim_dentry **trees,
+                  size_t num_trees,
+                  bool add_ancestors)
 {
 	INIT_LIST_HEAD(dentry_list);
 
 	/* Add the trees recursively.  */
 	for (size_t i = 0; i < num_trees; i++)
-		for_dentry_in_tree(trees[i], dentry_append_to_list, dentry_list);
+		for_dentry_in_tree(
+			trees[i], dentry_append_to_list, dentry_list);
 
 	/* If requested, add ancestors of the trees.  */
 	if (add_ancestors) {
@@ -756,11 +780,12 @@ build_dentry_list(struct list_head *dentry_list, struct wim_dentry **trees,
 				continue;
 
 			place_after = dentry_list;
-			ancestor = dentry;
+			ancestor    = dentry;
 			do {
 				ancestor = ancestor->d_parent;
 				if (will_extract_dentry(ancestor)) {
-					place_after = &ancestor->d_extraction_list_node;
+					place_after =
+						&ancestor->d_extraction_list_node;
 					break;
 				}
 			} while (!dentry_is_root(ancestor));
@@ -770,7 +795,8 @@ build_dentry_list(struct list_head *dentry_list, struct wim_dentry **trees,
 				ancestor = ancestor->d_parent;
 				if (will_extract_dentry(ancestor))
 					break;
-				list_add(&ancestor->d_extraction_list_node, place_after);
+				list_add(&ancestor->d_extraction_list_node,
+				         place_after);
 			} while (!dentry_is_root(ancestor));
 		}
 	}
@@ -782,14 +808,16 @@ destroy_dentry_list(struct list_head *dentry_list)
 	struct wim_dentry *dentry, *tmp;
 	struct wim_inode *inode;
 
-	list_for_each_entry_safe(dentry, tmp, dentry_list, d_extraction_list_node) {
+	list_for_each_entry_safe(
+		dentry, tmp, dentry_list, d_extraction_list_node)
+	{
 		inode = dentry->d_inode;
 		dentry_reset_extraction_list_node(dentry);
-		inode->i_visited = 0;
+		inode->i_visited             = 0;
 		inode->i_can_externally_back = 0;
 		if ((void *)dentry->d_extraction_name != (void *)dentry->d_name)
 			FREE(dentry->d_extraction_name);
-		dentry->d_extraction_name = NULL;
+		dentry->d_extraction_name        = NULL;
 		dentry->d_extraction_name_nchars = 0;
 	}
 }
@@ -800,7 +828,8 @@ destroy_blob_list(struct list_head *blob_list)
 	struct blob_descriptor *blob;
 
 	list_for_each_entry(blob, blob_list, extraction_list)
-		if (blob->out_refcnt > ARRAY_LEN(blob->inline_blob_extraction_targets))
+		if (blob->out_refcnt >
+		    ARRAY_LEN(blob->inline_blob_extraction_targets))
 			FREE(blob->blob_extraction_targets);
 }
 
@@ -819,8 +848,8 @@ file_name_valid(utf16lechar *name, size_t num_chars, bool fix)
 		return true;
 	for (i = 0; i < num_chars; i++) {
 		switch (le16_to_cpu(name[i])) {
-	#ifdef _WIN32
-		case '\x01'...'\x1F':
+#ifdef _WIN32
+		case '\x01' ... '\x1F':
 		case '\\':
 		case ':':
 		case '*':
@@ -829,7 +858,7 @@ file_name_valid(utf16lechar *name, size_t num_chars, bool fix)
 		case '<':
 		case '>':
 		case '|':
-	#endif
+#endif
 		case '/':
 		case '\0':
 			if (fix)
@@ -844,7 +873,7 @@ file_name_valid(utf16lechar *name, size_t num_chars, bool fix)
 
 static int
 dentry_calculate_extraction_name(struct wim_dentry *dentry,
-				 struct apply_ctx *ctx)
+                                 struct apply_ctx *ctx)
 {
 	int ret;
 
@@ -854,8 +883,8 @@ dentry_calculate_extraction_name(struct wim_dentry *dentry,
 #ifdef WITH_NTFS_3G
 	if (ctx->extract_flags & WIMLIB_EXTRACT_FLAG_NTFS) {
 		dentry->d_extraction_name = dentry->d_name;
-		dentry->d_extraction_name_nchars = dentry->d_name_nbytes /
-						   sizeof(utf16lechar);
+		dentry->d_extraction_name_nchars =
+			dentry->d_name_nbytes / sizeof(utf16lechar);
 		return 0;
 	}
 #endif
@@ -865,20 +894,21 @@ dentry_calculate_extraction_name(struct wim_dentry *dentry,
 		dentry_for_each_ci_match(other, dentry) {
 			if (will_extract_dentry(other)) {
 				if (ctx->extract_flags &
-				    WIMLIB_EXTRACT_FLAG_ALL_CASE_CONFLICTS) {
-					WARNING("\"%"TS"\" has the same "
-						"case-insensitive name as "
-						"\"%"TS"\"; extracting "
-						"dummy name instead",
-						dentry_full_path(dentry),
-						dentry_full_path(other));
+				    WIMLIB_EXTRACT_FLAG_ALL_CASE_CONFLICTS)
+				{
+					WARNING("\"%" TS "\" has the same "
+					        "case-insensitive name as "
+					        "\"%" TS "\"; extracting "
+					        "dummy name instead",
+					        dentry_full_path(dentry),
+					        dentry_full_path(other));
 					goto out_replace;
 				} else {
-					WARNING("Not extracting \"%"TS"\": "
-						"has same case-insensitive "
-						"name as \"%"TS"\"",
-						dentry_full_path(dentry),
-						dentry_full_path(other));
+					WARNING("Not extracting \"%" TS "\": "
+					        "has same case-insensitive "
+					        "name as \"%" TS "\"",
+					        dentry_full_path(dentry),
+					        dentry_full_path(other));
 					goto skip_dentry;
 				}
 			}
@@ -887,61 +917,64 @@ dentry_calculate_extraction_name(struct wim_dentry *dentry,
 
 	if (file_name_valid(dentry->d_name, dentry->d_name_nbytes / 2, false)) {
 		size_t nbytes = 0;
-		ret = utf16le_get_tstr(dentry->d_name,
-				       dentry->d_name_nbytes,
-				       (const tchar **)&dentry->d_extraction_name,
-				       &nbytes);
+		ret           = utf16le_get_tstr(
+                        dentry->d_name,
+                        dentry->d_name_nbytes,
+                        (const tchar **)&dentry->d_extraction_name,
+                        &nbytes);
 		dentry->d_extraction_name_nchars = nbytes / sizeof(tchar);
 		return ret;
 	} else {
-		if (ctx->extract_flags & WIMLIB_EXTRACT_FLAG_REPLACE_INVALID_FILENAMES)
+		if (ctx->extract_flags &
+		    WIMLIB_EXTRACT_FLAG_REPLACE_INVALID_FILENAMES)
 		{
-			WARNING("\"%"TS"\" has an invalid filename "
-				"that is not supported on this platform; "
-				"extracting dummy name instead",
-				dentry_full_path(dentry));
+			WARNING("\"%" TS "\" has an invalid filename "
+			        "that is not supported on this platform; "
+			        "extracting dummy name instead",
+			        dentry_full_path(dentry));
 			goto out_replace;
 		} else {
-			WARNING("Not extracting \"%"TS"\": has an invalid filename "
-				"that is not supported on this platform",
-				dentry_full_path(dentry));
+			WARNING("Not extracting \"%" TS
+			        "\": has an invalid filename "
+			        "that is not supported on this platform",
+			        dentry_full_path(dentry));
 			goto skip_dentry;
 		}
 	}
 
-out_replace:
-	{
-		utf16lechar utf16_name_copy[dentry->d_name_nbytes / 2];
+out_replace : {
+	utf16lechar utf16_name_copy[dentry->d_name_nbytes / 2];
 
-		memcpy(utf16_name_copy, dentry->d_name, dentry->d_name_nbytes);
-		file_name_valid(utf16_name_copy, dentry->d_name_nbytes / 2, true);
+	memcpy(utf16_name_copy, dentry->d_name, dentry->d_name_nbytes);
+	file_name_valid(utf16_name_copy, dentry->d_name_nbytes / 2, true);
 
-		const tchar *tchar_name;
-		size_t tchar_nchars;
+	const tchar *tchar_name;
+	size_t tchar_nchars;
 
-		ret = utf16le_get_tstr(utf16_name_copy,
-				       dentry->d_name_nbytes,
-				       &tchar_name, &tchar_nchars);
-		if (ret)
-			return ret;
+	ret = utf16le_get_tstr(utf16_name_copy,
+	                       dentry->d_name_nbytes,
+	                       &tchar_name,
+	                       &tchar_nchars);
+	if (ret)
+		return ret;
 
-		tchar_nchars /= sizeof(tchar);
+	tchar_nchars /= sizeof(tchar);
 
-		size_t fixed_name_num_chars = tchar_nchars;
-		tchar fixed_name[tchar_nchars + 50];
+	size_t fixed_name_num_chars = tchar_nchars;
+	tchar fixed_name[tchar_nchars + 50];
 
-		tmemcpy(fixed_name, tchar_name, tchar_nchars);
-		fixed_name_num_chars += tsprintf(fixed_name + tchar_nchars,
-						 T(" (invalid filename #%lu)"),
-						 ++ctx->invalid_sequence);
+	tmemcpy(fixed_name, tchar_name, tchar_nchars);
+	fixed_name_num_chars += tsprintf(fixed_name + tchar_nchars,
+	                                 T(" (invalid filename #%lu)"),
+	                                 ++ctx->invalid_sequence);
 
-		utf16le_put_tstr(tchar_name);
+	utf16le_put_tstr(tchar_name);
 
-		dentry->d_extraction_name = TSTRDUP(fixed_name);
-		if (!dentry->d_extraction_name)
-			return WIMLIB_ERR_NOMEM;
-		dentry->d_extraction_name_nchars = fixed_name_num_chars;
-	}
+	dentry->d_extraction_name = TSTRDUP(fixed_name);
+	if (!dentry->d_extraction_name)
+		return WIMLIB_ERR_NOMEM;
+	dentry->d_extraction_name_nchars = fixed_name_num_chars;
+}
 	return 0;
 
 skip_dentry:
@@ -960,7 +993,7 @@ skip_dentry:
  */
 static int
 dentry_list_calculate_extraction_names(struct list_head *dentry_list,
-				       struct apply_ctx *ctx)
+                                       struct apply_ctx *ctx)
 {
 	struct list_head *prev, *cur;
 
@@ -977,7 +1010,8 @@ dentry_list_calculate_extraction_names(struct list_head *dentry_list,
 		if (cur == dentry_list)
 			break;
 
-		dentry = list_entry(cur, struct wim_dentry, d_extraction_list_node);
+		dentry = list_entry(
+			cur, struct wim_dentry, d_extraction_list_node);
 
 		ret = dentry_calculate_extraction_name(dentry, ctx);
 		if (ret)
@@ -993,8 +1027,9 @@ dentry_list_calculate_extraction_names(struct list_head *dentry_list,
 }
 
 static int
-dentry_resolve_streams(struct wim_dentry *dentry, int extract_flags,
-		       struct blob_table *blob_table)
+dentry_resolve_streams(struct wim_dentry *dentry,
+                       int extract_flags,
+                       struct blob_table *blob_table)
 {
 	struct wim_inode *inode = dentry->d_inode;
 	struct blob_descriptor *blob;
@@ -1028,15 +1063,14 @@ dentry_resolve_streams(struct wim_dentry *dentry, int extract_flags,
  */
 static int
 dentry_list_resolve_streams(struct list_head *dentry_list,
-			    struct apply_ctx *ctx)
+                            struct apply_ctx *ctx)
 {
 	struct wim_dentry *dentry;
 	int ret;
 
 	list_for_each_entry(dentry, dentry_list, d_extraction_list_node) {
-		ret = dentry_resolve_streams(dentry,
-					     ctx->extract_flags,
-					     ctx->wim->blob_table);
+		ret = dentry_resolve_streams(
+			dentry, ctx->extract_flags, ctx->wim->blob_table);
 		if (ret)
 			return ret;
 	}
@@ -1044,10 +1078,11 @@ dentry_list_resolve_streams(struct list_head *dentry_list,
 }
 
 static int
-ref_stream(struct wim_inode_stream *strm, struct wim_dentry *dentry,
-	   struct apply_ctx *ctx)
+ref_stream(struct wim_inode_stream *strm,
+           struct wim_dentry *dentry,
+           struct apply_ctx *ctx)
 {
-	struct wim_inode *inode = dentry->d_inode;
+	struct wim_inode *inode      = dentry->d_inode;
 	struct blob_descriptor *blob = stream_blob_resolved(strm);
 	struct blob_extraction_target *targets;
 
@@ -1074,25 +1109,30 @@ ref_stream(struct wim_inode_stream *strm, struct wim_dentry *dentry,
 
 	/* Set this stream as an extraction target of 'blob'.  */
 
-	if (blob->out_refcnt < ARRAY_LEN(blob->inline_blob_extraction_targets)) {
+	if (blob->out_refcnt < ARRAY_LEN(blob->inline_blob_extraction_targets))
+	{
 		targets = blob->inline_blob_extraction_targets;
 	} else {
 		struct blob_extraction_target *prev_targets;
 		size_t alloc_blob_extraction_targets;
 
-		if (blob->out_refcnt == ARRAY_LEN(blob->inline_blob_extraction_targets)) {
+		if (blob->out_refcnt ==
+		    ARRAY_LEN(blob->inline_blob_extraction_targets))
+		{
 			prev_targets = NULL;
-			alloc_blob_extraction_targets = ARRAY_LEN(blob->inline_blob_extraction_targets);
+			alloc_blob_extraction_targets =
+				ARRAY_LEN(blob->inline_blob_extraction_targets);
 		} else {
 			prev_targets = blob->blob_extraction_targets;
-			alloc_blob_extraction_targets = blob->alloc_blob_extraction_targets;
+			alloc_blob_extraction_targets =
+				blob->alloc_blob_extraction_targets;
 		}
 
 		if (blob->out_refcnt == alloc_blob_extraction_targets) {
 			alloc_blob_extraction_targets *= 2;
 			targets = REALLOC(prev_targets,
-					  alloc_blob_extraction_targets *
-					  sizeof(targets[0]));
+			                  alloc_blob_extraction_targets *
+			                          sizeof(targets[0]));
 			if (!targets)
 				return WIMLIB_ERR_NOMEM;
 			if (!prev_targets) {
@@ -1101,19 +1141,22 @@ ref_stream(struct wim_inode_stream *strm, struct wim_dentry *dentry,
 				       sizeof(blob->inline_blob_extraction_targets));
 			}
 			blob->blob_extraction_targets = targets;
-			blob->alloc_blob_extraction_targets = alloc_blob_extraction_targets;
+			blob->alloc_blob_extraction_targets =
+				alloc_blob_extraction_targets;
 		}
 		targets = blob->blob_extraction_targets;
 	}
-	targets[blob->out_refcnt].inode = inode;
+	targets[blob->out_refcnt].inode  = inode;
 	targets[blob->out_refcnt].stream = strm;
 	blob->out_refcnt++;
 	return 0;
 }
 
 static int
-ref_stream_if_needed(struct wim_dentry *dentry, struct wim_inode *inode,
-		     struct wim_inode_stream *strm, struct apply_ctx *ctx)
+ref_stream_if_needed(struct wim_dentry *dentry,
+                     struct wim_inode *inode,
+                     struct wim_inode_stream *strm,
+                     struct apply_ctx *ctx)
 {
 	bool need_stream = false;
 	switch (strm->stream_type) {
@@ -1122,11 +1165,12 @@ ref_stream_if_needed(struct wim_dentry *dentry, struct wim_inode *inode,
 			/* Named data stream  */
 			if (ctx->supported_features.named_data_streams)
 				need_stream = true;
-		} else if (!(inode->i_attributes & (FILE_ATTRIBUTE_DIRECTORY |
-						    FILE_ATTRIBUTE_ENCRYPTED))
-			   && !(inode_is_symlink(inode)
-				&& !ctx->supported_features.reparse_points
-				&& ctx->supported_features.symlink_reparse_points))
+		} else if (!(inode->i_attributes &
+		             (FILE_ATTRIBUTE_DIRECTORY |
+		              FILE_ATTRIBUTE_ENCRYPTED)) &&
+		           !(inode_is_symlink(inode) &&
+		             !ctx->supported_features.reparse_points &&
+		             ctx->supported_features.symlink_reparse_points))
 		{
 			/*
 			 * Unnamed data stream.  Skip if any of the following is true:
@@ -1138,7 +1182,8 @@ ref_stream_if_needed(struct wim_dentry *dentry, struct wim_inode *inode,
 			 *   backed from the WIM archive itself
 			 */
 			if (ctx->apply_ops->will_back_from_wim) {
-				int ret = (*ctx->apply_ops->will_back_from_wim)(dentry, ctx);
+				int ret = (*ctx->apply_ops->will_back_from_wim)(
+					dentry, ctx);
 				if (ret > 0) /* Error?  */
 					return ret;
 				if (ret < 0) /* Won't externally back?  */
@@ -1149,7 +1194,8 @@ ref_stream_if_needed(struct wim_dentry *dentry, struct wim_inode *inode,
 		}
 		break;
 	case STREAM_TYPE_REPARSE_POINT:
-		wimlib_assert(inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT);
+		wimlib_assert(inode->i_attributes &
+		              FILE_ATTRIBUTE_REPARSE_POINT);
 		if (ctx->supported_features.reparse_points ||
 		    (inode_is_symlink(inode) &&
 		     ctx->supported_features.symlink_reparse_points))
@@ -1176,8 +1222,8 @@ dentry_ref_streams(struct wim_dentry *dentry, struct apply_ctx *ctx)
 {
 	struct wim_inode *inode = dentry->d_inode;
 	for (unsigned i = 0; i < inode->i_num_streams; i++) {
-		int ret = ref_stream_if_needed(dentry, inode,
-					       &inode->i_streams[i], ctx);
+		int ret = ref_stream_if_needed(
+			dentry, inode, &inode->i_streams[i], ctx);
 		if (ret)
 			return ret;
 	}
@@ -1220,14 +1266,15 @@ dentry_list_build_inode_alias_lists(struct list_head *dentry_list)
 		dentry->d_inode->i_first_extraction_alias = NULL;
 
 	list_for_each_entry(dentry, dentry_list, d_extraction_list_node) {
-		dentry->d_next_extraction_alias = dentry->d_inode->i_first_extraction_alias;
+		dentry->d_next_extraction_alias =
+			dentry->d_inode->i_first_extraction_alias;
 		dentry->d_inode->i_first_extraction_alias = dentry;
 	}
 }
 
 static void
 inode_tally_features(const struct wim_inode *inode,
-		     struct wim_features *features)
+                     struct wim_features *features)
 {
 	if (inode->i_attributes & FILE_ATTRIBUTE_READONLY)
 		features->readonly_files++;
@@ -1288,7 +1335,7 @@ dentry_tally_features(struct wim_dentry *dentry, struct wim_features *features)
 /* Tally the features necessary to extract the specified dentries.  */
 static void
 dentry_list_get_features(struct list_head *dentry_list,
-			 struct wim_features *features)
+                         struct wim_features *features)
 {
 	struct wim_dentry *dentry;
 
@@ -1301,38 +1348,37 @@ dentry_list_get_features(struct list_head *dentry_list,
 
 static int
 do_feature_check(const struct wim_features *required_features,
-		 const struct wim_features *supported_features,
-		 int extract_flags)
+                 const struct wim_features *supported_features,
+                 int extract_flags)
 {
 	/* Encrypted files.  */
 	if (required_features->encrypted_files &&
 	    !supported_features->encrypted_files)
 		WARNING("Ignoring EFS-encrypted data of %lu files",
-			required_features->encrypted_files);
+		        required_features->encrypted_files);
 
 	/* Named data streams.  */
 	if (required_features->named_data_streams &&
 	    !supported_features->named_data_streams)
 		WARNING("Ignoring named data streams of %lu files",
-			required_features->named_data_streams);
+		        required_features->named_data_streams);
 
 	/* File attributes.  */
 	if (!(extract_flags & WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES)) {
-
 		if (required_features->readonly_files &&
 		    !supported_features->readonly_files)
 			WARNING("Ignoring FILE_ATTRIBUTE_READONLY of %lu files",
-				required_features->readonly_files);
+			        required_features->readonly_files);
 
 		if (required_features->hidden_files &&
 		    !supported_features->hidden_files)
 			WARNING("Ignoring FILE_ATTRIBUTE_HIDDEN of %lu files",
-				required_features->hidden_files);
+			        required_features->hidden_files);
 
 		if (required_features->system_files &&
 		    !supported_features->system_files)
 			WARNING("Ignoring FILE_ATTRIBUTE_SYSTEM of %lu files",
-				required_features->system_files);
+			        required_features->system_files);
 
 		/* Note: Don't bother the user about FILE_ATTRIBUTE_ARCHIVE.
 		 * We're an archive program, so theoretically we can do what we
@@ -1341,28 +1387,28 @@ do_feature_check(const struct wim_features *required_features,
 		if (required_features->compressed_files &&
 		    !supported_features->compressed_files)
 			WARNING("Ignoring FILE_ATTRIBUTE_COMPRESSED of %lu files",
-				required_features->compressed_files);
+			        required_features->compressed_files);
 
 		if (required_features->not_context_indexed_files &&
 		    !supported_features->not_context_indexed_files)
 			WARNING("Ignoring FILE_ATTRIBUTE_NOT_CONTENT_INDEXED of %lu files",
-				required_features->not_context_indexed_files);
+			        required_features->not_context_indexed_files);
 
 		if (required_features->sparse_files &&
 		    !supported_features->sparse_files)
 			WARNING("Ignoring FILE_ATTRIBUTE_SPARSE_FILE of %lu files",
-				required_features->sparse_files);
+			        required_features->sparse_files);
 
 		if (required_features->encrypted_directories &&
 		    !supported_features->encrypted_directories)
 			WARNING("Ignoring FILE_ATTRIBUTE_ENCRYPTED of %lu directories",
-				required_features->encrypted_directories);
+			        required_features->encrypted_directories);
 	}
 
 	/* Hard links.  */
 	if (required_features->hard_links && !supported_features->hard_links)
 		WARNING("Extracting %lu hard links as independent files",
-			required_features->hard_links);
+		        required_features->hard_links);
 
 	/* Symbolic links and reparse points.  */
 	if ((extract_flags & WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS) &&
@@ -1379,18 +1425,18 @@ do_feature_check(const struct wim_features *required_features,
 		if (supported_features->symlink_reparse_points) {
 			if (required_features->other_reparse_points) {
 				WARNING("Ignoring reparse data of %lu non-symlink/junction files",
-					required_features->other_reparse_points);
+				        required_features->other_reparse_points);
 			}
 		} else {
 			WARNING("Ignoring reparse data of %lu files",
-				required_features->reparse_points);
+			        required_features->reparse_points);
 		}
 	}
 
 	/* Security descriptors.  */
 	if (((extract_flags & (WIMLIB_EXTRACT_FLAG_STRICT_ACLS |
-			       WIMLIB_EXTRACT_FLAG_UNIX_DATA))
-	     == WIMLIB_EXTRACT_FLAG_STRICT_ACLS) &&
+	                       WIMLIB_EXTRACT_FLAG_UNIX_DATA)) ==
+	     WIMLIB_EXTRACT_FLAG_STRICT_ACLS) &&
 	    required_features->security_descriptors &&
 	    !supported_features->security_descriptors)
 	{
@@ -1401,7 +1447,7 @@ do_feature_check(const struct wim_features *required_features,
 	    required_features->security_descriptors &&
 	    !supported_features->security_descriptors)
 		WARNING("Ignoring Windows NT security descriptors of %lu files",
-			required_features->security_descriptors);
+		        required_features->security_descriptors);
 
 	/* Standard UNIX metadata */
 	if (required_features->unix_data &&
@@ -1413,10 +1459,11 @@ do_feature_check(const struct wim_features *required_features,
 			      "extraction backend does not support it!");
 			return WIMLIB_ERR_UNSUPPORTED;
 		}
-		WARNING("Ignoring UNIX metadata (uid/gid/mode/rdev) of %lu files%"TS,
-			required_features->unix_data,
-			(supported_features->unix_data ?
-			 T("\n          (use --unix-data mode to extract these)") : T("")));
+		WARNING("Ignoring UNIX metadata (uid/gid/mode/rdev) of %lu files%" TS,
+		        required_features->unix_data,
+		        (supported_features->unix_data ?
+		                 T("\n          (use --unix-data mode to extract these)") :
+		                 T("")));
 	}
 
 	/* Extended attributes */
@@ -1425,28 +1472,28 @@ do_feature_check(const struct wim_features *required_features,
 	     (supported_features->unix_data &&
 	      !(extract_flags & WIMLIB_EXTRACT_FLAG_UNIX_DATA))))
 	{
-		WARNING("Ignoring extended attributes of %lu files%"TS,
-			required_features->xattrs,
-			(supported_features->xattrs ?
-			 T("\n          (use --unix-data mode to extract these)") : T("")));
+		WARNING("Ignoring extended attributes of %lu files%" TS,
+		        required_features->xattrs,
+		        (supported_features->xattrs ?
+		                 T("\n          (use --unix-data mode to extract these)") :
+		                 T("")));
 	}
 
 	/* Object IDs.  */
 	if (required_features->object_ids && !supported_features->object_ids) {
 		WARNING("Ignoring object IDs of %lu files",
-			required_features->object_ids);
+		        required_features->object_ids);
 	}
 
 	/* DOS Names.  */
-	if (required_features->short_names &&
-	    !supported_features->short_names)
+	if (required_features->short_names && !supported_features->short_names)
 	{
 		if (extract_flags & WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES) {
 			ERROR("Extraction backend does not support DOS names!");
 			return WIMLIB_ERR_UNSUPPORTED;
 		}
 		WARNING("Ignoring DOS names of %lu files",
-			required_features->short_names);
+		        required_features->short_names);
 	}
 
 	/* Timestamps.  */
@@ -1475,8 +1522,11 @@ select_apply_operations(int extract_flags)
 }
 
 static int
-extract_trees(WIMStruct *wim, struct wim_dentry **trees, size_t num_trees,
-	      const tchar *target, int extract_flags)
+extract_trees(WIMStruct *wim,
+              struct wim_dentry **trees,
+              size_t num_trees,
+              const tchar *target,
+              int extract_flags)
 {
 	const struct apply_operations *ops;
 	struct apply_ctx *ctx;
@@ -1484,9 +1534,8 @@ extract_trees(WIMStruct *wim, struct wim_dentry **trees, size_t num_trees,
 	LIST_HEAD(dentry_list);
 
 	if (extract_flags & WIMLIB_EXTRACT_FLAG_TO_STDOUT) {
-		ret = extract_dentries_to_stdout(trees, num_trees,
-						 wim->blob_table,
-						 extract_flags);
+		ret = extract_dentries_to_stdout(
+			trees, num_trees, wim->blob_table, extract_flags);
 		goto out;
 	}
 
@@ -1509,19 +1558,19 @@ extract_trees(WIMStruct *wim, struct wim_dentry **trees, size_t num_trees,
 		goto out;
 	}
 
-	ctx->wim = wim;
-	ctx->target = target;
+	ctx->wim           = wim;
+	ctx->target        = target;
 	ctx->target_nchars = tstrlen(target);
 	ctx->extract_flags = extract_flags;
 	if (ctx->wim->progfunc) {
-		ctx->progfunc = ctx->wim->progfunc;
-		ctx->progctx = ctx->wim->progctx;
+		ctx->progfunc               = ctx->wim->progfunc;
+		ctx->progctx                = ctx->wim->progctx;
 		ctx->progress.extract.image = wim->current_image;
-		ctx->progress.extract.extract_flags = (extract_flags &
-						       WIMLIB_EXTRACT_MASK_PUBLIC);
+		ctx->progress.extract.extract_flags =
+			(extract_flags & WIMLIB_EXTRACT_MASK_PUBLIC);
 		ctx->progress.extract.wimfile_name = wim->filename;
-		ctx->progress.extract.image_name = wimlib_get_image_name(wim,
-									 wim->current_image);
+		ctx->progress.extract.image_name =
+			wimlib_get_image_name(wim, wim->current_image);
 		ctx->progress.extract.target = target;
 	}
 	INIT_LIST_HEAD(&ctx->blob_list);
@@ -1532,14 +1581,17 @@ extract_trees(WIMStruct *wim, struct wim_dentry **trees, size_t num_trees,
 	if (ret)
 		goto out_cleanup;
 
-	build_dentry_list(&dentry_list, trees, num_trees,
-			  !(extract_flags &
-			    WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE));
+	build_dentry_list(&dentry_list,
+	                  trees,
+	                  num_trees,
+	                  !(extract_flags &
+	                    WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE));
 
 	dentry_list_get_features(&dentry_list, &ctx->required_features);
 
-	ret = do_feature_check(&ctx->required_features, &ctx->supported_features,
-			       ctx->extract_flags);
+	ret = do_feature_check(&ctx->required_features,
+	                       &ctx->supported_features,
+	                       ctx->extract_flags);
 	if (ret)
 		goto out_cleanup;
 
@@ -1573,20 +1625,20 @@ extract_trees(WIMStruct *wim, struct wim_dentry **trees, size_t num_trees,
 		 * but currently there is no API for doing otherwise.  (Also,
 		 * subtract <HARDLINKBYTES> from this if hard links are
 		 * supported by the extraction mode.)  */
-		ctx->progress.extract.total_bytes =
-			xml_get_image_total_bytes(wim->xml_info,
-						  wim->current_image);
+		ctx->progress.extract.total_bytes = xml_get_image_total_bytes(
+			wim->xml_info, wim->current_image);
 		if (ctx->supported_features.hard_links) {
 			ctx->progress.extract.total_bytes -=
-				xml_get_image_hard_link_bytes(wim->xml_info,
-							      wim->current_image);
+				xml_get_image_hard_link_bytes(
+					wim->xml_info, wim->current_image);
 		}
 	}
 
-	ret = extract_progress(ctx,
-			       ((extract_flags & WIMLIB_EXTRACT_FLAG_IMAGEMODE) ?
-				       WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN :
-				       WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN));
+	ret = extract_progress(
+		ctx,
+		((extract_flags & WIMLIB_EXTRACT_FLAG_IMAGEMODE) ?
+	                 WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN :
+	                 WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN));
 	if (ret)
 		goto out_cleanup;
 
@@ -1599,15 +1651,17 @@ extract_trees(WIMStruct *wim, struct wim_dentry **trees, size_t num_trees,
 	{
 		ctx->progress.extract.completed_bytes =
 			ctx->progress.extract.total_bytes;
-		ret = extract_progress(ctx, WIMLIB_PROGRESS_MSG_EXTRACT_STREAMS);
+		ret = extract_progress(ctx,
+		                       WIMLIB_PROGRESS_MSG_EXTRACT_STREAMS);
 		if (ret)
 			goto out_cleanup;
 	}
 
-	ret = extract_progress(ctx,
-			       ((extract_flags & WIMLIB_EXTRACT_FLAG_IMAGEMODE) ?
-				       WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_END :
-				       WIMLIB_PROGRESS_MSG_EXTRACT_TREE_END));
+	ret = extract_progress(
+		ctx,
+		((extract_flags & WIMLIB_EXTRACT_FLAG_IMAGEMODE) ?
+	                 WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_END :
+	                 WIMLIB_PROGRESS_MSG_EXTRACT_TREE_END));
 out_cleanup:
 	destroy_blob_list(&ctx->blob_list);
 	destroy_dentry_list(&dentry_list);
@@ -1631,7 +1685,7 @@ mkdir_if_needed(const tchar *target)
 		return 0;
 #endif
 
-	ERROR_WITH_ERRNO("Failed to create directory \"%"TS"\"", target);
+	ERROR_WITH_ERRNO("Failed to create directory \"%" TS "\"", target);
 	return WIMLIB_ERR_MKDIR;
 }
 
@@ -1644,15 +1698,13 @@ check_extract_flags(const WIMStruct *wim, int *extract_flags_p)
 	/* Check for invalid flag combinations  */
 
 	if ((extract_flags &
-	     (WIMLIB_EXTRACT_FLAG_NO_ACLS |
-	      WIMLIB_EXTRACT_FLAG_STRICT_ACLS)) == (WIMLIB_EXTRACT_FLAG_NO_ACLS |
-						    WIMLIB_EXTRACT_FLAG_STRICT_ACLS))
+	     (WIMLIB_EXTRACT_FLAG_NO_ACLS | WIMLIB_EXTRACT_FLAG_STRICT_ACLS)) ==
+	    (WIMLIB_EXTRACT_FLAG_NO_ACLS | WIMLIB_EXTRACT_FLAG_STRICT_ACLS))
 		return WIMLIB_ERR_INVALID_PARAM;
 
 	if ((extract_flags &
-	     (WIMLIB_EXTRACT_FLAG_RPFIX |
-	      WIMLIB_EXTRACT_FLAG_NORPFIX)) == (WIMLIB_EXTRACT_FLAG_RPFIX |
-						WIMLIB_EXTRACT_FLAG_NORPFIX))
+	     (WIMLIB_EXTRACT_FLAG_RPFIX | WIMLIB_EXTRACT_FLAG_NORPFIX)) ==
+	    (WIMLIB_EXTRACT_FLAG_RPFIX | WIMLIB_EXTRACT_FLAG_NORPFIX))
 		return WIMLIB_ERR_INVALID_PARAM;
 
 #ifndef WITH_NTFS_3G
@@ -1674,16 +1726,20 @@ check_extract_flags(const WIMStruct *wim, int *extract_flags_p)
 	}
 
 	if (extract_flags & (WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K |
-			     WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K |
-			     WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K |
-			     WIMLIB_EXTRACT_FLAG_COMPACT_LZX))
+	                     WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K |
+	                     WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K |
+	                     WIMLIB_EXTRACT_FLAG_COMPACT_LZX))
 	{
-	#ifdef _WIN32
+#ifdef _WIN32
 		int count = 0;
-		count += ((extract_flags & WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K) != 0);
-		count += ((extract_flags & WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K) != 0);
-		count += ((extract_flags & WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K) != 0);
-		count += ((extract_flags & WIMLIB_EXTRACT_FLAG_COMPACT_LZX) != 0);
+		count += ((extract_flags &
+		           WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K) != 0);
+		count += ((extract_flags &
+		           WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K) != 0);
+		count += ((extract_flags &
+		           WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K) != 0);
+		count += ((extract_flags & WIMLIB_EXTRACT_FLAG_COMPACT_LZX) !=
+		          0);
 		if (count != 1) {
 			ERROR("Only one compression format can be specified "
 			      "for compact-mode extraction!");
@@ -1694,18 +1750,16 @@ check_extract_flags(const WIMStruct *wim, int *extract_flags_p)
 			      "extraction are mutually exclusive!");
 			return WIMLIB_ERR_INVALID_PARAM;
 		}
-	#else
+#else
 		ERROR("Compact-mode extraction (System Compression) "
 		      "is only supported on Windows!");
 		return WIMLIB_ERR_UNSUPPORTED;
-	#endif
+#endif
 	}
 
-
-	if ((extract_flags & (WIMLIB_EXTRACT_FLAG_RPFIX |
-			      WIMLIB_EXTRACT_FLAG_NORPFIX |
-			      WIMLIB_EXTRACT_FLAG_IMAGEMODE)) ==
-					WIMLIB_EXTRACT_FLAG_IMAGEMODE)
+	if ((extract_flags &
+	     (WIMLIB_EXTRACT_FLAG_RPFIX | WIMLIB_EXTRACT_FLAG_NORPFIX |
+	      WIMLIB_EXTRACT_FLAG_IMAGEMODE)) == WIMLIB_EXTRACT_FLAG_IMAGEMODE)
 	{
 		/* For full-image extraction, do reparse point fixups by default
 		 * if the WIM header says they are enabled.  */
@@ -1732,13 +1786,13 @@ append_dentry_cb(struct wim_dentry *dentry, void *_ctx)
 		struct wim_dentry **new_dentries;
 		size_t new_length;
 
-		new_length = max(ctx->num_alloc_dentries + 8,
-				 ctx->num_alloc_dentries * 3 / 2);
+		new_length   = max(ctx->num_alloc_dentries + 8,
+                                 ctx->num_alloc_dentries * 3 / 2);
 		new_dentries = REALLOC(ctx->dentries,
-				       new_length * sizeof(ctx->dentries[0]));
+		                       new_length * sizeof(ctx->dentries[0]));
 		if (new_dentries == NULL)
 			return WIMLIB_ERR_NOMEM;
-		ctx->dentries = new_dentries;
+		ctx->dentries           = new_dentries;
 		ctx->num_alloc_dentries = new_length;
 	}
 	ctx->dentries[ctx->num_dentries++] = dentry;
@@ -1747,8 +1801,10 @@ append_dentry_cb(struct wim_dentry *dentry, void *_ctx)
 
 /* Append dentries matched by a path which can contain wildcard characters.  */
 static int
-append_matched_dentries(WIMStruct *wim, const tchar *orig_pattern,
-			int extract_flags, struct append_dentry_ctx *ctx)
+append_matched_dentries(WIMStruct *wim,
+                        const tchar *orig_pattern,
+                        int extract_flags,
+                        struct append_dentry_ctx *ctx)
 {
 	const size_t count_before = ctx->num_dentries;
 	tchar *pattern;
@@ -1757,23 +1813,28 @@ append_matched_dentries(WIMStruct *wim, const tchar *orig_pattern,
 	pattern = canonicalize_wim_path(orig_pattern);
 	if (!pattern)
 		return WIMLIB_ERR_NOMEM;
-	ret = expand_path_pattern(wim_get_current_root_dentry(wim), pattern,
-				  append_dentry_cb, ctx);
+	ret = expand_path_pattern(wim_get_current_root_dentry(wim),
+	                          pattern,
+	                          append_dentry_cb,
+	                          ctx);
 	FREE(pattern);
 	if (ret || ctx->num_dentries > count_before)
 		return ret;
 	if (extract_flags & WIMLIB_EXTRACT_FLAG_STRICT_GLOB) {
-		ERROR("No matches for path pattern \"%"TS"\"", orig_pattern);
+		ERROR("No matches for path pattern \"%" TS "\"", orig_pattern);
 		return WIMLIB_ERR_PATH_DOES_NOT_EXIST;
 	}
-	WARNING("No matches for path pattern \"%"TS"\"", orig_pattern);
+	WARNING("No matches for path pattern \"%" TS "\"", orig_pattern);
 	return 0;
 }
 
 static int
-do_wimlib_extract_paths(WIMStruct *wim, int image, const tchar *target,
-			const tchar * const *paths, size_t num_paths,
-			int extract_flags)
+do_wimlib_extract_paths(WIMStruct *wim,
+                        int image,
+                        const tchar *target,
+                        const tchar *const *paths,
+                        size_t num_paths,
+                        int extract_flags)
 {
 	int ret;
 	struct wim_dentry **trees;
@@ -1796,7 +1857,7 @@ do_wimlib_extract_paths(WIMStruct *wim, int image, const tchar *target,
 		return ret;
 
 	if ((extract_flags & (WIMLIB_EXTRACT_FLAG_NTFS |
-			      WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE)) ==
+	                      WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE)) ==
 	    (WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE))
 	{
 		ret = mkdir_if_needed(target);
@@ -1805,23 +1866,23 @@ do_wimlib_extract_paths(WIMStruct *wim, int image, const tchar *target,
 	}
 
 	if (extract_flags & WIMLIB_EXTRACT_FLAG_GLOB_PATHS) {
-
 		struct append_dentry_ctx append_dentry_ctx = {
-			.dentries = NULL,
-			.num_dentries = 0,
+			.dentries           = NULL,
+			.num_dentries       = 0,
 			.num_alloc_dentries = 0,
 		};
 
 		for (size_t i = 0; i < num_paths; i++) {
-			ret = append_matched_dentries(wim, paths[i],
-						      extract_flags,
-						      &append_dentry_ctx);
+			ret = append_matched_dentries(wim,
+			                              paths[i],
+			                              extract_flags,
+			                              &append_dentry_ctx);
 			if (ret) {
 				trees = append_dentry_ctx.dentries;
 				goto out_free_trees;
 			}
 		}
-		trees = append_dentry_ctx.dentries;
+		trees     = append_dentry_ctx.dentries;
 		num_trees = append_dentry_ctx.num_dentries;
 	} else {
 		trees = MALLOC(num_paths * sizeof(trees[0]));
@@ -1829,22 +1890,22 @@ do_wimlib_extract_paths(WIMStruct *wim, int image, const tchar *target,
 			return WIMLIB_ERR_NOMEM;
 
 		for (size_t i = 0; i < num_paths; i++) {
-
 			tchar *path = canonicalize_wim_path(paths[i]);
 			if (path == NULL) {
 				ret = WIMLIB_ERR_NOMEM;
 				goto out_free_trees;
 			}
 
-			trees[i] = get_dentry(wim, path,
-					      WIMLIB_CASE_PLATFORM_DEFAULT);
+			trees[i] = get_dentry(
+				wim, path, WIMLIB_CASE_PLATFORM_DEFAULT);
 			FREE(path);
 			if (trees[i] == NULL) {
-				  ERROR("Path \"%"TS"\" does not exist "
-					"in WIM image %d",
-					paths[i], wim->current_image);
-				  ret = WIMLIB_ERR_PATH_DOES_NOT_EXIST;
-				  goto out_free_trees;
+				ERROR("Path \"%" TS "\" does not exist "
+				      "in WIM image %d",
+				      paths[i],
+				      wim->current_image);
+				ret = WIMLIB_ERR_PATH_DOES_NOT_EXIST;
+				goto out_free_trees;
 			}
 		}
 		num_trees = num_paths;
@@ -1862,19 +1923,22 @@ out_free_trees:
 }
 
 static int
-extract_single_image(WIMStruct *wim, int image,
-		     const tchar *target, int extract_flags)
+extract_single_image(WIMStruct *wim,
+                     int image,
+                     const tchar *target,
+                     int extract_flags)
 {
 	const tchar *path = WIMLIB_WIM_ROOT_PATH;
 	extract_flags |= WIMLIB_EXTRACT_FLAG_IMAGEMODE;
-	return do_wimlib_extract_paths(wim, image, target, &path, 1, extract_flags);
+	return do_wimlib_extract_paths(
+		wim, image, target, &path, 1, extract_flags);
 }
 
-static const tchar * const filename_forbidden_chars =
+static const tchar *const filename_forbidden_chars =
 #ifdef _WIN32
-T("<>:\"/\\|?*");
+	T("<>:\"/\\|?*");
 #else
-T("/");
+	T("/");
 #endif
 
 /* This function checks if it is okay to use a WIM image's name as a directory
@@ -1883,10 +1947,9 @@ static bool
 image_name_ok_as_dir(const tchar *image_name)
 {
 	return image_name && *image_name &&
-		!tstrpbrk(image_name, filename_forbidden_chars) &&
-		tstrcmp(image_name, T(".")) &&
-		tstrcmp(image_name, T("..")) &&
-		tstrlen(image_name) <= 128;
+	       !tstrpbrk(image_name, filename_forbidden_chars) &&
+	       tstrcmp(image_name, T(".")) && tstrcmp(image_name, T("..")) &&
+	       tstrlen(image_name) <= 128;
 }
 
 /* Extracts all images from the WIM to the directory @target, with the images
@@ -1927,12 +1990,14 @@ extract_all_images(WIMStruct *wim, const tchar *target, int extract_flags)
 }
 
 static int
-do_wimlib_extract_image(WIMStruct *wim, int image, const tchar *target,
-			int extract_flags)
+do_wimlib_extract_image(WIMStruct *wim,
+                        int image,
+                        const tchar *target,
+                        int extract_flags)
 {
-	if (extract_flags & (WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE |
-			     WIMLIB_EXTRACT_FLAG_TO_STDOUT |
-			     WIMLIB_EXTRACT_FLAG_GLOB_PATHS))
+	if (extract_flags &
+	    (WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE |
+	     WIMLIB_EXTRACT_FLAG_TO_STDOUT | WIMLIB_EXTRACT_FLAG_GLOB_PATHS))
 		return WIMLIB_ERR_INVALID_PARAM;
 
 	if (image == WIMLIB_ALL_IMAGES)
@@ -1941,26 +2006,31 @@ do_wimlib_extract_image(WIMStruct *wim, int image, const tchar *target,
 		return extract_single_image(wim, image, target, extract_flags);
 }
 
-
 /****************************************************************************
  *                          Extraction API                                  *
  ****************************************************************************/
 
 WIMLIBAPI int
-wimlib_extract_paths(WIMStruct *wim, int image, const tchar *target,
-		     const tchar * const *paths, size_t num_paths,
-		     int extract_flags)
+wimlib_extract_paths(WIMStruct *wim,
+                     int image,
+                     const tchar *target,
+                     const tchar *const *paths,
+                     size_t num_paths,
+                     int extract_flags)
 {
 	if (extract_flags & ~WIMLIB_EXTRACT_MASK_PUBLIC)
 		return WIMLIB_ERR_INVALID_PARAM;
 
-	return do_wimlib_extract_paths(wim, image, target, paths, num_paths,
-				       extract_flags);
+	return do_wimlib_extract_paths(
+		wim, image, target, paths, num_paths, extract_flags);
 }
 
 WIMLIBAPI int
-wimlib_extract_pathlist(WIMStruct *wim, int image, const tchar *target,
-			const tchar *path_list_file, int extract_flags)
+wimlib_extract_pathlist(WIMStruct *wim,
+                        int image,
+                        const tchar *target,
+                        const tchar *path_list_file,
+                        int extract_flags)
 {
 	int ret;
 	tchar **paths;
@@ -1969,14 +2039,17 @@ wimlib_extract_pathlist(WIMStruct *wim, int image, const tchar *target,
 
 	ret = read_path_list_file(path_list_file, &paths, &num_paths, &mem);
 	if (ret) {
-		ERROR("Failed to read path list file \"%"TS"\"",
+		ERROR("Failed to read path list file \"%" TS "\"",
 		      path_list_file ? path_list_file : T("<stdin>"));
 		return ret;
 	}
 
-	ret = wimlib_extract_paths(wim, image, target,
-				   (const tchar * const *)paths, num_paths,
-				   extract_flags);
+	ret = wimlib_extract_paths(wim,
+	                           image,
+	                           target,
+	                           (const tchar *const *)paths,
+	                           num_paths,
+	                           extract_flags);
 	FREE(paths);
 	FREE(mem);
 	return ret;
@@ -1984,11 +2057,11 @@ wimlib_extract_pathlist(WIMStruct *wim, int image, const tchar *target,
 
 WIMLIBAPI int
 wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
-					     const tchar *image_num_or_name,
-					     const tchar *target,
-					     int extract_flags,
-					     wimlib_progress_func_t progfunc,
-					     void *progctx)
+                                             const tchar *image_num_or_name,
+                                             const tchar *target,
+                                             int extract_flags,
+                                             wimlib_progress_func_t progfunc,
+                                             void *progctx)
 {
 	int ret;
 	WIMStruct *pwm;
@@ -2003,15 +2076,16 @@ wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
 	 * the pipable WIM.  Caveats:  Unlike getting a WIMStruct with
 	 * wimlib_open_wim(), getting a WIMStruct in this way will result in an
 	 * empty blob table, no XML data read, and no filename set.  */
-	ret = open_wim_as_WIMStruct(&pipe_fd, WIMLIB_OPEN_FLAG_FROM_PIPE, &pwm,
-				    progfunc, progctx);
+	ret = open_wim_as_WIMStruct(
+		&pipe_fd, WIMLIB_OPEN_FLAG_FROM_PIPE, &pwm, progfunc, progctx);
 	if (ret)
 		return ret;
 
 	/* Sanity check to make sure this is a pipable WIM.  */
 	if (pwm->hdr.magic != PWM_MAGIC) {
 		ERROR("The WIM being read from file descriptor %d "
-		      "is not pipable!", pipe_fd);
+		      "is not pipable!",
+		      pipe_fd);
 		ret = WIMLIB_ERR_NOT_PIPABLE;
 		goto out_wimlib_free;
 	}
@@ -2036,12 +2110,14 @@ wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
 	{
 		u8 hash[SHA1_HASH_SIZE];
 
-		ret = read_pwm_blob_header(pwm, hash,
-					   &pwm->hdr.xml_data_reshdr, NULL);
+		ret = read_pwm_blob_header(
+			pwm, hash, &pwm->hdr.xml_data_reshdr, NULL);
 		if (ret)
 			goto out_wimlib_free;
 
-		if (!(pwm->hdr.xml_data_reshdr.flags & WIM_RESHDR_FLAG_METADATA)) {
+		if (!(pwm->hdr.xml_data_reshdr.flags &
+		      WIM_RESHDR_FLAG_METADATA))
+		{
 			ERROR("Expected XML data, but found non-metadata resource.");
 			ret = WIMLIB_ERR_INVALID_PIPABLE_WIM;
 			goto out_wimlib_free;
@@ -2051,7 +2127,8 @@ wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
 		if (ret)
 			goto out_wimlib_free;
 
-		if (xml_get_image_count(pwm->xml_info) != pwm->hdr.image_count) {
+		if (xml_get_image_count(pwm->xml_info) != pwm->hdr.image_count)
+		{
 			ERROR("Image count in XML data is not the same as in WIM header.");
 			ret = WIMLIB_ERR_IMAGE_COUNT;
 			goto out_wimlib_free;
@@ -2063,7 +2140,8 @@ wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
 	if (image_num_or_name) {
 		image = wimlib_resolve_image(pwm, image_num_or_name);
 		if (image == WIMLIB_NO_IMAGE) {
-			ERROR("\"%"TS"\" is not a valid image in the pipable WIM!",
+			ERROR("\"%" TS
+			      "\" is not a valid image in the pipable WIM!",
 			      image_num_or_name);
 			ret = WIMLIB_ERR_INVALID_IMAGE;
 			goto out_wimlib_free;
@@ -2097,22 +2175,21 @@ out_wimlib_free:
 	return ret;
 }
 
-
 WIMLIBAPI int
-wimlib_extract_image_from_pipe(int pipe_fd, const tchar *image_num_or_name,
-			       const tchar *target, int extract_flags)
+wimlib_extract_image_from_pipe(int pipe_fd,
+                               const tchar *image_num_or_name,
+                               const tchar *target,
+                               int extract_flags)
 {
-	return wimlib_extract_image_from_pipe_with_progress(pipe_fd,
-							    image_num_or_name,
-							    target,
-							    extract_flags,
-							    NULL,
-							    NULL);
+	return wimlib_extract_image_from_pipe_with_progress(
+		pipe_fd, image_num_or_name, target, extract_flags, NULL, NULL);
 }
 
 WIMLIBAPI int
-wimlib_extract_image(WIMStruct *wim, int image, const tchar *target,
-		     int extract_flags)
+wimlib_extract_image(WIMStruct *wim,
+                     int image,
+                     const tchar *target,
+                     int extract_flags)
 {
 	if (extract_flags & ~WIMLIB_EXTRACT_MASK_PUBLIC)
 		return WIMLIB_ERR_INVALID_PARAM;

@@ -21,32 +21,31 @@
 
 #ifdef _WIN32
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#  ifdef HAVE_CONFIG_H
+#    include "config.h"
+#  endif
 
-#include "wimlib/win32_common.h"
+#  include "wimlib/win32_common.h"
 
-#include "wimlib/apply.h"
-#include "wimlib/assert.h"
-#include "wimlib/blob_table.h"
-#include "wimlib/dentry.h"
-#include "wimlib/encoding.h"
-#include "wimlib/error.h"
-#include "wimlib/metadata.h"
-#include "wimlib/object_id.h"
-#include "wimlib/paths.h"
-#include "wimlib/pattern.h"
-#include "wimlib/reparse.h"
-#include "wimlib/scan.h" /* for mangle_pat() and match_pattern_list()  */
-#include "wimlib/textfile.h"
-#include "wimlib/wimboot.h"
-#include "wimlib/wof.h"
-#include "wimlib/xattr.h"
-#include "wimlib/xml.h"
+#  include "wimlib/apply.h"
+#  include "wimlib/assert.h"
+#  include "wimlib/blob_table.h"
+#  include "wimlib/dentry.h"
+#  include "wimlib/encoding.h"
+#  include "wimlib/error.h"
+#  include "wimlib/metadata.h"
+#  include "wimlib/object_id.h"
+#  include "wimlib/paths.h"
+#  include "wimlib/pattern.h"
+#  include "wimlib/reparse.h"
+#  include "wimlib/scan.h" /* for mangle_pat() and match_pattern_list()  */
+#  include "wimlib/textfile.h"
+#  include "wimlib/wimboot.h"
+#  include "wimlib/wof.h"
+#  include "wimlib/xattr.h"
+#  include "wimlib/xml.h"
 
 struct win32_apply_ctx {
-
 	/* Extract flags, the pointer to the WIMStruct, etc.  */
 	struct apply_ctx common;
 
@@ -193,21 +192,23 @@ get_drive_letter(const wchar_t *path)
 
 	/* Return drive letter if valid  */
 	if (((path[0] >= L'a' && path[0] <= L'z') ||
-	     (path[0] >= L'A' && path[0] <= L'Z')) && path[1] == L':')
+	     (path[0] >= L'A' && path[0] <= L'Z')) &&
+	    path[1] == L':')
 		return path[0];
 
 	return L'\0';
 }
 
 static void
-get_vol_flags(const wchar_t *target, DWORD *vol_flags_ret,
-	      bool *short_names_supported_ret)
+get_vol_flags(const wchar_t *target,
+              DWORD *vol_flags_ret,
+              bool *short_names_supported_ret)
 {
 	wchar_t filesystem_name[MAX_PATH + 1];
 	wchar_t drive[4];
 	wchar_t *volume = NULL;
 
-	*vol_flags_ret = 0;
+	*vol_flags_ret             = 0;
 	*short_names_supported_ret = false;
 
 	drive[0] = get_drive_letter(target);
@@ -215,16 +216,21 @@ get_vol_flags(const wchar_t *target, DWORD *vol_flags_ret,
 		drive[1] = L':';
 		drive[2] = L'\\';
 		drive[3] = L'\0';
-		volume = drive;
+		volume   = drive;
 	}
 
-	if (!GetVolumeInformation(volume, NULL, 0, NULL, NULL,
-				  vol_flags_ret, filesystem_name,
-				  ARRAY_LEN(filesystem_name)))
+	if (!GetVolumeInformation(volume,
+	                          NULL,
+	                          0,
+	                          NULL,
+	                          NULL,
+	                          vol_flags_ret,
+	                          filesystem_name,
+	                          ARRAY_LEN(filesystem_name)))
 	{
 		win32_warning(GetLastError(),
-			      L"Failed to get volume information for \"%ls\"",
-			      target);
+		              L"Failed to get volume information for \"%ls\"",
+		              target);
 		return;
 	}
 
@@ -249,11 +255,12 @@ current_path(struct win32_apply_ctx *ctx);
 
 static void
 build_extraction_path(const struct wim_dentry *dentry,
-		      struct win32_apply_ctx *ctx);
+                      struct win32_apply_ctx *ctx);
 
 static int
 report_dentry_apply_error(const struct wim_dentry *dentry,
-			  struct win32_apply_ctx *ctx, int ret)
+                          struct win32_apply_ctx *ctx,
+                          int ret)
 {
 	build_extraction_path(dentry, ctx);
 	return report_apply_error(&ctx->common, ret, current_path(ctx));
@@ -261,7 +268,8 @@ report_dentry_apply_error(const struct wim_dentry *dentry,
 
 static inline int
 check_apply_error(const struct wim_dentry *dentry,
-		  struct win32_apply_ctx *ctx, int ret)
+                  struct win32_apply_ctx *ctx,
+                  int ret)
 {
 	if (unlikely(ret))
 		ret = report_dentry_apply_error(dentry, ctx, ret);
@@ -270,7 +278,7 @@ check_apply_error(const struct wim_dentry *dentry,
 
 static int
 win32_get_supported_features(const wchar_t *target,
-			     struct wim_features *supported_features)
+                             struct wim_features *supported_features)
 {
 	DWORD vol_flags;
 	bool short_names_supported;
@@ -280,15 +288,15 @@ win32_get_supported_features(const wchar_t *target,
 	get_vol_flags(target, &vol_flags, &short_names_supported);
 
 	supported_features->readonly_files = 1;
-	supported_features->hidden_files = 1;
-	supported_features->system_files = 1;
-	supported_features->archive_files = 1;
+	supported_features->hidden_files   = 1;
+	supported_features->system_files   = 1;
+	supported_features->archive_files  = 1;
 
 	if (vol_flags & FILE_FILE_COMPRESSION)
 		supported_features->compressed_files = 1;
 
 	if (vol_flags & FILE_SUPPORTS_ENCRYPTION) {
-		supported_features->encrypted_files = 1;
+		supported_features->encrypted_files       = 1;
 		supported_features->encrypted_directories = 1;
 	}
 
@@ -346,12 +354,10 @@ win32_get_supported_features(const wchar_t *target,
 	return 0;
 }
 
-#define COMPACT_FLAGS	(WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K |		\
-			 WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K |		\
-			 WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K |	\
-			 WIMLIB_EXTRACT_FLAG_COMPACT_LZX)
-
-
+#  define COMPACT_FLAGS                     \
+    (WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K | \
+     WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K | \
+     WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K | WIMLIB_EXTRACT_FLAG_COMPACT_LZX)
 
 /*
  * If not done already, load the patterns from the [PrepopulateList] section of
@@ -381,16 +387,17 @@ load_prepopulate_pats(struct win32_apply_ctx *ctx)
 
 	dentry = get_dentry(ctx->common.wim, path, WIMLIB_CASE_INSENSITIVE);
 	if (!dentry ||
-	    (dentry->d_inode->i_attributes & (FILE_ATTRIBUTE_DIRECTORY |
-					      FILE_ATTRIBUTE_REPARSE_POINT |
-					      FILE_ATTRIBUTE_ENCRYPTED)) ||
-	    !(blob = inode_get_blob_for_unnamed_data_stream(dentry->d_inode,
-							    ctx->common.wim->blob_table)))
+	    (dentry->d_inode->i_attributes &
+	     (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT |
+	      FILE_ATTRIBUTE_ENCRYPTED)) ||
+	    !(blob = inode_get_blob_for_unnamed_data_stream(
+		      dentry->d_inode, ctx->common.wim->blob_table)))
 	{
 		WARNING("%ls does not exist in the WIM image.\n"
-			"          The default configuration will be used instead; it assumes that all\n"
-			"          files are valid for external backing regardless of path, equivalent\n"
-			"          to an empty [PrepopulateList] section.", path);
+		        "          The default configuration will be used instead; it assumes that all\n"
+		        "          files are valid for external backing regardless of path, equivalent\n"
+		        "          to an empty [PrepopulateList] section.",
+		        path);
 		return WIMLIB_ERR_PATH_DOES_NOT_EXIST;
 	}
 
@@ -404,20 +411,25 @@ load_prepopulate_pats(struct win32_apply_ctx *ctx)
 		return WIMLIB_ERR_NOMEM;
 	}
 
-	sec.name = T("PrepopulateList");
+	sec.name    = T("PrepopulateList");
 	sec.strings = strings;
 
-	ret = load_text_file(path, buf, blob->size, &mem, &sec, 1,
-			     LOAD_TEXT_FILE_REMOVE_QUOTES |
-			     LOAD_TEXT_FILE_NO_WARNINGS,
-			     mangle_pat);
+	ret = load_text_file(path,
+	                     buf,
+	                     blob->size,
+	                     &mem,
+	                     &sec,
+	                     1,
+	                     LOAD_TEXT_FILE_REMOVE_QUOTES |
+	                             LOAD_TEXT_FILE_NO_WARNINGS,
+	                     mangle_pat);
 	STATIC_ASSERT(OS_PREFERRED_PATH_SEPARATOR == WIM_PATH_SEPARATOR);
 	FREE(buf);
 	if (ret) {
 		FREE(strings);
 		return ret;
 	}
-	ctx->prepopulate_pats = strings;
+	ctx->prepopulate_pats     = strings;
 	ctx->mem_prepopulate_pats = mem;
 	return 0;
 }
@@ -429,8 +441,8 @@ can_externally_back_path(const wchar_t *path, const struct win32_apply_ctx *ctx)
 {
 	/* Does the path match a pattern given in the [PrepopulateList] section
 	 * of WimBootCompress.ini?  */
-	if (ctx->prepopulate_pats && match_pattern_list(path, ctx->prepopulate_pats,
-							MATCH_RECURSIVELY))
+	if (ctx->prepopulate_pats &&
+	    match_pattern_list(path, ctx->prepopulate_pats, MATCH_RECURSIVELY))
 		return false;
 
 	/* Since we attempt to modify the SYSTEM registry after it's extracted
@@ -451,8 +463,9 @@ can_externally_back_path(const wchar_t *path, const struct win32_apply_ctx *ctx)
 /* Can the specified WIM resource be used as the source of an external backing
  * for the wof.sys WIM provider?  */
 static bool
-is_resource_valid_for_external_backing(const struct wim_resource_descriptor *rdesc,
-				       struct win32_apply_ctx *ctx)
+is_resource_valid_for_external_backing(
+	const struct wim_resource_descriptor *rdesc,
+	struct win32_apply_ctx *ctx)
 {
 	/* Must be the original WIM file format.  This check excludes pipable
 	 * resources and solid resources.  It also excludes other resources
@@ -478,7 +491,9 @@ is_resource_valid_for_external_backing(const struct wim_resource_descriptor *rde
 	 */
 	switch (rdesc->compression_type) {
 	case WIMLIB_COMPRESSION_TYPE_NONE:
-		if (rdesc->wim->compression_type == WIMLIB_COMPRESSION_TYPE_NONE) {
+		if (rdesc->wim->compression_type ==
+		    WIMLIB_COMPRESSION_TYPE_NONE)
+		{
 			ctx->wimboot.have_uncompressed_wims = true;
 			return false;
 		}
@@ -491,7 +506,8 @@ is_resource_valid_for_external_backing(const struct wim_resource_descriptor *rde
 		case 32768:
 			break;
 		default:
-			ctx->wimboot.have_unsupported_compressed_resources = true;
+			ctx->wimboot.have_unsupported_compressed_resources =
+				true;
 			return false;
 		}
 		break;
@@ -500,7 +516,8 @@ is_resource_valid_for_external_backing(const struct wim_resource_descriptor *rde
 		case 32768:
 			break;
 		default:
-			ctx->wimboot.have_unsupported_compressed_resources = true;
+			ctx->wimboot.have_unsupported_compressed_resources =
+				true;
 			return false;
 		}
 		break;
@@ -519,9 +536,9 @@ is_resource_valid_for_external_backing(const struct wim_resource_descriptor *rde
 	return true;
 }
 
-#define EXTERNAL_BACKING_NOT_ENABLED		-1
-#define EXTERNAL_BACKING_NOT_POSSIBLE		-2
-#define EXTERNAL_BACKING_EXCLUDED		-3
+#  define EXTERNAL_BACKING_NOT_ENABLED  -1
+#  define EXTERNAL_BACKING_NOT_POSSIBLE -2
+#  define EXTERNAL_BACKING_EXCLUDED     -3
 
 /*
  * Determines whether the specified file will be externally backed.  Returns a
@@ -540,9 +557,10 @@ is_resource_valid_for_external_backing(const struct wim_resource_descriptor *rde
  * WIM provider.
  */
 static int
-will_externally_back_inode(struct wim_inode *inode, struct win32_apply_ctx *ctx,
-			   const struct wim_dentry **excluded_dentry_ret,
-			   bool wimboot_mode)
+will_externally_back_inode(struct wim_inode *inode,
+                           struct win32_apply_ctx *ctx,
+                           const struct wim_dentry **excluded_dentry_ret,
+                           bool wimboot_mode)
 {
 	struct wim_dentry *dentry;
 	struct blob_descriptor *blob;
@@ -559,9 +577,9 @@ will_externally_back_inode(struct wim_inode *inode, struct win32_apply_ctx *ctx,
 	 * unknown/no/yes).  But most files can be externally backed, so this
 	 * way is fine.  */
 
-	if (inode->i_attributes & (FILE_ATTRIBUTE_DIRECTORY |
-				   FILE_ATTRIBUTE_REPARSE_POINT |
-				   FILE_ATTRIBUTE_ENCRYPTED))
+	if (inode->i_attributes &
+	    (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT |
+	     FILE_ATTRIBUTE_ENCRYPTED))
 		return EXTERNAL_BACKING_NOT_POSSIBLE;
 
 	blob = inode_get_blob_for_unnamed_data_stream_resolved(inode);
@@ -580,7 +598,6 @@ will_externally_back_inode(struct wim_inode *inode, struct win32_apply_ctx *ctx,
 	 */
 
 	inode_for_each_extraction_alias(dentry, inode) {
-
 		ret = calculate_dentry_full_path(dentry);
 		if (ret)
 			return ret;
@@ -625,7 +642,9 @@ find_wimboot_wim(WIMStruct *wim_to_find, struct win32_apply_ctx *ctx)
 }
 
 static int
-set_backed_from_wim(HANDLE h, struct wim_inode *inode, struct win32_apply_ctx *ctx)
+set_backed_from_wim(HANDLE h,
+                    struct wim_inode *inode,
+                    struct win32_apply_ctx *ctx)
 {
 	int ret;
 	const struct wim_dentry *excluded_dentry;
@@ -649,26 +668,29 @@ set_backed_from_wim(HANDLE h, struct wim_inode *inode, struct win32_apply_ctx *c
 		info.wimboot_exclude.extraction_path = current_path(ctx);
 
 		return call_progress(ctx->common.progfunc,
-				     WIMLIB_PROGRESS_MSG_WIMBOOT_EXCLUDE,
-				     &info, ctx->common.progctx);
+		                     WIMLIB_PROGRESS_MSG_WIMBOOT_EXCLUDE,
+		                     &info,
+		                     ctx->common.progctx);
 	}
 
 	/* Externally backing.  */
 
-	blob = inode_get_blob_for_unnamed_data_stream_resolved(inode);
+	blob        = inode_get_blob_for_unnamed_data_stream_resolved(inode);
 	wimboot_wim = find_wimboot_wim(blob->rdesc->wim, ctx);
 
 	if (unlikely(!wimboot_set_pointer(h,
-					  blob,
-					  wimboot_wim->data_source_id,
-					  wimboot_wim->blob_table_hash,
-					  ctx->wimboot.wof_running)))
+	                                  blob,
+	                                  wimboot_wim->data_source_id,
+	                                  wimboot_wim->blob_table_hash,
+	                                  ctx->wimboot.wof_running)))
 	{
 		const DWORD err = GetLastError();
 
-		build_extraction_path(inode_first_extraction_dentry(inode), ctx);
-		win32_error(err, L"\"%ls\": Couldn't set WIMBoot pointer data",
-			    current_path(ctx));
+		build_extraction_path(inode_first_extraction_dentry(inode),
+		                      ctx);
+		win32_error(err,
+		            L"\"%ls\": Couldn't set WIMBoot pointer data",
+		            current_path(ctx));
 		return WIMLIB_ERR_WIMBOOT;
 	}
 	return 0;
@@ -695,23 +717,25 @@ register_wim_with_wof(WIMStruct *wim, struct win32_apply_ctx *ctx)
 	/* Not yet registered  */
 
 	p = REALLOC(ctx->wimboot.wims,
-		    (ctx->wimboot.num_wims + 1) * sizeof(ctx->wimboot.wims[0]));
+	            (ctx->wimboot.num_wims + 1) * sizeof(ctx->wimboot.wims[0]));
 	if (!p)
 		return WIMLIB_ERR_NOMEM;
 	ctx->wimboot.wims = p;
 
 	ctx->wimboot.wims[ctx->wimboot.num_wims].wim = wim;
 
-	ret = hash_blob_table(wim, ctx->wimboot.wims[ctx->wimboot.num_wims].blob_table_hash);
+	ret = hash_blob_table(
+		wim, ctx->wimboot.wims[ctx->wimboot.num_wims].blob_table_hash);
 	if (ret)
 		return ret;
 
-	ret = wimboot_alloc_data_source_id(wim->filename,
-					   wim->hdr.guid,
-					   ctx->common.wim->current_image,
-					   ctx->common.target,
-					   &ctx->wimboot.wims[ctx->wimboot.num_wims].data_source_id,
-					   &ctx->wimboot.wof_running);
+	ret = wimboot_alloc_data_source_id(
+		wim->filename,
+		wim->hdr.guid,
+		ctx->common.wim->current_image,
+		ctx->common.target,
+		&ctx->wimboot.wims[ctx->wimboot.num_wims].data_source_id,
+		&ctx->wimboot.wof_running);
 	if (ret)
 		return ret;
 
@@ -722,16 +746,17 @@ register_wim_with_wof(WIMStruct *wim, struct win32_apply_ctx *ctx)
 /* Prepare for doing a "WIMBoot" extraction by registering each source WIM file
  * with WOF on the target volume.  */
 static int
-start_wimboot_extraction(struct list_head *dentry_list, struct win32_apply_ctx *ctx)
+start_wimboot_extraction(struct list_head *dentry_list,
+                         struct win32_apply_ctx *ctx)
 {
 	int ret;
 	struct wim_dentry *dentry;
 
 	if (!xml_get_wimboot(ctx->common.wim->xml_info,
-			     ctx->common.wim->current_image))
+	                     ctx->common.wim->current_image))
 		WARNING("The WIM image is not marked as WIMBoot compatible.  This usually\n"
-			"          means it is not intended to be used to back a Windows operating\n"
-			"          system.  Proceeding anyway.");
+		        "          means it is not intended to be used to back a Windows operating\n"
+		        "          system.  Proceeding anyway.");
 
 	list_for_each_entry(dentry, dentry_list, d_extraction_list_node) {
 		struct blob_descriptor *blob;
@@ -742,39 +767,40 @@ start_wimboot_extraction(struct list_head *dentry_list, struct win32_apply_ctx *
 		if (ret < 0) /* Won't externally back */
 			continue;
 
-		blob = inode_get_blob_for_unnamed_data_stream_resolved(dentry->d_inode);
+		blob = inode_get_blob_for_unnamed_data_stream_resolved(
+			dentry->d_inode);
 		ret = register_wim_with_wof(blob->rdesc->wim, ctx);
 		if (ret)
 			return ret;
 	}
 
 	if (ctx->wimboot.have_wrong_version_wims) {
-  WARNING("At least one of the source WIM files uses a version of the WIM\n"
-"          file format that not supported by Microsoft's wof.sys driver.\n"
-"          Files whose data is contained in one of these WIM files will be\n"
-"          extracted as full files rather than externally backed.");
+		WARNING("At least one of the source WIM files uses a version of the WIM\n"
+		        "          file format that not supported by Microsoft's wof.sys driver.\n"
+		        "          Files whose data is contained in one of these WIM files will be\n"
+		        "          extracted as full files rather than externally backed.");
 	}
 
 	if (ctx->wimboot.have_uncompressed_wims) {
-  WARNING("At least one of the source WIM files is uncompressed.  Files whose\n"
-"          data is contained in an uncompressed WIM file will be extracted as\n"
-"          full files rather than externally backed, since uncompressed WIM\n"
-"          files are not supported by Microsoft's wof.sys driver.");
+		WARNING("At least one of the source WIM files is uncompressed.  Files whose\n"
+		        "          data is contained in an uncompressed WIM file will be extracted as\n"
+		        "          full files rather than externally backed, since uncompressed WIM\n"
+		        "          files are not supported by Microsoft's wof.sys driver.");
 	}
 
 	if (ctx->wimboot.have_unsupported_compressed_resources) {
-  WARNING("At least one of the source WIM files uses a compression format that\n"
-"          is not supported by Microsoft's wof.sys driver.  Files whose data is\n"
-"          contained in a compressed resource in one of these WIM files will be\n"
-"          extracted as full files rather than externally backed.  (The\n"
-"          compression formats supported by wof.sys are: XPRESS 4K, XPRESS 8K,\n"
-"          XPRESS 16K, XPRESS 32K, and LZX 32K.)");
+		WARNING("At least one of the source WIM files uses a compression format that\n"
+		        "          is not supported by Microsoft's wof.sys driver.  Files whose data is\n"
+		        "          contained in a compressed resource in one of these WIM files will be\n"
+		        "          extracted as full files rather than externally backed.  (The\n"
+		        "          compression formats supported by wof.sys are: XPRESS 4K, XPRESS 8K,\n"
+		        "          XPRESS 16K, XPRESS 32K, and LZX 32K.)");
 	}
 
 	if (ctx->wimboot.have_huge_resources) {
-  WARNING("Some files exceeded 4.2 GB in size.  Such files will be extracted\n"
-"          as full files rather than externally backed, since very large files\n"
-"          are not supported by Microsoft's wof.sys driver.");
+		WARNING("Some files exceeded 4.2 GB in size.  Such files will be extracted\n"
+		        "          as full files rather than externally backed, since very large files\n"
+		        "          are not supported by Microsoft's wof.sys driver.");
 	}
 
 	return 0;
@@ -782,7 +808,7 @@ start_wimboot_extraction(struct list_head *dentry_list, struct win32_apply_ctx *
 
 static void
 build_win32_extraction_path(const struct wim_dentry *dentry,
-			    struct win32_apply_ctx *ctx);
+                            struct win32_apply_ctx *ctx);
 
 /* Sets WimBoot=1 in the extracted SYSTEM registry hive.
  *
@@ -798,8 +824,9 @@ end_wimboot_extraction(struct win32_apply_ctx *ctx)
 	HKEY key;
 	DWORD value;
 
-	dentry = get_dentry(ctx->common.wim, L"\\Windows\\System32\\config\\SYSTEM",
-			    WIMLIB_CASE_INSENSITIVE);
+	dentry = get_dentry(ctx->common.wim,
+	                    L"\\Windows\\System32\\config\\SYSTEM",
+	                    WIMLIB_CASE_INSENSITIVE);
 
 	if (!dentry || !will_extract_dentry(dentry))
 		goto out;
@@ -821,15 +848,26 @@ end_wimboot_extraction(struct win32_apply_ctx *ctx)
 
 	wcscpy(&subkeyname[20], L"\\Setup");
 
-	res = RegCreateKeyEx(HKEY_LOCAL_MACHINE, subkeyname, 0, NULL,
-			     REG_OPTION_BACKUP_RESTORE, 0, NULL, &key, NULL);
+	res = RegCreateKeyEx(HKEY_LOCAL_MACHINE,
+	                     subkeyname,
+	                     0,
+	                     NULL,
+	                     REG_OPTION_BACKUP_RESTORE,
+	                     0,
+	                     NULL,
+	                     &key,
+	                     NULL);
 	if (res)
 		goto out_unload_key;
 
 	value = 1;
 
-	res = RegSetValueEx(key, L"WimBoot", 0, REG_DWORD,
-			    (const BYTE *)&value, sizeof(DWORD));
+	res = RegSetValueEx(key,
+	                    L"WimBoot",
+	                    0,
+	                    REG_DWORD,
+	                    (const BYTE *)&value,
+	                    sizeof(DWORD));
 	if (res)
 		goto out_close_key;
 
@@ -845,9 +883,10 @@ out_unload_key:
 out_check_res:
 	if (res) {
 		/* Warning only.  */
-		win32_warning(res, L"Failed to set \\Setup: dword \"WimBoot\"=1 "
-			      "value in registry hive \"%ls\"",
-			      ctx->pathbuf.Buffer);
+		win32_warning(res,
+		              L"Failed to set \\Setup: dword \"WimBoot\"=1 "
+		              "value in registry hive \"%ls\"",
+		              ctx->pathbuf.Buffer);
 	}
 out:
 	return 0;
@@ -869,7 +908,7 @@ dentry_extraction_path_length(const struct wim_dentry *dentry)
 		d = d->d_parent;
 	} while (!dentry_is_root(d) && will_extract_dentry(d));
 
-	return --len;  /* No leading slash  */
+	return --len; /* No leading slash  */
 }
 
 /* Returns the length of the longest string that might need to be appended to
@@ -927,7 +966,7 @@ compute_path_max(struct list_head *dentry_list)
  * The path is saved in ctx->pathbuf.  */
 static void
 build_extraction_path(const struct wim_dentry *dentry,
-		      struct win32_apply_ctx *ctx)
+                      struct win32_apply_ctx *ctx)
 {
 	size_t len;
 	wchar_t *p;
@@ -936,15 +975,16 @@ build_extraction_path(const struct wim_dentry *dentry,
 	len = dentry_extraction_path_length(dentry);
 
 	ctx->pathbuf.Length = len * sizeof(wchar_t);
-	p = ctx->pathbuf.Buffer + len;
+	p                   = ctx->pathbuf.Buffer + len;
 	for (d = dentry;
 	     !dentry_is_root(d->d_parent) && will_extract_dentry(d->d_parent);
 	     d = d->d_parent)
 	{
 		p -= d->d_extraction_name_nchars;
 		if (d->d_extraction_name_nchars)
-			wmemcpy(p, d->d_extraction_name,
-				d->d_extraction_name_nchars);
+			wmemcpy(p,
+			        d->d_extraction_name,
+			        d->d_extraction_name_nchars);
 		*--p = '\\';
 	}
 	/* No leading slash  */
@@ -958,16 +998,16 @@ build_extraction_path(const struct wim_dentry *dentry,
  * The path is saved in ctx->pathbuf.  */
 static void
 build_extraction_path_with_ads(const struct wim_dentry *dentry,
-			       struct win32_apply_ctx *ctx,
-			       const wchar_t *stream_name,
-			       size_t stream_name_nchars)
+                               struct win32_apply_ctx *ctx,
+                               const wchar_t *stream_name,
+                               size_t stream_name_nchars)
 {
 	wchar_t *p;
 
 	build_extraction_path(dentry, ctx);
 
 	/* Add :NAME for named data stream  */
-	p = ctx->pathbuf.Buffer + (ctx->pathbuf.Length / sizeof(wchar_t));
+	p    = ctx->pathbuf.Buffer + (ctx->pathbuf.Length / sizeof(wchar_t));
 	*p++ = L':';
 	wmemcpy(p, stream_name, stream_name_nchars);
 	ctx->pathbuf.Length += (1 + stream_name_nchars) * sizeof(wchar_t);
@@ -981,26 +1021,28 @@ build_extraction_path_with_ads(const struct wim_dentry *dentry,
  * APIs, and the registry manipulation in WIMBoot mode.  */
 static void
 build_win32_extraction_path(const struct wim_dentry *dentry,
-			    struct win32_apply_ctx *ctx)
+                            struct win32_apply_ctx *ctx)
 {
 	build_extraction_path(dentry, ctx);
 
 	/* Prepend target_ntpath to our relative path, then change \??\ into \\?\  */
 
 	memmove(ctx->pathbuf.Buffer +
-			(ctx->target_ntpath.Length / sizeof(wchar_t)) + 1,
-		ctx->pathbuf.Buffer, ctx->pathbuf.Length);
-	memcpy(ctx->pathbuf.Buffer, ctx->target_ntpath.Buffer,
-		ctx->target_ntpath.Length);
-	ctx->pathbuf.Buffer[ctx->target_ntpath.Length / sizeof(wchar_t)] = L'\\';
+	                (ctx->target_ntpath.Length / sizeof(wchar_t)) + 1,
+	        ctx->pathbuf.Buffer,
+	        ctx->pathbuf.Length);
+	memcpy(ctx->pathbuf.Buffer,
+	       ctx->target_ntpath.Buffer,
+	       ctx->target_ntpath.Length);
+	ctx->pathbuf.Buffer[ctx->target_ntpath.Length / sizeof(wchar_t)] =
+		L'\\';
 	ctx->pathbuf.Length += ctx->target_ntpath.Length + sizeof(wchar_t);
 	ctx->pathbuf.Buffer[ctx->pathbuf.Length / sizeof(wchar_t)] = L'\0';
 
 	wimlib_assert(ctx->pathbuf.Length >= 4 * sizeof(wchar_t) &&
-		      !wmemcmp(ctx->pathbuf.Buffer, L"\\??\\", 4));
+	              !wmemcmp(ctx->pathbuf.Buffer, L"\\??\\", 4));
 
 	ctx->pathbuf.Buffer[1] = L'\\';
-
 }
 
 /* Returns a "printable" representation of the last relative NT path that was
@@ -1012,9 +1054,10 @@ current_path(struct win32_apply_ctx *ctx)
 {
 	wchar_t *p = ctx->print_buffer;
 
-	p = wmempcpy(p, ctx->common.target, ctx->common.target_nchars);
+	p    = wmempcpy(p, ctx->common.target, ctx->common.target_nchars);
 	*p++ = L'\\';
-	p = wmempcpy(p, ctx->pathbuf.Buffer, ctx->pathbuf.Length / sizeof(wchar_t));
+	p    = wmempcpy(
+                p, ctx->pathbuf.Buffer, ctx->pathbuf.Length / sizeof(wchar_t));
 	*p = L'\0';
 	return ctx->print_buffer;
 }
@@ -1029,30 +1072,31 @@ open_target_directory(struct win32_apply_ctx *ctx)
 	if (ctx->h_target)
 		return 0;
 
-	ctx->attr.Length = sizeof(ctx->attr);
+	ctx->attr.Length        = sizeof(ctx->attr);
 	ctx->attr.RootDirectory = NULL;
-	ctx->attr.ObjectName = &ctx->target_ntpath;
+	ctx->attr.ObjectName    = &ctx->target_ntpath;
 
 	/* Don't use FILE_OPEN_REPARSE_POINT here; we want the extraction to
 	 * happen at the directory "pointed to" by the reparse point. */
 	status = NtCreateFile(&ctx->h_target,
-			      FILE_TRAVERSE,
-			      &ctx->attr,
-			      &ctx->iosb,
-			      NULL,
-			      0,
-			      FILE_SHARE_VALID_FLAGS,
-			      FILE_OPEN_IF,
-			      FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT,
-			      NULL,
-			      0);
+	                      FILE_TRAVERSE,
+	                      &ctx->attr,
+	                      &ctx->iosb,
+	                      NULL,
+	                      0,
+	                      FILE_SHARE_VALID_FLAGS,
+	                      FILE_OPEN_IF,
+	                      FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT,
+	                      NULL,
+	                      0);
 	if (!NT_SUCCESS(status)) {
-		winnt_error(status, L"Can't open or create directory \"%ls\"",
-			    ctx->common.target);
+		winnt_error(status,
+		            L"Can't open or create directory \"%ls\"",
+		            ctx->common.target);
 		return WIMLIB_ERR_OPENDIR;
 	}
 	ctx->attr.RootDirectory = ctx->h_target;
-	ctx->attr.ObjectName = &ctx->pathbuf;
+	ctx->attr.ObjectName    = &ctx->pathbuf;
 	return 0;
 }
 
@@ -1061,7 +1105,7 @@ close_target_directory(struct win32_apply_ctx *ctx)
 {
 	if (ctx->h_target) {
 		NtClose(ctx->h_target);
-		ctx->h_target = NULL;
+		ctx->h_target           = NULL;
 		ctx->attr.RootDirectory = NULL;
 	}
 }
@@ -1089,7 +1133,7 @@ prepare_target(struct list_head *dentry_list, struct win32_apply_ctx *ctx)
 	 * and ensure we have at least enough to potentially use an 8.3 name for
 	 * the last component.  */
 	path_max += max(2 + (ctx->target_ntpath.Length / sizeof(wchar_t)),
-			8 + 1 + 3);
+	                8 + 1 + 3);
 
 	ctx->pathbuf.MaximumLength = path_max * sizeof(wchar_t);
 	if (ctx->pathbuf.MaximumLength != path_max * sizeof(wchar_t)) {
@@ -1102,8 +1146,9 @@ prepare_target(struct list_head *dentry_list, struct win32_apply_ctx *ctx)
 	if (!ctx->pathbuf.Buffer)
 		return WIMLIB_ERR_NOMEM;
 
-	ctx->print_buffer = MALLOC((ctx->common.target_nchars + 1 + path_max + 1) *
-				   sizeof(wchar_t));
+	ctx->print_buffer =
+		MALLOC((ctx->common.target_nchars + 1 + path_max + 1) *
+	               sizeof(wchar_t));
 	if (!ctx->print_buffer)
 		return WIMLIB_ERR_NOMEM;
 
@@ -1132,11 +1177,12 @@ first_extraction_alias(const struct wim_inode *inode)
  * FILE_ATTRIBUTE_COMPRESSED directly with NtCreateFile().
  */
 static int
-adjust_compression_attribute(HANDLE h, const struct wim_dentry *dentry,
-			     struct win32_apply_ctx *ctx)
+adjust_compression_attribute(HANDLE h,
+                             const struct wim_dentry *dentry,
+                             struct win32_apply_ctx *ctx)
 {
-	const bool compressed = (dentry->d_inode->i_attributes &
-				 FILE_ATTRIBUTE_COMPRESSED);
+	const bool compressed =
+		(dentry->d_inode->i_attributes & FILE_ATTRIBUTE_COMPRESSED);
 	FILE_BASIC_INFORMATION info;
 	USHORT compression_state;
 	NTSTATUS status;
@@ -1147,10 +1193,9 @@ adjust_compression_attribute(HANDLE h, const struct wim_dentry *dentry,
 	if (!ctx->common.supported_features.compressed_files)
 		return 0;
 
-
 	/* Get current attributes  */
-	status = NtQueryInformationFile(h, &ctx->iosb, &info, sizeof(info),
-					FileBasicInformation);
+	status = NtQueryInformationFile(
+		h, &ctx->iosb, &info, sizeof(info), FileBasicInformation);
 	if (NT_SUCCESS(status) &&
 	    compressed == !!(info.FileAttributes & FILE_ATTRIBUTE_COMPRESSED))
 	{
@@ -1165,22 +1210,29 @@ adjust_compression_attribute(HANDLE h, const struct wim_dentry *dentry,
 	else
 		compression_state = COMPRESSION_FORMAT_NONE;
 
-	status = winnt_fsctl(h, FSCTL_SET_COMPRESSION,
-			     &compression_state, sizeof(USHORT), NULL, 0, NULL);
+	status = winnt_fsctl(h,
+	                     FSCTL_SET_COMPRESSION,
+	                     &compression_state,
+	                     sizeof(USHORT),
+	                     NULL,
+	                     0,
+	                     NULL);
 	if (NT_SUCCESS(status))
 		return 0;
 
-	winnt_error(status, L"Can't %s compression attribute on \"%ls\"",
-		    (compressed ? "set" : "clear"), current_path(ctx));
+	winnt_error(status,
+	            L"Can't %s compression attribute on \"%ls\"",
+	            (compressed ? "set" : "clear"),
+	            current_path(ctx));
 	return WIMLIB_ERR_SET_ATTRIBUTES;
 }
 
 static bool
 need_sparse_flag(const struct wim_inode *inode,
-		 const struct win32_apply_ctx *ctx)
+                 const struct win32_apply_ctx *ctx)
 {
 	return (inode->i_attributes & FILE_ATTRIBUTE_SPARSE_FILE) &&
-		ctx->common.supported_features.sparse_files;
+	       ctx->common.supported_features.sparse_files;
 }
 
 static int
@@ -1192,8 +1244,8 @@ set_sparse_flag(HANDLE h, struct win32_apply_ctx *ctx)
 	if (NT_SUCCESS(status))
 		return 0;
 
-	winnt_error(status, L"Can't set sparse flag on \"%ls\"",
-		    current_path(ctx));
+	winnt_error(
+		status, L"Can't set sparse flag on \"%ls\"", current_path(ctx));
 	return WIMLIB_ERR_SET_ATTRIBUTES;
 }
 
@@ -1207,20 +1259,29 @@ try_to_enable_short_names(const wchar_t *volume)
 	BOOL bret;
 	DWORD bytesReturned;
 
-	h = CreateFile(volume, GENERIC_WRITE,
-		       FILE_SHARE_VALID_FLAGS, NULL, OPEN_EXISTING,
-		       FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	h = CreateFile(volume,
+	               GENERIC_WRITE,
+	               FILE_SHARE_VALID_FLAGS,
+	               NULL,
+	               OPEN_EXISTING,
+	               FILE_FLAG_BACKUP_SEMANTICS,
+	               NULL);
 	if (h == INVALID_HANDLE_VALUE)
 		goto fail;
 
 	info.VolumeFlags = 0;
-	info.FlagMask = PERSISTENT_VOLUME_STATE_SHORT_NAME_CREATION_DISABLED;
-	info.Version = 1;
-	info.Reserved = 0;
+	info.FlagMask    = PERSISTENT_VOLUME_STATE_SHORT_NAME_CREATION_DISABLED;
+	info.Version     = 1;
+	info.Reserved    = 0;
 
-	bret = DeviceIoControl(h, FSCTL_SET_PERSISTENT_VOLUME_STATE,
-			       &info, sizeof(info), NULL, 0,
-			       &bytesReturned, NULL);
+	bret = DeviceIoControl(h,
+	                       FSCTL_SET_PERSISTENT_VOLUME_STATE,
+	                       &info,
+	                       sizeof(info),
+	                       NULL,
+	                       0,
+	                       &bytesReturned,
+	                       NULL);
 
 	CloseHandle(h);
 
@@ -1230,22 +1291,23 @@ try_to_enable_short_names(const wchar_t *volume)
 
 fail:
 	win32_warning(GetLastError(),
-		      L"Failed to enable short name support on %ls",
-		      volume + 4);
+	              L"Failed to enable short name support on %ls",
+	              volume + 4);
 	return false;
 }
 
 static NTSTATUS
-remove_conflicting_short_name(const struct wim_dentry *dentry, struct win32_apply_ctx *ctx)
+remove_conflicting_short_name(const struct wim_dentry *dentry,
+                              struct win32_apply_ctx *ctx)
 {
 	wchar_t *name;
 	wchar_t *end;
 	NTSTATUS status;
 	HANDLE h;
 	size_t bufsize = offsetof(FILE_NAME_INFORMATION, FileName) +
-			 (13 * sizeof(wchar_t));
+	                 (13 * sizeof(wchar_t));
 	u8 buf[bufsize] __attribute__((aligned(8)));
-	bool retried = false;
+	bool retried                = false;
 	FILE_NAME_INFORMATION *info = (FILE_NAME_INFORMATION *)buf;
 
 	memset(buf, 0, bufsize);
@@ -1258,25 +1320,28 @@ remove_conflicting_short_name(const struct wim_dentry *dentry, struct win32_appl
 	ctx->pathbuf.Length = ((u8 *)end - (u8 *)ctx->pathbuf.Buffer);
 
 	/* Open the conflicting file (by short name).  */
-	status = NtOpenFile(&h, GENERIC_WRITE | DELETE,
-			    &ctx->attr, &ctx->iosb,
-			    FILE_SHARE_VALID_FLAGS,
-			    FILE_OPEN_REPARSE_POINT | FILE_OPEN_FOR_BACKUP_INTENT);
+	status = NtOpenFile(&h,
+	                    GENERIC_WRITE | DELETE,
+	                    &ctx->attr,
+	                    &ctx->iosb,
+	                    FILE_SHARE_VALID_FLAGS,
+	                    FILE_OPEN_REPARSE_POINT |
+	                            FILE_OPEN_FOR_BACKUP_INTENT);
 	if (!NT_SUCCESS(status)) {
 		winnt_warning(status, L"Can't open \"%ls\"", current_path(ctx));
 		goto out;
 	}
 
-#if 0
+#  if 0
 	WARNING("Overriding conflicting short name; path=\"%ls\"",
 		current_path(ctx));
-#endif
+#  endif
 
 	/* Try to remove the short name on the conflicting file.  */
 
 retry:
-	status = NtSetInformationFile(h, &ctx->iosb, info, bufsize,
-				      FileShortNameInformation);
+	status = NtSetInformationFile(
+		h, &ctx->iosb, info, bufsize, FileShortNameInformation);
 
 	if (status == STATUS_INVALID_PARAMETER && !retried) {
 		/* Microsoft forgot to make it possible to remove short names
@@ -1284,7 +1349,7 @@ retry:
 		get_random_alnum_chars(info->FileName, 8);
 		wcscpy(&info->FileName[8], L".WLB");
 		info->FileNameLength = 12 * sizeof(wchar_t);
-		retried = true;
+		retried              = true;
 		goto retry;
 	}
 	NtClose(h);
@@ -1304,10 +1369,10 @@ out:
  * STRICT_SHORT_NAMES mode.
  */
 static int
-set_short_name(HANDLE h, const struct wim_dentry *dentry,
-	       struct win32_apply_ctx *ctx)
+set_short_name(HANDLE h,
+               const struct wim_dentry *dentry,
+               struct win32_apply_ctx *ctx)
 {
-
 	if (!ctx->common.supported_features.short_names)
 		return 0;
 
@@ -1324,8 +1389,8 @@ set_short_name(HANDLE h, const struct wim_dentry *dentry,
 	 */
 
 	size_t bufsize = offsetof(FILE_NAME_INFORMATION, FileName) +
-			 max(dentry->d_short_name_nbytes, sizeof(wchar_t)) +
-			 sizeof(wchar_t);
+	                 max(dentry->d_short_name_nbytes, sizeof(wchar_t)) +
+	                 sizeof(wchar_t);
 	u8 buf[bufsize] __attribute__((aligned(8)));
 	FILE_NAME_INFORMATION *info = (FILE_NAME_INFORMATION *)buf;
 	NTSTATUS status;
@@ -1334,11 +1399,13 @@ set_short_name(HANDLE h, const struct wim_dentry *dentry,
 	memset(buf, 0, bufsize);
 
 	info->FileNameLength = dentry->d_short_name_nbytes;
-	memcpy(info->FileName, dentry->d_short_name, dentry->d_short_name_nbytes);
+	memcpy(info->FileName,
+	       dentry->d_short_name,
+	       dentry->d_short_name_nbytes);
 
 retry:
-	status = NtSetInformationFile(h, &ctx->iosb, info, bufsize,
-				      FileShortNameInformation);
+	status = NtSetInformationFile(
+		h, &ctx->iosb, info, bufsize, FileShortNameInformation);
 	if (NT_SUCCESS(status))
 		return 0;
 
@@ -1351,8 +1418,7 @@ retry:
 
 			ctx->tried_to_enable_short_names = true;
 
-			ret = win32_get_drive_path(ctx->common.target,
-						   volume);
+			ret = win32_get_drive_path(ctx->common.target, volume);
 			if (ret)
 				return ret;
 			if (try_to_enable_short_names(volume))
@@ -1387,7 +1453,9 @@ retry:
 
 	/* By default, failure to set short names is not an error (since short
 	 * names aren't too important anymore...).  */
-	if (!(ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES)) {
+	if (!(ctx->common.extract_flags &
+	      WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES))
+	{
 		if (dentry->d_short_name_nbytes)
 			ctx->num_set_short_name_failures++;
 		else
@@ -1395,7 +1463,8 @@ retry:
 		return 0;
 	}
 
-	winnt_error(status, L"Can't set short name on \"%ls\"", current_path(ctx));
+	winnt_error(
+		status, L"Can't set short name on \"%ls\"", current_path(ctx));
 	return WIMLIB_ERR_SET_SHORT_NAME;
 }
 
@@ -1408,48 +1477,47 @@ retry:
  */
 static NTSTATUS
 do_create_file(PHANDLE FileHandle,
-	       ACCESS_MASK DesiredAccess,
-	       PLARGE_INTEGER AllocationSize,
-	       ULONG FileAttributes,
-	       ULONG CreateDisposition,
-	       ULONG CreateOptions,
-	       struct win32_apply_ctx *ctx)
+               ACCESS_MASK DesiredAccess,
+               PLARGE_INTEGER AllocationSize,
+               ULONG FileAttributes,
+               ULONG CreateDisposition,
+               ULONG CreateOptions,
+               struct win32_apply_ctx *ctx)
 {
 	return NtCreateFile(FileHandle,
-			    DesiredAccess | SYNCHRONIZE,
-			    &ctx->attr,
-			    &ctx->iosb,
-			    AllocationSize,
-			    FileAttributes,
-			    FILE_SHARE_VALID_FLAGS,
-			    CreateDisposition,
-			    CreateOptions |
-				FILE_OPEN_FOR_BACKUP_INTENT |
-				FILE_OPEN_REPARSE_POINT,
-			    NULL,
-			    0);
+	                    DesiredAccess | SYNCHRONIZE,
+	                    &ctx->attr,
+	                    &ctx->iosb,
+	                    AllocationSize,
+	                    FileAttributes,
+	                    FILE_SHARE_VALID_FLAGS,
+	                    CreateDisposition,
+	                    CreateOptions | FILE_OPEN_FOR_BACKUP_INTENT |
+	                            FILE_OPEN_REPARSE_POINT,
+	                    NULL,
+	                    0);
 }
 
 /* Like do_create_file(), but builds the extraction path of the @dentry first.
  */
 static NTSTATUS
 create_file(PHANDLE FileHandle,
-	    ACCESS_MASK DesiredAccess,
-	    PLARGE_INTEGER AllocationSize,
-	    ULONG FileAttributes,
-	    ULONG CreateDisposition,
-	    ULONG CreateOptions,
-	    const struct wim_dentry *dentry,
-	    struct win32_apply_ctx *ctx)
+            ACCESS_MASK DesiredAccess,
+            PLARGE_INTEGER AllocationSize,
+            ULONG FileAttributes,
+            ULONG CreateDisposition,
+            ULONG CreateOptions,
+            const struct wim_dentry *dentry,
+            struct win32_apply_ctx *ctx)
 {
 	build_extraction_path(dentry, ctx);
 	return do_create_file(FileHandle,
-			      DesiredAccess,
-			      AllocationSize,
-			      FileAttributes,
-			      CreateDisposition,
-			      CreateOptions,
-			      ctx);
+	                      DesiredAccess,
+	                      AllocationSize,
+	                      FileAttributes,
+	                      CreateDisposition,
+	                      CreateOptions,
+	                      ctx);
 }
 
 static int
@@ -1478,35 +1546,46 @@ retry:
 	}
 
 	if (unlikely(!NT_SUCCESS(status))) {
-		winnt_error(status, L"Can't open \"%ls\" for deletion "
-			    "(perms=%x, flags=%x)",
-			    current_path(ctx), (u32)perms, (u32)flags);
+		winnt_error(status,
+		            L"Can't open \"%ls\" for deletion "
+		            "(perms=%x, flags=%x)",
+		            current_path(ctx),
+		            (u32)perms,
+		            (u32)flags);
 		return WIMLIB_ERR_OPEN;
 	}
 
 	if (unlikely(!(flags & FILE_DELETE_ON_CLOSE))) {
-
-		FILE_BASIC_INFORMATION basic_info =
-			{ .FileAttributes = FILE_ATTRIBUTE_NORMAL };
-		status = NtSetInformationFile(h, &ctx->iosb, &basic_info,
-					      sizeof(basic_info),
-					      FileBasicInformation);
+		FILE_BASIC_INFORMATION basic_info = {
+			.FileAttributes = FILE_ATTRIBUTE_NORMAL
+		};
+		status = NtSetInformationFile(h,
+		                              &ctx->iosb,
+		                              &basic_info,
+		                              sizeof(basic_info),
+		                              FileBasicInformation);
 
 		if (!NT_SUCCESS(status)) {
-			winnt_error(status, L"Can't reset attributes of \"%ls\" "
-				    "to prepare for deletion", current_path(ctx));
+			winnt_error(status,
+			            L"Can't reset attributes of \"%ls\" "
+			            "to prepare for deletion",
+			            current_path(ctx));
 			NtClose(h);
 			return WIMLIB_ERR_SET_ATTRIBUTES;
 		}
 
-		FILE_DISPOSITION_INFORMATION disp_info =
-			{ .DoDeleteFile = TRUE };
-		status = NtSetInformationFile(h, &ctx->iosb, &disp_info,
-					      sizeof(disp_info),
-					      FileDispositionInformation);
+		FILE_DISPOSITION_INFORMATION disp_info = { .DoDeleteFile =
+			                                           TRUE };
+		status                                 = NtSetInformationFile(h,
+                                              &ctx->iosb,
+                                              &disp_info,
+                                              sizeof(disp_info),
+                                              FileDispositionInformation);
 		if (!NT_SUCCESS(status)) {
-			winnt_error(status, L"Can't set delete-on-close "
-				    "disposition on \"%ls\"", current_path(ctx));
+			winnt_error(status,
+			            L"Can't set delete-on-close "
+			            "disposition on \"%ls\"",
+			            current_path(ctx));
 			NtClose(h);
 			return WIMLIB_ERR_SET_ATTRIBUTES;
 		}
@@ -1514,8 +1593,10 @@ retry:
 
 	status = NtClose(h);
 	if (unlikely(!NT_SUCCESS(status))) {
-		winnt_error(status, L"Error closing \"%ls\" after setting "
-			    "delete-on-close disposition", current_path(ctx));
+		winnt_error(status,
+		            L"Error closing \"%ls\" after setting "
+		            "delete-on-close disposition",
+		            current_path(ctx));
 		return WIMLIB_ERR_OPEN;
 	}
 
@@ -1528,8 +1609,9 @@ retry:
  * open handle to the file or named data stream with the requested permissions.
  */
 static int
-supersede_file_or_stream(struct win32_apply_ctx *ctx, DWORD perms,
-			 HANDLE *h_ret)
+supersede_file_or_stream(struct win32_apply_ctx *ctx,
+                         DWORD perms,
+                         HANDLE *h_ret)
 {
 	NTSTATUS status;
 	bool retried = false;
@@ -1538,12 +1620,12 @@ supersede_file_or_stream(struct win32_apply_ctx *ctx, DWORD perms,
 	 * FILE_ATTRIBUTE_ENCRYPTED doesn't get set before we want it to be.  */
 retry:
 	status = do_create_file(h_ret,
-				perms,
-				NULL,
-				FILE_ATTRIBUTE_SYSTEM,
-				FILE_CREATE,
-				FILE_NON_DIRECTORY_FILE,
-				ctx);
+	                        perms,
+	                        NULL,
+	                        FILE_ATTRIBUTE_SYSTEM,
+	                        FILE_CREATE,
+	                        FILE_NON_DIRECTORY_FILE,
+	                        ctx);
 	if (likely(NT_SUCCESS(status)))
 		return 0;
 
@@ -1569,19 +1651,20 @@ retry:
  * corresponding to the WIM dentry @dentry.  */
 static int
 do_set_reparse_point(const struct wim_dentry *dentry,
-		     const struct reparse_buffer_disk *rpbuf, u16 rpbuflen,
-		     struct win32_apply_ctx *ctx)
+                     const struct reparse_buffer_disk *rpbuf,
+                     u16 rpbuflen,
+                     struct win32_apply_ctx *ctx)
 {
 	NTSTATUS status;
 	HANDLE h;
 
-	status = create_file(&h, GENERIC_WRITE, NULL,
-			     0, FILE_OPEN, 0, dentry, ctx);
+	status = create_file(
+		&h, GENERIC_WRITE, NULL, 0, FILE_OPEN, 0, dentry, ctx);
 	if (!NT_SUCCESS(status))
 		goto fail;
 
-	status = winnt_fsctl(h, FSCTL_SET_REPARSE_POINT,
-			     rpbuf, rpbuflen, NULL, 0, NULL);
+	status = winnt_fsctl(
+		h, FSCTL_SET_REPARSE_POINT, rpbuf, rpbuflen, NULL, 0, NULL);
 	NtClose(h);
 
 	if (NT_SUCCESS(status))
@@ -1591,23 +1674,25 @@ do_set_reparse_point(const struct wim_dentry *dentry,
 	 * links for some reason.  By default we just issue a warning if this
 	 * appears to be the problem.  Use WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS
 	 * to get a hard error.  */
-	if (!(ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS)
-	    && (status == STATUS_PRIVILEGE_NOT_HELD ||
-		status == STATUS_ACCESS_DENIED)
-	    && (dentry->d_inode->i_reparse_tag == WIM_IO_REPARSE_TAG_SYMLINK ||
-		dentry->d_inode->i_reparse_tag == WIM_IO_REPARSE_TAG_MOUNT_POINT))
+	if (!(ctx->common.extract_flags &
+	      WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS) &&
+	    (status == STATUS_PRIVILEGE_NOT_HELD ||
+	     status == STATUS_ACCESS_DENIED) &&
+	    (dentry->d_inode->i_reparse_tag == WIM_IO_REPARSE_TAG_SYMLINK ||
+	     dentry->d_inode->i_reparse_tag == WIM_IO_REPARSE_TAG_MOUNT_POINT))
 	{
 		WARNING("Can't create symbolic link \"%ls\"!              \n"
-			"          (Need Administrator rights, or at least "
-			"the\n"
-			"          SeCreateSymbolicLink privilege.)",
-			current_path(ctx));
+		        "          (Need Administrator rights, or at least "
+		        "the\n"
+		        "          SeCreateSymbolicLink privilege.)",
+		        current_path(ctx));
 		return 0;
 	}
 
 fail:
-	winnt_error(status, L"Can't set reparse data on \"%ls\"",
-		    current_path(ctx));
+	winnt_error(status,
+	            L"Can't set reparse data on \"%ls\"",
+	            current_path(ctx));
 	return WIMLIB_ERR_SET_REPARSE_DATA;
 }
 
@@ -1620,7 +1705,7 @@ fail:
  */
 static int
 create_empty_streams(const struct wim_dentry *dentry,
-		     struct win32_apply_ctx *ctx)
+                     struct win32_apply_ctx *ctx)
 {
 	const struct wim_inode *inode = dentry->d_inode;
 	int ret;
@@ -1638,18 +1723,20 @@ create_empty_streams(const struct wim_dentry *dentry,
 			struct reparse_buffer_disk *rpbuf =
 				(struct reparse_buffer_disk *)buf;
 			complete_reparse_point(rpbuf, inode, 0);
-			ret = do_set_reparse_point(dentry, rpbuf,
-						   REPARSE_DATA_OFFSET, ctx);
+			ret = do_set_reparse_point(
+				dentry, rpbuf, REPARSE_DATA_OFFSET, ctx);
 			if (ret)
 				return ret;
 		} else if (stream_is_named_data_stream(strm) &&
-			   ctx->common.supported_features.named_data_streams)
+		           ctx->common.supported_features.named_data_streams)
 		{
 			HANDLE h;
 
-			build_extraction_path_with_ads(dentry, ctx,
-						       strm->stream_name,
-						       utf16le_len_chars(strm->stream_name));
+			build_extraction_path_with_ads(
+				dentry,
+				ctx,
+				strm->stream_name,
+				utf16le_len_chars(strm->stream_name));
 			/*
 			 * Note: do not request any permissions on the handle.
 			 * Otherwise, we may encounter a Windows bug where the
@@ -1692,8 +1779,14 @@ create_directory(const struct wim_dentry *dentry, struct win32_apply_ctx *ctx)
 
 	/* FILE_ATTRIBUTE_SYSTEM is needed to ensure that
 	 * FILE_ATTRIBUTE_ENCRYPTED doesn't get set before we want it to be.  */
-	status = create_file(&h, perms, NULL, FILE_ATTRIBUTE_SYSTEM,
-			     FILE_OPEN_IF, FILE_DIRECTORY_FILE, dentry, ctx);
+	status = create_file(&h,
+	                     perms,
+	                     NULL,
+	                     FILE_ATTRIBUTE_SYSTEM,
+	                     FILE_OPEN_IF,
+	                     FILE_DIRECTORY_FILE,
+	                     dentry,
+	                     ctx);
 	if (unlikely(!NT_SUCCESS(status))) {
 		const wchar_t *path = current_path(ctx);
 		winnt_error(status, L"Can't create directory \"%ls\"", path);
@@ -1701,17 +1794,17 @@ create_directory(const struct wim_dentry *dentry, struct win32_apply_ctx *ctx)
 		/* Check for known issue with WindowsApps directory.  */
 		if (status == STATUS_ACCESS_DENIED &&
 		    (wcsstr(path, L"\\WindowsApps\\") ||
-		     wcsstr(path, L"\\InfusedApps\\"))) {
-			ERROR(
-"You seem to be trying to extract files to the WindowsApps directory.\n"
-"        Windows 8.1 and later use new file permissions in this directory that\n"
-"        cannot be overridden, even by backup/restore programs.  To extract your\n"
-"        files anyway, you need to choose a different target directory, delete\n"
-"        the WindowsApps directory entirely, reformat the volume, do the\n"
-"        extraction from a non-broken operating system such as Windows 7 or\n"
-"        Linux, or wait for Microsoft to fix the design flaw in their operating\n"
-"        system.  This is *not* a bug in wimlib.  See this thread for more\n"
-"        information: https://wimlib.net/forums/viewtopic.php?f=1&t=261");
+		     wcsstr(path, L"\\InfusedApps\\")))
+		{
+			ERROR("You seem to be trying to extract files to the WindowsApps directory.\n"
+			      "        Windows 8.1 and later use new file permissions in this directory that\n"
+			      "        cannot be overridden, even by backup/restore programs.  To extract your\n"
+			      "        files anyway, you need to choose a different target directory, delete\n"
+			      "        the WindowsApps directory entirely, reformat the volume, do the\n"
+			      "        extraction from a non-broken operating system such as Windows 7 or\n"
+			      "        Linux, or wait for Microsoft to fix the design flaw in their operating\n"
+			      "        system.  This is *not* a bug in wimlib.  See this thread for more\n"
+			      "        information: https://wimlib.net/forums/viewtopic.php?f=1&t=261");
 		}
 		return WIMLIB_ERR_MKDIR;
 	}
@@ -1725,12 +1818,17 @@ create_directory(const struct wim_dentry *dentry, struct win32_apply_ctx *ctx)
 		 * directory, even though this contradicts Microsoft's
 		 * documentation for FILE_ATTRIBUTE_READONLY which states it is
 		 * not honored for directories!  */
-		if (!(ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES)) {
-			FILE_BASIC_INFORMATION basic_info =
-				{ .FileAttributes = FILE_ATTRIBUTE_NORMAL };
-			NtSetInformationFile(h, &ctx->iosb, &basic_info,
-					     sizeof(basic_info),
-					     FileBasicInformation);
+		if (!(ctx->common.extract_flags &
+		      WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES))
+		{
+			FILE_BASIC_INFORMATION basic_info = {
+				.FileAttributes = FILE_ATTRIBUTE_NORMAL
+			};
+			NtSetInformationFile(h,
+			                     &ctx->iosb,
+			                     &basic_info,
+			                     sizeof(basic_info),
+			                     FileBasicInformation);
 		}
 	}
 
@@ -1754,14 +1852,12 @@ out:
  * exist in WIM images anyway (see inode_fixup.c).
  */
 static int
-create_directories(struct list_head *dentry_list,
-		   struct win32_apply_ctx *ctx)
+create_directories(struct list_head *dentry_list, struct win32_apply_ctx *ctx)
 {
 	const struct wim_dentry *dentry;
 	int ret;
 
 	list_for_each_entry(dentry, dentry_list, d_extraction_list_node) {
-
 		if (!(dentry->d_inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY))
 			continue;
 
@@ -1793,17 +1889,17 @@ create_directories(struct list_head *dentry_list,
  * in ctx->pathbuf.  On failure, returns an error code.
  */
 static int
-create_nondirectory_inode(HANDLE *h_ret, const struct wim_dentry *dentry,
-			  struct win32_apply_ctx *ctx)
+create_nondirectory_inode(HANDLE *h_ret,
+                          const struct wim_dentry *dentry,
+                          struct win32_apply_ctx *ctx)
 {
 	int ret;
 	HANDLE h;
 
 	build_extraction_path(dentry, ctx);
 
-	ret = supersede_file_or_stream(ctx,
-				       GENERIC_READ | GENERIC_WRITE | DELETE,
-				       &h);
+	ret = supersede_file_or_stream(
+		ctx, GENERIC_READ | GENERIC_WRITE | DELETE, &h);
 	if (ret)
 		goto out;
 
@@ -1834,23 +1930,25 @@ out:
  * by the open handle @h.  Or, if the target volume does not support hard links,
  * create a separate file instead.  */
 static int
-create_link(HANDLE h, const struct wim_dentry *dentry,
-	    struct win32_apply_ctx *ctx)
+create_link(HANDLE h,
+            const struct wim_dentry *dentry,
+            struct win32_apply_ctx *ctx)
 {
 	if (ctx->common.supported_features.hard_links) {
-
 		build_extraction_path(dentry, ctx);
 
 		size_t bufsize = offsetof(FILE_LINK_INFORMATION, FileName) +
-				 ctx->pathbuf.Length + sizeof(wchar_t);
+		                 ctx->pathbuf.Length + sizeof(wchar_t);
 		u8 buf[bufsize] __attribute__((aligned(8)));
 		FILE_LINK_INFORMATION *info = (FILE_LINK_INFORMATION *)buf;
 		NTSTATUS status;
 
 		info->ReplaceIfExists = TRUE;
-		info->RootDirectory = ctx->attr.RootDirectory;
-		info->FileNameLength = ctx->pathbuf.Length;
-		memcpy(info->FileName, ctx->pathbuf.Buffer, ctx->pathbuf.Length);
+		info->RootDirectory   = ctx->attr.RootDirectory;
+		info->FileNameLength  = ctx->pathbuf.Length;
+		memcpy(info->FileName,
+		       ctx->pathbuf.Buffer,
+		       ctx->pathbuf.Length);
 		info->FileName[info->FileNameLength / 2] = L'\0';
 		/*
 		 * Note: the null terminator isn't actually necessary, but if
@@ -1865,14 +1963,17 @@ create_link(HANDLE h, const struct wim_dentry *dentry,
 		 */
 		int i = 0;
 		do {
-			status = NtSetInformationFile(h, &ctx->iosb, info,
-						      bufsize,
-						      FileLinkInformation);
+			status = NtSetInformationFile(h,
+			                              &ctx->iosb,
+			                              info,
+			                              bufsize,
+			                              FileLinkInformation);
 			if (NT_SUCCESS(status))
 				return 0;
 		} while (++i < 32);
-		winnt_error(status, L"Failed to create link \"%ls\"",
-			    current_path(ctx));
+		winnt_error(status,
+		            L"Failed to create link \"%ls\"",
+		            current_path(ctx));
 		return WIMLIB_ERR_LINK;
 	} else {
 		HANDLE h2;
@@ -1895,8 +1996,9 @@ create_link(HANDLE h, const struct wim_dentry *dentry,
  * Note: This uses ctx->pathbuf and does not reset it.
  */
 static int
-create_links(HANDLE h, const struct wim_dentry *first_dentry,
-	     struct win32_apply_ctx *ctx)
+create_links(HANDLE h,
+             const struct wim_dentry *first_dentry,
+             struct win32_apply_ctx *ctx)
 {
 	const struct wim_inode *inode = first_dentry->d_inode;
 	const struct wim_dentry *dentry;
@@ -1936,7 +2038,8 @@ create_nondirectory(struct wim_inode *inode, struct win32_apply_ctx *ctx)
 		ret = create_links(h, first_dentry, ctx);
 
 	/* "WIMBoot" extraction: set external backing by the WIM file if needed.  */
-	if (!ret && unlikely(ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_WIMBOOT))
+	if (!ret &&
+	    unlikely(ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_WIMBOOT))
 		ret = set_backed_from_wim(h, inode, ctx);
 
 	NtClose(h);
@@ -1946,7 +2049,8 @@ create_nondirectory(struct wim_inode *inode, struct win32_apply_ctx *ctx)
 /* Create all the nondirectory files being extracted, including all aliases
  * (hard links).  */
 static int
-create_nondirectories(struct list_head *dentry_list, struct win32_apply_ctx *ctx)
+create_nondirectories(struct list_head *dentry_list,
+                      struct win32_apply_ctx *ctx)
 {
 	struct wim_dentry *dentry;
 	struct wim_inode *inode;
@@ -1990,7 +2094,7 @@ prepare_data_buffer(struct win32_apply_ctx *ctx, u64 blob_size)
 		new_buffer = REALLOC(ctx->data_buffer, blob_size);
 		if (!new_buffer)
 			return false;
-		ctx->data_buffer = new_buffer;
+		ctx->data_buffer      = new_buffer;
 		ctx->data_buffer_size = blob_size;
 	}
 	/* On the first call this changes data_buffer_ptr from NULL, which tells
@@ -2002,9 +2106,9 @@ prepare_data_buffer(struct win32_apply_ctx *ctx, u64 blob_size)
 
 static int
 begin_extract_blob_instance(const struct blob_descriptor *blob,
-			    struct wim_dentry *dentry,
-			    const struct wim_inode_stream *strm,
-			    struct win32_apply_ctx *ctx)
+                            struct wim_dentry *dentry,
+                            const struct wim_inode_stream *strm,
+                            struct win32_apply_ctx *ctx)
 {
 	HANDLE h;
 	NTSTATUS status;
@@ -2048,26 +2152,29 @@ begin_extract_blob_instance(const struct blob_descriptor *blob,
 		return WIMLIB_ERR_UNSUPPORTED;
 	}
 
-
 	if (unlikely(stream_is_named(strm))) {
-		build_extraction_path_with_ads(dentry, ctx,
-					       strm->stream_name,
-					       utf16le_len_chars(strm->stream_name));
+		build_extraction_path_with_ads(
+			dentry,
+			ctx,
+			strm->stream_name,
+			utf16le_len_chars(strm->stream_name));
 	} else {
 		build_extraction_path(dentry, ctx);
 	}
 
-
 	/* Open a new handle  */
 	status = do_create_file(&h,
-				FILE_WRITE_DATA | SYNCHRONIZE,
-				NULL, 0, FILE_OPEN_IF,
-				FILE_SEQUENTIAL_ONLY |
-					FILE_SYNCHRONOUS_IO_NONALERT,
-				ctx);
+	                        FILE_WRITE_DATA | SYNCHRONIZE,
+	                        NULL,
+	                        0,
+	                        FILE_OPEN_IF,
+	                        FILE_SEQUENTIAL_ONLY |
+	                                FILE_SYNCHRONOUS_IO_NONALERT,
+	                        ctx);
 	if (!NT_SUCCESS(status)) {
-		winnt_error(status, L"Can't open \"%ls\" for writing",
-			    current_path(ctx));
+		winnt_error(status,
+		            L"Can't open \"%ls\" for writing",
+		            current_path(ctx));
 		return WIMLIB_ERR_OPEN;
 	}
 
@@ -2084,13 +2191,17 @@ begin_extract_blob_instance(const struct blob_descriptor *blob,
 			}
 		}
 		ctx->is_sparse_stream[ctx->num_open_handles] = true;
-		ctx->any_sparse_streams = true;
+		ctx->any_sparse_streams                      = true;
 	} else {
 		/* Allocate space for the data.  */
-		FILE_ALLOCATION_INFORMATION info =
-			{ .AllocationSize = { .QuadPart = blob->size }};
-		NtSetInformationFile(h, &ctx->iosb, &info, sizeof(info),
-				     FileAllocationInformation);
+		FILE_ALLOCATION_INFORMATION info = {
+			.AllocationSize = { .QuadPart = blob->size }
+		};
+		NtSetInformationFile(h,
+		                     &ctx->iosb,
+		                     &info,
+		                     sizeof(info),
+		                     FileAllocationInformation);
 	}
 	ctx->open_handles[ctx->num_open_handles++] = h;
 	return 0;
@@ -2102,12 +2213,12 @@ begin_extract_blob_instance(const struct blob_descriptor *blob,
 static const wchar_t *
 skip_nt_toplevel_component(const wchar_t *path, size_t path_nchars)
 {
-	static const wchar_t * const dirs[] = {
+	static const wchar_t *const dirs[] = {
 		L"\\??\\",
 		L"\\DosDevices\\",
 		L"\\Device\\",
 	};
-	const wchar_t * const end = path + path_nchars;
+	const wchar_t *const end = path + path_nchars;
 
 	for (size_t i = 0; i < ARRAY_LEN(dirs); i++) {
 		size_t len = wcslen(dirs[i]);
@@ -2131,8 +2242,8 @@ skip_nt_toplevel_component(const wchar_t *path, size_t path_nchars)
 static const wchar_t *
 get_device_relative_path(const wchar_t *path, size_t path_nchars)
 {
-	const wchar_t * const orig_path = path;
-	const wchar_t * const end = path + path_nchars;
+	const wchar_t *const orig_path = path;
+	const wchar_t *const end       = path + path_nchars;
 
 	path = skip_nt_toplevel_component(path, path_nchars);
 	if (path == orig_path)
@@ -2150,8 +2261,9 @@ get_device_relative_path(const wchar_t *path, size_t path_nchars)
  * consistent with the actual extraction location.
  */
 static void
-try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
-	  struct win32_apply_ctx *ctx)
+try_rpfix(struct reparse_buffer_disk *rpbuf,
+          u16 *rpbuflen_p,
+          struct win32_apply_ctx *ctx)
 {
 	struct link_reparse_point link;
 	size_t orig_subst_name_nchars;
@@ -2177,9 +2289,9 @@ try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
 	orig_subst_name_nchars = link.substitute_name_nbytes / sizeof(wchar_t);
 
 	relpath = get_device_relative_path(link.substitute_name,
-					   orig_subst_name_nchars);
-	relpath_nchars = orig_subst_name_nchars -
-			 (relpath - link.substitute_name);
+	                                   orig_subst_name_nchars);
+	relpath_nchars =
+		orig_subst_name_nchars - (relpath - link.substitute_name);
 
 	target_ntpath_nchars = ctx->target_ntpath.Length / sizeof(wchar_t);
 
@@ -2197,8 +2309,9 @@ try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
 	/* Also remove extra slashes from the beginning of 'relpath'.  Normally
 	 * this isn't needed, but this is here to make the extra slash(es) added
 	 * by wimlib pre-v1.9.1 get removed automatically.  */
-	while (relpath_nchars >= 2 &&
-	       relpath[0] == L'\\' && relpath[1] == L'\\') {
+	while (relpath_nchars >= 2 && relpath[0] == L'\\' &&
+	       relpath[1] == L'\\')
+	{
 		relpath++;
 		relpath_nchars--;
 	}
@@ -2207,8 +2320,12 @@ try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
 
 	wchar_t fixed_subst_name[fixed_subst_name_nchars];
 
-	wmemcpy(fixed_subst_name, ctx->target_ntpath.Buffer, target_ntpath_nchars);
-	wmemcpy(&fixed_subst_name[target_ntpath_nchars], relpath, relpath_nchars);
+	wmemcpy(fixed_subst_name,
+	        ctx->target_ntpath.Buffer,
+	        target_ntpath_nchars);
+	wmemcpy(&fixed_subst_name[target_ntpath_nchars],
+	        relpath,
+	        relpath_nchars);
 	/* Doesn't need to be null-terminated.  */
 
 	/* Print name should be Win32, but not all NT names can even be
@@ -2216,14 +2333,14 @@ try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
 	 * directory, such as \??\, and this will have the expected result in
 	 * the usual case.  */
 	fixed_print_name = skip_nt_toplevel_component(fixed_subst_name,
-						      fixed_subst_name_nchars);
-	fixed_print_name_nchars = fixed_subst_name_nchars - (fixed_print_name -
-							     fixed_subst_name);
+	                                              fixed_subst_name_nchars);
+	fixed_print_name_nchars =
+		fixed_subst_name_nchars - (fixed_print_name - fixed_subst_name);
 
-	link.substitute_name = fixed_subst_name;
+	link.substitute_name        = fixed_subst_name;
 	link.substitute_name_nbytes = fixed_subst_name_nchars * sizeof(wchar_t);
-	link.print_name = (wchar_t *)fixed_print_name;
-	link.print_name_nbytes = fixed_print_name_nchars * sizeof(wchar_t);
+	link.print_name             = (wchar_t *)fixed_print_name;
+	link.print_name_nbytes      = fixed_print_name_nchars * sizeof(wchar_t);
 	make_link_reparse_point(&link, rpbuf, rpbuflen_p);
 }
 
@@ -2232,18 +2349,18 @@ try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
  * was specified.  */
 static int
 set_reparse_point(const struct wim_dentry *dentry,
-		  const struct reparse_buffer_disk *rpbuf, u16 rpbuflen,
-		  struct win32_apply_ctx *ctx)
+                  const struct reparse_buffer_disk *rpbuf,
+                  u16 rpbuflen,
+                  struct win32_apply_ctx *ctx)
 {
-	if ((ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_RPFIX)
-	    && !(dentry->d_inode->i_rp_flags & WIM_RP_FLAG_NOT_FIXED))
+	if ((ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_RPFIX) &&
+	    !(dentry->d_inode->i_rp_flags & WIM_RP_FLAG_NOT_FIXED))
 	{
 		memcpy(&ctx->rpfixbuf, rpbuf, rpbuflen);
 		try_rpfix(&ctx->rpfixbuf, &rpbuflen, ctx);
 		rpbuf = &ctx->rpfixbuf;
 	}
 	return do_set_reparse_point(dentry, rpbuf, rpbuflen, ctx);
-
 }
 
 /* Import the next block of raw encrypted data  */
@@ -2272,7 +2389,7 @@ import_encrypted_data(PBYTE pbData, PVOID pvCallbackContext, PULONG Length)
  */
 static int
 extract_encrypted_file(const struct wim_dentry *dentry,
-		       struct win32_apply_ctx *ctx)
+                       struct win32_apply_ctx *ctx)
 {
 	void *rawctx;
 	DWORD err;
@@ -2301,8 +2418,9 @@ retry:
 	build_extraction_path(dentry, ctx);
 
 	if (err != ERROR_SUCCESS) {
-		win32_error(err, L"Can't open \"%ls\" for encrypted import",
-			    current_path(ctx));
+		win32_error(err,
+		            L"Can't open \"%ls\" for encrypted import",
+		            current_path(ctx));
 		return WIMLIB_ERR_OPEN;
 	}
 
@@ -2313,8 +2431,9 @@ retry:
 	CloseEncryptedFileRaw(rawctx);
 
 	if (err != ERROR_SUCCESS) {
-		win32_error(err, L"Can't import encrypted file \"%ls\"",
-			    current_path(ctx));
+		win32_error(err,
+		            L"Can't import encrypted file \"%ls\"",
+		            current_path(ctx));
 		return WIMLIB_ERR_WRITE;
 	}
 
@@ -2326,17 +2445,18 @@ static int
 win32_begin_extract_blob(struct blob_descriptor *blob, void *_ctx)
 {
 	struct win32_apply_ctx *ctx = _ctx;
-	const struct blob_extraction_target *targets = blob_extraction_targets(blob);
+	const struct blob_extraction_target *targets =
+		blob_extraction_targets(blob);
 	int ret;
 
-	ctx->num_open_handles = 0;
-	ctx->data_buffer_ptr = NULL;
+	ctx->num_open_handles   = 0;
+	ctx->data_buffer_ptr    = NULL;
 	ctx->any_sparse_streams = false;
 	INIT_LIST_HEAD(&ctx->reparse_dentries);
 	INIT_LIST_HEAD(&ctx->encrypted_dentries);
 
 	for (u32 i = 0; i < blob->out_refcnt; i++) {
-		const struct wim_inode *inode = targets[i].inode;
+		const struct wim_inode *inode       = targets[i].inode;
 		const struct wim_inode_stream *strm = targets[i].stream;
 		struct wim_dentry *dentry;
 
@@ -2344,7 +2464,8 @@ win32_begin_extract_blob(struct blob_descriptor *blob, void *_ctx)
 
 		if (ctx->common.supported_features.hard_links) {
 			dentry = inode_first_extraction_dentry(inode);
-			ret = begin_extract_blob_instance(blob, dentry, strm, ctx);
+			ret    = begin_extract_blob_instance(
+                                blob, dentry, strm, ctx);
 			ret = check_apply_error(dentry, ctx, ret);
 			if (ret)
 				goto fail;
@@ -2352,7 +2473,8 @@ win32_begin_extract_blob(struct blob_descriptor *blob, void *_ctx)
 			/* Hard links not supported.  Extract the blob
 			 * separately to each alias of the inode.  */
 			inode_for_each_extraction_alias(dentry, inode) {
-				ret = begin_extract_blob_instance(blob, dentry, strm, ctx);
+				ret = begin_extract_blob_instance(
+					blob, dentry, strm, ctx);
 				ret = check_apply_error(dentry, ctx, ret);
 				if (ret)
 					goto fail;
@@ -2370,22 +2492,28 @@ fail:
 static int
 pwrite_to_handle(HANDLE h, const void *data, size_t size, u64 offset)
 {
-	const void * const end = data + size;
+	const void *const end = data + size;
 	const void *p;
 	IO_STATUS_BLOCK iosb;
 	NTSTATUS status;
 
-	for (p = data; p != end; p += iosb.Information,
-				 offset += iosb.Information)
+	for (p = data; p != end;
+	     p += iosb.Information, offset += iosb.Information)
 	{
 		LARGE_INTEGER offs = { .QuadPart = offset };
 
-		status = NtWriteFile(h, NULL, NULL, NULL, &iosb,
-				     (void *)p, min(INT32_MAX, end - p),
-				     &offs, NULL);
+		status = NtWriteFile(h,
+		                     NULL,
+		                     NULL,
+		                     NULL,
+		                     &iosb,
+		                     (void *)p,
+		                     min(INT32_MAX, end - p),
+		                     &offs,
+		                     NULL);
 		if (!NT_SUCCESS(status)) {
 			winnt_error(status,
-				    L"Error writing data to target volume");
+			            L"Error writing data to target volume");
 			return WIMLIB_ERR_WRITE;
 		}
 	}
@@ -2394,11 +2522,14 @@ pwrite_to_handle(HANDLE h, const void *data, size_t size, u64 offset)
 
 /* Called when the next chunk of a blob has been read for extraction */
 static int
-win32_extract_chunk(const struct blob_descriptor *blob, u64 offset,
-		    const void *chunk, size_t size, void *_ctx)
+win32_extract_chunk(const struct blob_descriptor *blob,
+                    u64 offset,
+                    const void *chunk,
+                    size_t size,
+                    void *_ctx)
 {
 	struct win32_apply_ctx *ctx = _ctx;
-	const void * const end = chunk + size;
+	const void *const end       = chunk + size;
 	const void *p;
 	bool zeroes;
 	size_t len;
@@ -2410,12 +2541,12 @@ win32_extract_chunk(const struct blob_descriptor *blob, u64 offset,
 	 * filesystem use holes to represent zero regions.
 	 */
 	for (p = chunk; p != end; p += len, offset += len) {
-		zeroes = maybe_detect_sparse_region(p, end - p, &len,
-						    ctx->any_sparse_streams);
+		zeroes = maybe_detect_sparse_region(
+			p, end - p, &len, ctx->any_sparse_streams);
 		for (i = 0; i < ctx->num_open_handles; i++) {
 			if (!zeroes || !ctx->is_sparse_stream[i]) {
-				ret = pwrite_to_handle(ctx->open_handles[i],
-						       p, len, offset);
+				ret = pwrite_to_handle(
+					ctx->open_handles[i], p, len, offset);
 				if (ret)
 					return ret;
 			}
@@ -2424,8 +2555,8 @@ win32_extract_chunk(const struct blob_descriptor *blob, u64 offset,
 
 	/* Copy the data chunk into the buffer (if needed)  */
 	if (ctx->data_buffer_ptr)
-		ctx->data_buffer_ptr = mempcpy(ctx->data_buffer_ptr,
-					       chunk, size);
+		ctx->data_buffer_ptr =
+			mempcpy(ctx->data_buffer_ptr, chunk, size);
 	return 0;
 }
 
@@ -2443,7 +2574,6 @@ get_system_compression_format(int extract_flags)
 
 	return FILE_PROVIDER_COMPRESSION_LZX;
 }
-
 
 static const wchar_t *
 get_system_compression_format_string(int format)
@@ -2484,10 +2614,11 @@ set_system_compression(HANDLE h, int format)
 	 * versions of Windows (before Windows 10?).  This can be a problem if
 	 * the WOFADK driver is being used rather than the regular WOF, since
 	 * WOFADK can be used on older versions of Windows.  */
-	status = winnt_fsctl(h, FSCTL_SET_EXTERNAL_BACKING,
-			     &in, sizeof(in), NULL, 0, NULL);
+	status = winnt_fsctl(
+		h, FSCTL_SET_EXTERNAL_BACKING, &in, sizeof(in), NULL, 0, NULL);
 
-	if (status == 0xC000046F) /* "Compressing this object would not save space."  */
+	if (status ==
+	    0xC000046F) /* "Compressing this object would not save space."  */
 		return STATUS_SUCCESS;
 
 	return status;
@@ -2495,7 +2626,7 @@ set_system_compression(HANDLE h, int format)
 
 /* Hard-coded list of files which the Windows bootloader may need to access
  * before the WOF driver has been loaded.  */
-static const wchar_t * const bootloader_pattern_strings[] = {
+static const wchar_t *const bootloader_pattern_strings[] = {
 	L"*winload.*",
 	L"*winresume.*",
 	L"\\Windows\\AppPatch\\drvmain.sdb",
@@ -2527,7 +2658,7 @@ static const wchar_t * const bootloader_pattern_strings[] = {
 };
 
 static const struct string_list bootloader_patterns = {
-	.strings = (wchar_t **)bootloader_pattern_strings,
+	.strings     = (wchar_t **)bootloader_pattern_strings,
 	.num_strings = ARRAY_LEN(bootloader_pattern_strings),
 };
 
@@ -2548,8 +2679,9 @@ bootloader_supports_compression_format(struct win32_apply_ctx *ctx, int format)
 }
 
 static NTSTATUS
-set_system_compression_on_inode(struct wim_inode *inode, int format,
-				struct win32_apply_ctx *ctx)
+set_system_compression_on_inode(struct wim_inode *inode,
+                                int format,
+                                struct win32_apply_ctx *ctx)
 {
 	bool retried = false;
 	NTSTATUS status;
@@ -2571,8 +2703,8 @@ set_system_compression_on_inode(struct wim_inode *inode, int format,
 			}
 
 			incompatible = match_pattern_list(dentry->d_full_path,
-							  &bootloader_patterns,
-							  MATCH_RECURSIVELY);
+			                                  &bootloader_patterns,
+			                                  MATCH_RECURSIVELY);
 			FREE(dentry->d_full_path);
 			dentry->d_full_path = NULL;
 
@@ -2581,19 +2713,21 @@ set_system_compression_on_inode(struct wim_inode *inode, int format,
 
 			warned = (ctx->num_system_compression_exclusions++ > 0);
 
-			if (bootloader_supports_compression_format(ctx,
-				   FILE_PROVIDER_COMPRESSION_XPRESS4K))
+			if (bootloader_supports_compression_format(
+				    ctx, FILE_PROVIDER_COMPRESSION_XPRESS4K))
 			{
 				/* Force to XPRESS4K  */
 				if (!warned) {
 					WARNING("For compatibility with the "
-						"Windows bootloader, some "
-						"files are being\n"
-						"          compacted "
-						"using the XPRESS4K format "
-						"instead of the %"TS" format\n"
-						"          you requested.",
-						get_system_compression_format_string(format));
+					        "Windows bootloader, some "
+					        "files are being\n"
+					        "          compacted "
+					        "using the XPRESS4K format "
+					        "instead of the %" TS
+					        " format\n"
+					        "          you requested.",
+					        get_system_compression_format_string(
+							format));
 				}
 				format = FILE_PROVIDER_COMPRESSION_XPRESS4K;
 				break;
@@ -2601,22 +2735,26 @@ set_system_compression_on_inode(struct wim_inode *inode, int format,
 				/* Force to uncompressed  */
 				if (!warned) {
 					WARNING("For compatibility with the "
-						"Windows bootloader, some "
-						"files will not\n"
-						"          be compressed with"
-						" system compression "
-						"(\"compacted\").");
+					        "Windows bootloader, some "
+					        "files will not\n"
+					        "          be compressed with"
+					        " system compression "
+					        "(\"compacted\").");
 				}
 				return STATUS_SUCCESS;
 			}
-
 		}
 	}
 
 	/* Open the extracted file.  */
-	status = create_file(&h, GENERIC_READ | GENERIC_WRITE, NULL,
-			     0, FILE_OPEN, 0,
-			     inode_first_extraction_dentry(inode), ctx);
+	status = create_file(&h,
+	                     GENERIC_READ | GENERIC_WRITE,
+	                     NULL,
+	                     0,
+	                     FILE_OPEN,
+	                     0,
+	                     inode_first_extraction_dentry(inode),
+	                     ctx);
 
 	if (!NT_SUCCESS(status))
 		return status;
@@ -2627,7 +2765,8 @@ retry:
 	if (unlikely(status == STATUS_INVALID_DEVICE_REQUEST && !retried)) {
 		wchar_t drive_path[7];
 		if (!win32_get_drive_path(ctx->common.target, drive_path) &&
-		    win32_try_to_attach_wof(drive_path + 4)) {
+		    win32_try_to_attach_wof(drive_path + 4))
+		{
 			retried = true;
 			goto retry;
 		}
@@ -2654,14 +2793,17 @@ retry:
  * creating its reparse points.
  */
 static void
-handle_system_compression(struct blob_descriptor *blob, struct win32_apply_ctx *ctx)
+handle_system_compression(struct blob_descriptor *blob,
+                          struct win32_apply_ctx *ctx)
 {
-	const struct blob_extraction_target *targets = blob_extraction_targets(blob);
+	const struct blob_extraction_target *targets =
+		blob_extraction_targets(blob);
 
-	const int format = get_system_compression_format(ctx->common.extract_flags);
+	const int format =
+		get_system_compression_format(ctx->common.extract_flags);
 
 	for (u32 i = 0; i < blob->out_refcnt; i++) {
-		struct wim_inode *inode = targets[i].inode;
+		struct wim_inode *inode       = targets[i].inode;
 		struct wim_inode_stream *strm = targets[i].stream;
 		NTSTATUS status;
 
@@ -2676,23 +2818,23 @@ handle_system_compression(struct blob_descriptor *blob, struct win32_apply_ctx *
 			continue;
 
 		if (status == STATUS_INVALID_DEVICE_REQUEST) {
-			WARNING(
-	  "The request to compress the extracted files using System Compression\n"
-"          will not be honored because the operating system or target volume\n"
-"          does not support it.  System Compression is only supported on\n"
-"          Windows 10 and later, and only on NTFS volumes.");
+			WARNING("The request to compress the extracted files using System Compression\n"
+			        "          will not be honored because the operating system or target volume\n"
+			        "          does not support it.  System Compression is only supported on\n"
+			        "          Windows 10 and later, and only on NTFS volumes.");
 			ctx->common.extract_flags &= ~COMPACT_FLAGS;
 			return;
 		}
 
 		ctx->num_system_compression_failures++;
 		if (ctx->num_system_compression_failures < 10) {
-			winnt_warning(status, L"\"%ls\": Failed to compress "
-				      "extracted file using System Compression",
-				      current_path(ctx));
+			winnt_warning(status,
+			              L"\"%ls\": Failed to compress "
+			              "extracted file using System Compression",
+			              current_path(ctx));
 		} else if (ctx->num_system_compression_failures == 10) {
 			WARNING("Suppressing further warnings about "
-				"System Compression failures.");
+			        "System Compression failures.");
 		}
 	}
 }
@@ -2708,20 +2850,24 @@ win32_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 	/* Extend sparse streams to their final size. */
 	if (ctx->any_sparse_streams && !status) {
 		for (unsigned i = 0; i < ctx->num_open_handles; i++) {
-			FILE_END_OF_FILE_INFORMATION info =
-				{ .EndOfFile = { .QuadPart = blob->size } };
+			FILE_END_OF_FILE_INFORMATION info = {
+				.EndOfFile = { .QuadPart = blob->size }
+			};
 			NTSTATUS ntstatus;
 
 			if (!ctx->is_sparse_stream[i])
 				continue;
 
-			ntstatus = NtSetInformationFile(ctx->open_handles[i],
-							&ctx->iosb,
-							&info, sizeof(info),
-							FileEndOfFileInformation);
+			ntstatus =
+				NtSetInformationFile(ctx->open_handles[i],
+			                             &ctx->iosb,
+			                             &info,
+			                             sizeof(info),
+			                             FileEndOfFileInformation);
 			if (!NT_SUCCESS(ntstatus)) {
-				winnt_error(ntstatus, L"Error writing data to "
-					    "target volume (while extending)");
+				winnt_error(ntstatus,
+				            L"Error writing data to "
+				            "target volume (while extending)");
 				status = WIMLIB_ERR_WRITE;
 				break;
 			}
@@ -2742,11 +2888,13 @@ win32_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 	if (!list_empty(&ctx->reparse_dentries)) {
 		if (blob->size > REPARSE_DATA_MAX_SIZE) {
 			dentry = list_first_entry(&ctx->reparse_dentries,
-						  struct wim_dentry, d_tmp_list);
+			                          struct wim_dentry,
+			                          d_tmp_list);
 			build_extraction_path(dentry, ctx);
 			ERROR("Reparse data of \"%ls\" has size "
-			      "%"PRIu64" bytes (exceeds %u bytes)",
-			      current_path(ctx), blob->size,
+			      "%" PRIu64 " bytes (exceeds %u bytes)",
+			      current_path(ctx),
+			      blob->size,
 			      REPARSE_DATA_MAX_SIZE);
 			ret = WIMLIB_ERR_INVALID_REPARSE_DATA;
 			return check_apply_error(dentry, ctx, ret);
@@ -2754,15 +2902,17 @@ win32_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 		/* Reparse data  */
 		memcpy(ctx->rpbuf.rpdata, ctx->data_buffer, blob->size);
 
-		list_for_each_entry(dentry, &ctx->reparse_dentries, d_tmp_list) {
-
+		list_for_each_entry(dentry, &ctx->reparse_dentries, d_tmp_list)
+		{
 			/* Reparse point header  */
-			complete_reparse_point(&ctx->rpbuf, dentry->d_inode,
-					       blob->size);
+			complete_reparse_point(
+				&ctx->rpbuf, dentry->d_inode, blob->size);
 
-			ret = set_reparse_point(dentry, &ctx->rpbuf,
-						REPARSE_DATA_OFFSET + blob->size,
-						ctx);
+			ret = set_reparse_point(dentry,
+			                        &ctx->rpbuf,
+			                        REPARSE_DATA_OFFSET +
+			                                blob->size,
+			                        ctx);
 			ret = check_apply_error(dentry, ctx, ret);
 			if (ret)
 				return ret;
@@ -2771,7 +2921,9 @@ win32_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 
 	if (!list_empty(&ctx->encrypted_dentries)) {
 		ctx->encrypted_size = blob->size;
-		list_for_each_entry(dentry, &ctx->encrypted_dentries, d_tmp_list) {
+		list_for_each_entry(
+			dentry, &ctx->encrypted_dentries, d_tmp_list)
+		{
 			ret = extract_encrypted_file(dentry, ctx);
 			ret = check_apply_error(dentry, ctx, ret);
 			if (ret)
@@ -2787,16 +2939,15 @@ win32_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 }
 
 /* Attributes that can't be set directly  */
-#define SPECIAL_ATTRIBUTES			\
-	(FILE_ATTRIBUTE_REPARSE_POINT	|	\
-	 FILE_ATTRIBUTE_DIRECTORY	|	\
-	 FILE_ATTRIBUTE_ENCRYPTED	|	\
-	 FILE_ATTRIBUTE_SPARSE_FILE	|	\
-	 FILE_ATTRIBUTE_COMPRESSED)
+#  define SPECIAL_ATTRIBUTES                                   \
+    (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY | \
+     FILE_ATTRIBUTE_ENCRYPTED | FILE_ATTRIBUTE_SPARSE_FILE |   \
+     FILE_ATTRIBUTE_COMPRESSED)
 
 static void
-set_object_id(HANDLE h, const struct wim_inode *inode,
-	      struct win32_apply_ctx *ctx)
+set_object_id(HANDLE h,
+              const struct wim_inode *inode,
+              struct win32_apply_ctx *ctx)
 {
 	const void *object_id;
 	u32 len;
@@ -2806,11 +2957,11 @@ set_object_id(HANDLE h, const struct wim_inode *inode,
 		return;
 
 	object_id = inode_get_object_id(inode, &len);
-	if (likely(object_id == NULL))  /* No object ID?  */
+	if (likely(object_id == NULL)) /* No object ID?  */
 		return;
 
-	status = winnt_fsctl(h, FSCTL_SET_OBJECT_ID,
-			     object_id, len, NULL, 0, NULL);
+	status = winnt_fsctl(
+		h, FSCTL_SET_OBJECT_ID, object_id, len, NULL, 0, NULL);
 	if (NT_SUCCESS(status))
 		return;
 
@@ -2826,11 +2977,12 @@ set_object_id(HANDLE h, const struct wim_inode *inode,
 
 	ctx->num_object_id_failures++;
 	if (ctx->num_object_id_failures < 10) {
-		winnt_warning(status, L"Can't set object ID on \"%ls\"",
-			      current_path(ctx));
+		winnt_warning(status,
+		              L"Can't set object ID on \"%ls\"",
+		              current_path(ctx));
 	} else if (ctx->num_object_id_failures == 10) {
 		WARNING("Suppressing further warnings about failure to set "
-			"object IDs.");
+		        "object IDs.");
 	}
 }
 
@@ -2851,26 +3003,29 @@ set_xattrs(HANDLE h, const struct wim_inode *inode, struct win32_apply_ctx *ctx)
 		return 0;
 
 	entries = inode_get_xattrs(inode, &len);
-	if (likely(entries == NULL || len == 0))  /* No extended attributes? */
+	if (likely(entries == NULL || len == 0)) /* No extended attributes? */
 		return 0;
 	entries_end = entries + len;
 
 	entry = entries;
 	for (entry = entries; (void *)entry < entries_end;
-	     entry = xattr_entry_next(entry)) {
+	     entry = xattr_entry_next(entry))
+	{
 		if (!valid_xattr_entry(entry, entries_end - (void *)entry)) {
-			ERROR("\"%"TS"\": extended attribute is corrupt or unsupported",
+			ERROR("\"%" TS
+			      "\": extended attribute is corrupt or unsupported",
 			      inode_any_full_path(inode));
 			return WIMLIB_ERR_INVALID_XATTR;
 		}
 
 		bufsize += ALIGN(offsetof(FILE_FULL_EA_INFORMATION, EaName) +
-				 entry->name_len + 1 +
-				 le16_to_cpu(entry->value_len), 4);
+		                         entry->name_len + 1 +
+		                         le16_to_cpu(entry->value_len),
+		                 4);
 	}
 
 	if (unlikely(bufsize != (u32)bufsize)) {
-		ERROR("\"%"TS"\": too many extended attributes to extract!",
+		ERROR("\"%" TS "\": too many extended attributes to extract!",
 		      inode_any_full_path(inode));
 		return WIMLIB_ERR_INVALID_XATTR;
 	}
@@ -2882,22 +3037,24 @@ set_xattrs(HANDLE h, const struct wim_inode *inode, struct win32_apply_ctx *ctx)
 	}
 
 	ea_prev = NULL;
-	ea = (FILE_FULL_EA_INFORMATION *)buf;
+	ea      = (FILE_FULL_EA_INFORMATION *)buf;
 	for (entry = entries; (void *)entry < entries_end;
-	     entry = xattr_entry_next(entry)) {
+	     entry = xattr_entry_next(entry))
+	{
 		u8 *p;
 
 		if (ea_prev)
 			ea_prev->NextEntryOffset = (u8 *)ea - (u8 *)ea_prev;
-		ea->Flags = entry->flags;
-		ea->EaNameLength = entry->name_len;
+		ea->Flags         = entry->flags;
+		ea->EaNameLength  = entry->name_len;
 		ea->EaValueLength = le16_to_cpu(entry->value_len);
-		p = mempcpy(ea->EaName, entry->name,
-			    ea->EaNameLength + 1 + ea->EaValueLength);
+		p                 = mempcpy(ea->EaName,
+                            entry->name,
+                            ea->EaNameLength + 1 + ea->EaValueLength);
 		while ((uintptr_t)p & 3)
 			*p++ = 0;
 		ea_prev = ea;
-		ea = (FILE_FULL_EA_INFORMATION *)p;
+		ea      = (FILE_FULL_EA_INFORMATION *)p;
 	}
 	ea_prev->NextEntryOffset = 0;
 	wimlib_assert((u8 *)ea - buf == bufsize);
@@ -2907,21 +3064,23 @@ set_xattrs(HANDLE h, const struct wim_inode *inode, struct win32_apply_ctx *ctx)
 		if (status == STATUS_EAS_NOT_SUPPORTED) {
 			/* This happens with Samba. */
 			WARNING("Filesystem advertised extended attribute (EA) support, but it doesn't\n"
-				"          work.  EAs will not be extracted.");
+			        "          work.  EAs will not be extracted.");
 			ctx->common.supported_features.xattrs = 0;
 		} else if (status == STATUS_INVALID_EA_NAME) {
 			ctx->num_xattr_failures++;
 			if (ctx->num_xattr_failures < 5) {
-				winnt_warning(status,
-					      L"Can't set extended attributes on \"%ls\"",
-					      current_path(ctx));
+				winnt_warning(
+					status,
+					L"Can't set extended attributes on \"%ls\"",
+					current_path(ctx));
 			} else if (ctx->num_xattr_failures == 5) {
 				WARNING("Suppressing further warnings about "
-					"failure to set extended attributes.");
+				        "failure to set extended attributes.");
 			}
 		} else {
-			winnt_error(status, L"Can't set extended attributes on \"%ls\"",
-				    current_path(ctx));
+			winnt_error(status,
+			            L"Can't set extended attributes on \"%ls\"",
+			            current_path(ctx));
 			ret = WIMLIB_ERR_SET_XATTR;
 			goto out;
 		}
@@ -2936,8 +3095,10 @@ out:
 /* Set the security descriptor @desc, of @desc_size bytes, on the file with open
  * handle @h.  */
 static NTSTATUS
-set_security_descriptor(HANDLE h, const void *_desc,
-			size_t desc_size, struct win32_apply_ctx *ctx)
+set_security_descriptor(HANDLE h,
+                        const void *_desc,
+                        size_t desc_size,
+                        struct win32_apply_ctx *ctx)
 {
 	SECURITY_INFORMATION info;
 	NTSTATUS status;
@@ -2983,7 +3144,6 @@ set_security_descriptor(HANDLE h, const void *_desc,
 	memcpy(desc, _desc, desc_size);
 
 	if (likely(desc_size >= 4)) {
-
 		if (desc->Control & SE_DACL_AUTO_INHERITED)
 			desc->Control |= SE_DACL_AUTO_INHERIT_REQ;
 
@@ -3014,7 +3174,6 @@ set_security_descriptor(HANDLE h, const void *_desc,
 	       DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION |
 	       LABEL_SECURITY_INFORMATION | BACKUP_SECURITY_INFORMATION;
 
-
 	/*
 	 * It's also worth noting that SetFileSecurity() is unusable because it
 	 * doesn't request "backup semantics" when it opens the file internally.
@@ -3039,8 +3198,8 @@ retry:
 	{
 		if (info & SACL_SECURITY_INFORMATION) {
 			info &= ~(SACL_SECURITY_INFORMATION |
-				  LABEL_SECURITY_INFORMATION |
-				  BACKUP_SECURITY_INFORMATION);
+			          LABEL_SECURITY_INFORMATION |
+			          BACKUP_SECURITY_INFORMATION);
 			ctx->partial_security_descriptors++;
 			goto retry;
 		}
@@ -3071,8 +3230,9 @@ out_maybe_free_desc:
 
 /* Set metadata on the open file @h from the WIM inode @inode.  */
 static int
-do_apply_metadata_to_file(HANDLE h, const struct wim_inode *inode,
-			  struct win32_apply_ctx *ctx)
+do_apply_metadata_to_file(HANDLE h,
+                          const struct wim_inode *inode,
+                          struct win32_apply_ctx *ctx)
 {
 	FILE_BASIC_INFORMATION info;
 	NTSTATUS status;
@@ -3097,26 +3257,26 @@ do_apply_metadata_to_file(HANDLE h, const struct wim_inode *inode,
 		const void *desc;
 		size_t desc_size;
 
-		sd = wim_get_current_security_data(ctx->common.wim);
-		desc = sd->descriptors[inode->i_security_id];
+		sd        = wim_get_current_security_data(ctx->common.wim);
+		desc      = sd->descriptors[inode->i_security_id];
 		desc_size = sd->sizes[inode->i_security_id];
 
 		status = set_security_descriptor(h, desc, desc_size, ctx);
-		if (!NT_SUCCESS(status) &&
-		    (ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_STRICT_ACLS))
+		if (!NT_SUCCESS(status) && (ctx->common.extract_flags &
+		                            WIMLIB_EXTRACT_FLAG_STRICT_ACLS))
 		{
 			winnt_error(status,
-				    L"Can't set security descriptor on \"%ls\"",
-				    current_path(ctx));
+			            L"Can't set security descriptor on \"%ls\"",
+			            current_path(ctx));
 			return WIMLIB_ERR_SET_SECURITY;
 		}
 	}
 
 	/* Set attributes and timestamps  */
-	info.CreationTime.QuadPart = inode->i_creation_time;
+	info.CreationTime.QuadPart   = inode->i_creation_time;
 	info.LastAccessTime.QuadPart = inode->i_last_access_time;
-	info.LastWriteTime.QuadPart = inode->i_last_write_time;
-	info.ChangeTime.QuadPart = 0;
+	info.LastWriteTime.QuadPart  = inode->i_last_write_time;
+	info.ChangeTime.QuadPart     = 0;
 	if (ctx->common.extract_flags & WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES) {
 		info.FileAttributes = FILE_ATTRIBUTE_NORMAL;
 	} else {
@@ -3125,17 +3285,18 @@ do_apply_metadata_to_file(HANDLE h, const struct wim_inode *inode,
 			info.FileAttributes = FILE_ATTRIBUTE_NORMAL;
 	}
 
-	status = NtSetInformationFile(h, &ctx->iosb, &info, sizeof(info),
-				      FileBasicInformation);
+	status = NtSetInformationFile(
+		h, &ctx->iosb, &info, sizeof(info), FileBasicInformation);
 	/* On FAT volumes we get STATUS_INVALID_PARAMETER if we try to set
 	 * attributes on the root directory.  (Apparently because FAT doesn't
 	 * actually have a place to store those attributes!)  */
-	if (!NT_SUCCESS(status)
-	    && !(status == STATUS_INVALID_PARAMETER &&
-		 dentry_is_root(inode_first_extraction_dentry(inode))))
+	if (!NT_SUCCESS(status) &&
+	    !(status == STATUS_INVALID_PARAMETER &&
+	      dentry_is_root(inode_first_extraction_dentry(inode))))
 	{
-		winnt_error(status, L"Can't set basic metadata on \"%ls\"",
-			    current_path(ctx));
+		winnt_error(status,
+		            L"Can't set basic metadata on \"%ls\"",
+		            current_path(ctx));
 		return WIMLIB_ERR_SET_ATTRIBUTES;
 	}
 
@@ -3144,7 +3305,7 @@ do_apply_metadata_to_file(HANDLE h, const struct wim_inode *inode,
 
 static int
 apply_metadata_to_file(const struct wim_dentry *dentry,
-		       struct win32_apply_ctx *ctx)
+                       struct win32_apply_ctx *ctx)
 {
 	const struct wim_inode *inode = dentry->d_inode;
 	DWORD perms;
@@ -3153,13 +3314,13 @@ apply_metadata_to_file(const struct wim_dentry *dentry,
 	int ret;
 
 	perms = FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | WRITE_DAC |
-		WRITE_OWNER | ACCESS_SYSTEM_SECURITY;
+	        WRITE_OWNER | ACCESS_SYSTEM_SECURITY;
 
 	build_extraction_path(dentry, ctx);
 
 	/* Open a handle with as many relevant permissions as possible.  */
-	while (!NT_SUCCESS(status = do_create_file(&h, perms, NULL,
-						   0, FILE_OPEN, 0, ctx)))
+	while (!NT_SUCCESS(
+		status = do_create_file(&h, perms, NULL, 0, FILE_OPEN, 0, ctx)))
 	{
 		if (status == STATUS_PRIVILEGE_NOT_HELD ||
 		    status == STATUS_ACCESS_DENIED)
@@ -3177,8 +3338,9 @@ apply_metadata_to_file(const struct wim_dentry *dentry,
 				continue;
 			}
 		}
-		winnt_error(status, L"Can't open \"%ls\" to set metadata",
-			    current_path(ctx));
+		winnt_error(status,
+		            L"Can't open \"%ls\" to set metadata",
+		            current_path(ctx));
 		return WIMLIB_ERR_OPEN;
 	}
 
@@ -3217,41 +3379,41 @@ apply_metadata(struct list_head *dentry_list, struct win32_apply_ctx *ctx)
 static void
 do_warnings(const struct win32_apply_ctx *ctx)
 {
-	if (ctx->partial_security_descriptors == 0
-	    && ctx->no_security_descriptors == 0
-	    && ctx->num_set_short_name_failures == 0
-	#if 0
+	if (ctx->partial_security_descriptors == 0 &&
+	    ctx->no_security_descriptors == 0 &&
+	    ctx->num_set_short_name_failures == 0
+#  if 0
 	    && ctx->num_remove_short_name_failures == 0
-	#endif
-	    )
+#  endif
+	)
 		return;
 
 	WARNING("Extraction to \"%ls\" complete, but with one or more warnings:",
-		ctx->common.target);
+	        ctx->common.target);
 	if (ctx->num_set_short_name_failures) {
 		WARNING("- Could not set short names on %lu files or directories",
-			ctx->num_set_short_name_failures);
+		        ctx->num_set_short_name_failures);
 	}
-#if 0
+#  if 0
 	if (ctx->num_remove_short_name_failures) {
 		WARNING("- Could not remove short names on %lu files or directories"
 			"          (This is expected on Vista and earlier)",
 			ctx->num_remove_short_name_failures);
 	}
-#endif
+#  endif
 	if (ctx->partial_security_descriptors) {
 		WARNING("- Could only partially set the security descriptor\n"
-			"            on %lu files or directories.",
-			ctx->partial_security_descriptors);
+		        "            on %lu files or directories.",
+		        ctx->partial_security_descriptors);
 	}
 	if (ctx->no_security_descriptors) {
 		WARNING("- Could not set security descriptor at all\n"
-			"            on %lu files or directories.",
-			ctx->no_security_descriptors);
+		        "            on %lu files or directories.",
+		        ctx->no_security_descriptors);
 	}
 	if (ctx->partial_security_descriptors || ctx->no_security_descriptors) {
 		WARNING("To fully restore all security descriptors, run the program\n"
-			"          with Administrator rights.");
+		        "          with Administrator rights.");
 	}
 }
 
@@ -3285,8 +3447,8 @@ win32_extract(struct list_head *dentry_list, struct apply_ctx *_ctx)
 			goto out;
 	}
 
-	ctx->windows_build_number = xml_get_windows_build_number(ctx->common.wim->xml_info,
-								 ctx->common.wim->current_image);
+	ctx->windows_build_number = xml_get_windows_build_number(
+		ctx->common.wim->xml_info, ctx->common.wim->current_image);
 
 	dentry_count = count_dentries(dentry_list);
 
@@ -3307,10 +3469,10 @@ win32_extract(struct list_head *dentry_list, struct apply_ctx *_ctx)
 		goto out;
 
 	struct read_blob_callbacks cbs = {
-		.begin_blob	= win32_begin_extract_blob,
-		.continue_blob	= win32_extract_chunk,
-		.end_blob	= win32_end_extract_blob,
-		.ctx		= ctx,
+		.begin_blob    = win32_begin_extract_blob,
+		.continue_blob = win32_extract_chunk,
+		.end_blob      = win32_end_extract_blob,
+		.ctx           = ctx,
 	};
 	ret = extract_blob_list(&ctx->common, &cbs);
 	if (ret)
@@ -3352,7 +3514,7 @@ out:
 }
 
 const struct apply_operations win32_apply_ops = {
-	.name			= "Windows",
+	.name                   = "Windows",
 	.get_supported_features = win32_get_supported_features,
 	.extract                = win32_extract,
 	.will_back_from_wim     = win32_will_back_from_wim,

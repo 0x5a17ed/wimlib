@@ -8,9 +8,9 @@
 #include "wimlib/util.h"
 
 #undef HAVE_LINUX_XATTR_SUPPORT
-#if defined(HAVE_SYS_XATTR_H) && \
-	defined(HAVE_LLISTXATTR) && defined(HAVE_LGETXATTR) && \
-	defined(HAVE_FSETXATTR) && defined(HAVE_LSETXATTR)
+#if defined(HAVE_SYS_XATTR_H) && defined(HAVE_LLISTXATTR) &&  \
+	defined(HAVE_LGETXATTR) && defined(HAVE_FSETXATTR) && \
+	defined(HAVE_LSETXATTR)
 #  define HAVE_LINUX_XATTR_SUPPORT 1
 #endif
 
@@ -23,7 +23,6 @@
  * also used by WIMGAPI and DISM starting in Windows 10 version 1607.
  */
 struct wim_xattr_entry {
-
 	/* length of xattr value in bytes */
 	le16 value_len;
 
@@ -48,7 +47,7 @@ xattr_entry_size(const struct wim_xattr_entry *entry)
 	STATIC_ASSERT(sizeof(*entry) == 4);
 
 	return sizeof(*entry) + entry->name_len + 1 +
-		le16_to_cpu(entry->value_len);
+	       le16_to_cpu(entry->value_len);
 }
 
 /* minimum is a 1-byte name (plus null terminator) and an empty value */
@@ -67,10 +66,10 @@ valid_xattr_entry(const struct wim_xattr_entry *entry, size_t avail)
 		return false;
 
 	return entry->name_len > 0 && entry->name_len <= WIM_XATTR_NAME_MAX &&
-		le16_to_cpu(entry->value_len) <= WIM_XATTR_SIZE_MAX &&
-		avail >= xattr_entry_size(entry) &&
-		memchr(entry->name, '\0', entry->name_len) == NULL &&
-		entry->name[entry->name_len] == '\0';
+	       le16_to_cpu(entry->value_len) <= WIM_XATTR_SIZE_MAX &&
+	       avail >= xattr_entry_size(entry) &&
+	       memchr(entry->name, '\0', entry->name_len) == NULL &&
+	       entry->name[entry->name_len] == '\0';
 }
 
 /*
@@ -81,7 +80,6 @@ valid_xattr_entry(const struct wim_xattr_entry *entry, size_t avail)
  * Windows and Linux xattrs.
  */
 struct wimlib_xattr_entry_old {
-
 	/* length of xattr name in bytes, excluding a null terminator */
 	le16 name_len;
 
@@ -106,12 +104,13 @@ old_xattr_entry_size(const struct wimlib_xattr_entry_old *entry)
 	STATIC_ASSERT(sizeof(*entry) == 8);
 
 	return ALIGN(sizeof(*entry) + le16_to_cpu(entry->name_len) +
-		     le32_to_cpu(entry->value_len), 4);
+	                     le32_to_cpu(entry->value_len),
+	             4);
 }
 
 /* minimum is a 1-byte name and an empty value */
 #define OLD_XATTR_ENTRY_MIN_SIZE \
-	(ALIGN(sizeof(struct wimlib_xattr_entry_old) + 1, 4))
+  (ALIGN(sizeof(struct wimlib_xattr_entry_old) + 1, 4))
 
 static inline struct wimlib_xattr_entry_old *
 old_xattr_entry_next(const struct wimlib_xattr_entry_old *entry)
@@ -129,24 +128,25 @@ old_valid_xattr_entry(const struct wimlib_xattr_entry_old *entry, size_t avail)
 
 	name_len = le16_to_cpu(entry->name_len);
 	return name_len > 0 && name_len <= WIM_XATTR_NAME_MAX &&
-		le32_to_cpu(entry->value_len) <= WIM_XATTR_SIZE_MAX &&
-		avail >= old_xattr_entry_size(entry) &&
-		memchr(entry->name, '\0', name_len) == NULL;
+	       le32_to_cpu(entry->value_len) <= WIM_XATTR_SIZE_MAX &&
+	       avail >= old_xattr_entry_size(entry) &&
+	       memchr(entry->name, '\0', name_len) == NULL;
 }
 
 /* Is the xattr of the specified name security-related on Linux? */
 static inline bool
 is_linux_security_xattr(const char *name)
 {
-#define XATTR_SECURITY_PREFIX "security."
-#define XATTR_SYSTEM_PREFIX "system."
-#define XATTR_POSIX_ACL_ACCESS  "posix_acl_access"
-#define XATTR_NAME_POSIX_ACL_ACCESS XATTR_SYSTEM_PREFIX XATTR_POSIX_ACL_ACCESS
-#define XATTR_POSIX_ACL_DEFAULT  "posix_acl_default"
+#define XATTR_SECURITY_PREFIX        "security."
+#define XATTR_SYSTEM_PREFIX          "system."
+#define XATTR_POSIX_ACL_ACCESS       "posix_acl_access"
+#define XATTR_NAME_POSIX_ACL_ACCESS  XATTR_SYSTEM_PREFIX XATTR_POSIX_ACL_ACCESS
+#define XATTR_POSIX_ACL_DEFAULT      "posix_acl_default"
 #define XATTR_NAME_POSIX_ACL_DEFAULT XATTR_SYSTEM_PREFIX XATTR_POSIX_ACL_DEFAULT
 
-	return !strncmp(name, XATTR_SECURITY_PREFIX,
-			sizeof(XATTR_SECURITY_PREFIX) - 1) ||
+	return !strncmp(name,
+	                XATTR_SECURITY_PREFIX,
+	                sizeof(XATTR_SECURITY_PREFIX) - 1) ||
 	       !strcmp(name, XATTR_NAME_POSIX_ACL_ACCESS) ||
 	       !strcmp(name, XATTR_NAME_POSIX_ACL_DEFAULT);
 }
@@ -154,20 +154,23 @@ is_linux_security_xattr(const char *name)
 static inline const void *
 inode_get_xattrs(const struct wim_inode *inode, u32 *len_ret)
 {
-	return inode_get_tagged_item(inode, TAG_XATTRS,
-				     XATTR_ENTRY_MIN_SIZE, len_ret);
+	return inode_get_tagged_item(
+		inode, TAG_XATTRS, XATTR_ENTRY_MIN_SIZE, len_ret);
 }
 
 static inline const void *
 inode_get_xattrs_old(const struct wim_inode *inode, u32 *len_ret)
 {
-	return inode_get_tagged_item(inode, TAG_WIMLIB_LINUX_XATTRS,
-				     OLD_XATTR_ENTRY_MIN_SIZE, len_ret);
+	return inode_get_tagged_item(inode,
+	                             TAG_WIMLIB_LINUX_XATTRS,
+	                             OLD_XATTR_ENTRY_MIN_SIZE,
+	                             len_ret);
 }
 
 static inline const void *
-inode_get_linux_xattrs(const struct wim_inode *inode, u32 *len_ret,
-		       bool *is_old_format_ret)
+inode_get_linux_xattrs(const struct wim_inode *inode,
+                       u32 *len_ret,
+                       bool *is_old_format_ret)
 {
 	const void *entries;
 

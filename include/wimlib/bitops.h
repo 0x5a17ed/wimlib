@@ -91,9 +91,9 @@ bsfw(machine_word_t v)
 static forceinline unsigned
 ilog2_ceil(size_t n)
 {
-        if (n <= 1)
-                return 0;
-        return 1 + bsrw(n - 1);
+	if (n <= 1)
+		return 0;
+	return 1 + bsrw(n - 1);
 }
 
 /* Round 'n' up to the nearest power of 2 */

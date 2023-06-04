@@ -33,32 +33,32 @@
 
 #if CPU_FEATURES_ENABLED
 
-#include "wimlib/util.h"
+#  include "wimlib/util.h"
 
-#include <stdlib.h>
-#include <string.h>
+#  include <stdlib.h>
+#  include <string.h>
 
-#if defined(__i386__) || defined(__x86_64__)
+#  if defined(__i386__) || defined(__x86_64__)
 
 /*
  * With old GCC versions we have to manually save and restore the x86_32 PIC
  * register (ebx).  See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47602
  */
-#if defined(__i386__) && defined(__PIC__)
-#  define EBX_CONSTRAINT "=&r"
-#else
-#  define EBX_CONSTRAINT "=b"
-#endif
+#    if defined(__i386__) && defined(__PIC__)
+#      define EBX_CONSTRAINT "=&r"
+#    else
+#      define EBX_CONSTRAINT "=b"
+#    endif
 
 /* Execute the CPUID instruction. */
 static inline void
 cpuid(u32 leaf, u32 subleaf, u32 *a, u32 *b, u32 *c, u32 *d)
 {
 	asm volatile(".ifnc %%ebx, %1; mov  %%ebx, %1; .endif\n"
-		     "cpuid                                  \n"
-		     ".ifnc %%ebx, %1; xchg %%ebx, %1; .endif\n"
-		     : "=a" (*a), EBX_CONSTRAINT (*b), "=c" (*c), "=d" (*d)
-		     : "a" (leaf), "c" (subleaf));
+	             "cpuid                                  \n"
+	             ".ifnc %%ebx, %1; xchg %%ebx, %1; .endif\n"
+	             : "=a"(*a), EBX_CONSTRAINT(*b), "=c"(*c), "=d"(*d)
+	             : "a"(leaf), "c"(subleaf));
 }
 
 /* Read an extended control register. */
@@ -74,8 +74,7 @@ read_xcr(u32 index)
 	 * This must be 'volatile' to prevent this code from being moved out
 	 * from under the check for OSXSAVE.
 	 */
-	asm volatile(".byte 0x0f, 0x01, 0xd0" :
-		     "=d" (d), "=a" (a) : "c" (index));
+	asm volatile(".byte 0x0f, 0x01, 0xd0" : "=d"(d), "=a"(a) : "c"(index));
 
 	return ((u64)d << 32) | a;
 }
@@ -84,7 +83,7 @@ static u32
 get_cpu_features(void)
 {
 	u32 max_leaf, a, b, c, d;
-	u64 xcr0 = 0;
+	u64 xcr0     = 0;
 	u32 features = 0;
 
 	/* EAX=0: Highest Function Parameter and Manufacturer ID */
@@ -118,7 +117,7 @@ get_cpu_features(void)
 	return features;
 }
 
-#elif defined(__aarch64__) && defined(__linux__)
+#  elif defined(__aarch64__) && defined(__linux__)
 
 /*
  * On Linux, arm32 and arm64 CPU features can be detected by reading the
@@ -129,15 +128,16 @@ get_cpu_features(void)
  * added to API level 18 for arm32 and level 21 for arm64.
  */
 
-#include <errno.h>
-#include <fcntl.h>
-#include <string.h>
-#include <unistd.h>
+#    include <errno.h>
+#    include <fcntl.h>
+#    include <string.h>
+#    include <unistd.h>
 
-#define AT_HWCAP	16
-#define AT_HWCAP2	26
+#    define AT_HWCAP  16
+#    define AT_HWCAP2 26
 
-static void scan_auxv(unsigned long *hwcap, unsigned long *hwcap2)
+static void
+scan_auxv(unsigned long *hwcap, unsigned long *hwcap2)
 {
 	int fd;
 	unsigned long auxbuf[32];
@@ -150,8 +150,9 @@ static void scan_auxv(unsigned long *hwcap, unsigned long *hwcap2)
 
 	for (;;) {
 		do {
-			int ret = read(fd, &((char *)auxbuf)[filled],
-				       sizeof(auxbuf) - filled);
+			int ret = read(fd,
+			               &((char *)auxbuf)[filled],
+			               sizeof(auxbuf) - filled);
 			if (ret <= 0) {
 				if (ret < 0 && errno == EINTR)
 					continue;
@@ -162,7 +163,7 @@ static void scan_auxv(unsigned long *hwcap, unsigned long *hwcap2)
 
 		i = 0;
 		do {
-			unsigned long type = auxbuf[i];
+			unsigned long type  = auxbuf[i];
 			unsigned long value = auxbuf[i + 1];
 
 			if (type == AT_HWCAP)
@@ -182,30 +183,30 @@ out:
 static u32
 get_cpu_features(void)
 {
-	unsigned long hwcap = 0;
+	unsigned long hwcap  = 0;
 	unsigned long hwcap2 = 0;
-	u32 features = 0;
+	u32 features         = 0;
 
 	scan_auxv(&hwcap, &hwcap2);
 
-	if (hwcap & (1 << 5))	/* HWCAP_SHA1 */
+	if (hwcap & (1 << 5)) /* HWCAP_SHA1 */
 		features |= ARM_CPU_FEATURE_SHA1;
 
 	return features;
 }
 
-#elif defined(__aarch64__) && defined(__APPLE__)
+#  elif defined(__aarch64__) && defined(__APPLE__)
 
 /* On Apple platforms, arm64 CPU features can be detected via sysctlbyname(). */
 
-#include <sys/types.h>
-#include <sys/sysctl.h>
+#    include <sys/types.h>
+#    include <sys/sysctl.h>
 
 static const struct {
 	const char *name;
 	u32 feature;
 } feature_sysctls[] = {
-	{ "hw.optional.arm.FEAT_SHA1",	ARM_CPU_FEATURE_SHA1 },
+	{ "hw.optional.arm.FEAT_SHA1", ARM_CPU_FEATURE_SHA1 },
 };
 
 static u32
@@ -215,8 +216,8 @@ get_cpu_features(void)
 
 	for (size_t i = 0; i < ARRAY_LEN(feature_sysctls); i++) {
 		const char *name = feature_sysctls[i].name;
-		u32 val = 0;
-		size_t valsize = sizeof(val);
+		u32 val          = 0;
+		size_t valsize   = sizeof(val);
 
 		if (sysctlbyname(name, &val, &valsize, NULL, 0) == 0 &&
 		    valsize == sizeof(val) && val == 1)
@@ -225,9 +226,9 @@ get_cpu_features(void)
 	return features;
 }
 
-#elif defined(__aarch64__) && defined(_WIN32)
+#  elif defined(__aarch64__) && defined(_WIN32)
 
-#include <windows.h>
+#    include <windows.h>
 
 static u32
 get_cpu_features(void)
@@ -240,28 +241,28 @@ get_cpu_features(void)
 	return features;
 }
 
-#else
-#  error "CPU_FEATURES_ENABLED was set but no implementation is available!"
-#endif
+#  else
+#    error "CPU_FEATURES_ENABLED was set but no implementation is available!"
+#  endif
 
 static const struct {
 	const char *name;
 	u32 feature;
 } feature_table[] = {
-#if defined(__i386__) || defined(__x86_64__)
-	{"ssse3",	X86_CPU_FEATURE_SSSE3},
-	{"sse4.1",	X86_CPU_FEATURE_SSE4_1},
-	{"sse4.2",	X86_CPU_FEATURE_SSE4_2},
-	{"avx",		X86_CPU_FEATURE_AVX},
-	{"bmi2",	X86_CPU_FEATURE_BMI2},
-	{"sha",		X86_CPU_FEATURE_SHA},
-	{"sha1",	X86_CPU_FEATURE_SHA},
-#elif defined(__aarch64__)
-	{"sha1",	ARM_CPU_FEATURE_SHA1},
-#else
-#  error "CPU_FEATURES_ENABLED was set but no features are defined!"
-#endif
-	{"*",		0xFFFFFFFF},
+#  if defined(__i386__) || defined(__x86_64__)
+	{ "ssse3", X86_CPU_FEATURE_SSSE3 },
+	{ "sse4.1", X86_CPU_FEATURE_SSE4_1 },
+	{ "sse4.2", X86_CPU_FEATURE_SSE4_2 },
+	{ "avx", X86_CPU_FEATURE_AVX },
+	{ "bmi2", X86_CPU_FEATURE_BMI2 },
+	{ "sha", X86_CPU_FEATURE_SHA },
+	{ "sha1", X86_CPU_FEATURE_SHA },
+#  elif defined(__aarch64__)
+	{ "sha1", ARM_CPU_FEATURE_SHA1 },
+#  else
+#    error "CPU_FEATURES_ENABLED was set but no features are defined!"
+#  endif
+	{ "*", 0xFFFFFFFF },
 };
 
 static u32
@@ -277,7 +278,8 @@ find_cpu_feature(const char *name, size_t namelen)
 
 u32 cpu_features;
 
-void init_cpu_features(void)
+void
+init_cpu_features(void)
 {
 	char *p, *sep;
 

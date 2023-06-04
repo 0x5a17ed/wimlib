@@ -32,9 +32,9 @@
 
 #ifdef _WIN32
 #  include "wimlib/win32.h"
-#  define read win32_read
-#  define write win32_write
-#  define pread win32_pread
+#  define read   win32_read
+#  define write  win32_write
+#  define pread  win32_pread
 #  define pwrite win32_pwrite
 #endif
 
@@ -76,9 +76,11 @@ pipe_read(struct filedes *fd, void *buf, size_t count, off_t offset)
 	/* Verify the offset.  */
 	if (offset < fd->offset) {
 		ERROR("Can't seek backwards in pipe "
-		      "(offset %"PRIu64" => %"PRIu64").\n"
+		      "(offset %" PRIu64 " => %" PRIu64 ").\n"
 		      "        Make sure the WIM was captured as "
-		      "pipable.", fd->offset, offset);
+		      "pipable.",
+		      fd->offset,
+		      offset);
 		errno = ESPIPE;
 		return WIMLIB_ERR_RESOURCE_ORDER;
 	}
@@ -166,7 +168,6 @@ full_write(struct filedes *fd, const void *buf, size_t count)
 	return 0;
 }
 
-
 /*
  * Wrapper around pwrite() that checks for errors and keeps retrying until all
  * requested bytes have been written.
@@ -192,7 +193,8 @@ full_pwrite(struct filedes *fd, const void *buf, size_t count, off_t offset)
 	return 0;
 }
 
-off_t filedes_seek(struct filedes *fd, off_t offset)
+off_t
+filedes_seek(struct filedes *fd, off_t offset)
 {
 	if (fd->is_pipe) {
 		errno = ESPIPE;
@@ -206,7 +208,8 @@ off_t filedes_seek(struct filedes *fd, off_t offset)
 	return offset;
 }
 
-bool filedes_is_seekable(struct filedes *fd)
+bool
+filedes_is_seekable(struct filedes *fd)
 {
 	return !fd->is_pipe && lseek(fd->fd, 0, SEEK_CUR) != -1;
 }

@@ -36,8 +36,9 @@ vss_put_snapshot(struct vss_snapshot *snapshot)
 }
 
 int
-vss_create_snapshot(const wchar_t *source, UNICODE_STRING *vss_path_ret,
-		    struct vss_snapshot **snapshot_ret);
+vss_create_snapshot(const wchar_t *source,
+                    UNICODE_STRING *vss_path_ret,
+                    struct vss_snapshot **snapshot_ret);
 
 void
 vss_global_cleanup(void);

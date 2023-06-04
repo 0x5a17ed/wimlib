@@ -44,20 +44,22 @@
  */
 void
 complete_reparse_point(struct reparse_buffer_disk *rpbuf,
-		       const struct wim_inode *inode, u16 blob_size)
+                       const struct wim_inode *inode,
+                       u16 blob_size)
 {
 	rpbuf->rptag = cpu_to_le32(inode->i_reparse_tag);
 	if (blob_size >= GUID_SIZE && !(inode->i_reparse_tag & 0x80000000))
 		blob_size -= GUID_SIZE;
-	rpbuf->rpdatalen = cpu_to_le16(blob_size);
+	rpbuf->rpdatalen  = cpu_to_le16(blob_size);
 	rpbuf->rpreserved = cpu_to_le16(inode->i_rp_reserved);
 }
 
 /* Parse the buffer for a symbolic link or junction reparse point and fill in a
  * 'struct link_reparse_point'.  */
 int
-parse_link_reparse_point(const struct reparse_buffer_disk *rpbuf, u16 rpbuflen,
-			 struct link_reparse_point *link)
+parse_link_reparse_point(const struct reparse_buffer_disk *rpbuf,
+                         u16 rpbuflen,
+                         struct link_reparse_point *link)
 {
 	u16 substitute_name_offset;
 	u16 print_name_offset;
@@ -75,44 +77,51 @@ parse_link_reparse_point(const struct reparse_buffer_disk *rpbuf, u16 rpbuflen,
 		return WIMLIB_ERR_INVALID_REPARSE_DATA;
 
 	link->rpreserved = le16_to_cpu(rpbuf->rpreserved);
-	link->substitute_name_nbytes = le16_to_cpu(rpbuf->link.substitute_name_nbytes);
-	substitute_name_offset = le16_to_cpu(rpbuf->link.substitute_name_offset);
+	link->substitute_name_nbytes =
+		le16_to_cpu(rpbuf->link.substitute_name_nbytes);
+	substitute_name_offset =
+		le16_to_cpu(rpbuf->link.substitute_name_offset);
 	link->print_name_nbytes = le16_to_cpu(rpbuf->link.print_name_nbytes);
-	print_name_offset = le16_to_cpu(rpbuf->link.print_name_offset);
+	print_name_offset       = le16_to_cpu(rpbuf->link.print_name_offset);
 
 	/* The names must be properly sized and aligned.  */
 	if ((substitute_name_offset | print_name_offset |
-	     link->substitute_name_nbytes | link->print_name_nbytes) & 1)
+	     link->substitute_name_nbytes | link->print_name_nbytes) &
+	    1)
 		return WIMLIB_ERR_INVALID_REPARSE_DATA;
 
 	if (link->rptag == WIM_IO_REPARSE_TAG_SYMLINK) {
-		if (rpbuflen < offsetof(struct reparse_buffer_disk, link.symlink.data))
+		if (rpbuflen <
+		    offsetof(struct reparse_buffer_disk, link.symlink.data))
 			return WIMLIB_ERR_INVALID_REPARSE_DATA;
 		link->symlink_flags = le32_to_cpu(rpbuf->link.symlink.flags);
-		data = rpbuf->link.symlink.data;
+		data                = rpbuf->link.symlink.data;
 	} else {
 		data = rpbuf->link.junction.data;
 	}
 
 	/* Verify that the names don't overflow the buffer.  */
 	if ((data - (const u8 *)rpbuf) + substitute_name_offset +
-	    link->substitute_name_nbytes > rpbuflen)
+	            link->substitute_name_nbytes >
+	    rpbuflen)
 		return WIMLIB_ERR_INVALID_REPARSE_DATA;
 
 	if ((data - (const u8 *)rpbuf) + print_name_offset +
-	    link->print_name_nbytes > rpbuflen)
+	            link->print_name_nbytes >
+	    rpbuflen)
 		return WIMLIB_ERR_INVALID_REPARSE_DATA;
 
 	/* Save the name pointers.  */
 	link->substitute_name = (utf16lechar *)&data[substitute_name_offset];
-	link->print_name = (utf16lechar *)&data[print_name_offset];
+	link->print_name      = (utf16lechar *)&data[print_name_offset];
 	return 0;
 }
 
 /* Translate a 'struct link_reparse_point' into a reparse point buffer.  */
 int
 make_link_reparse_point(const struct link_reparse_point *link,
-			struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_ret)
+                        struct reparse_buffer_disk *rpbuf,
+                        u16 *rpbuflen_ret)
 {
 	u8 *data;
 
@@ -125,16 +134,17 @@ make_link_reparse_point(const struct link_reparse_point *link,
 
 	/* Check if the names are too long to fit in a reparse point.  */
 	if ((data - (u8 *)rpbuf) + link->substitute_name_nbytes +
-	    link->print_name_nbytes +
-	    2 * sizeof(utf16lechar) > REPARSE_POINT_MAX_SIZE)
+	            link->print_name_nbytes + 2 * sizeof(utf16lechar) >
+	    REPARSE_POINT_MAX_SIZE)
 		return WIMLIB_ERR_INVALID_REPARSE_DATA;
 
-	rpbuf->rptag = cpu_to_le32(link->rptag);
-	rpbuf->rpreserved = cpu_to_le16(link->rpreserved);
+	rpbuf->rptag                       = cpu_to_le32(link->rptag);
+	rpbuf->rpreserved                  = cpu_to_le16(link->rpreserved);
 	rpbuf->link.substitute_name_offset = cpu_to_le16(0);
-	rpbuf->link.substitute_name_nbytes = cpu_to_le16(link->substitute_name_nbytes);
-	rpbuf->link.print_name_offset = cpu_to_le16(link->substitute_name_nbytes +
-						    sizeof(utf16lechar));
+	rpbuf->link.substitute_name_nbytes =
+		cpu_to_le16(link->substitute_name_nbytes);
+	rpbuf->link.print_name_offset =
+		cpu_to_le16(link->substitute_name_nbytes + sizeof(utf16lechar));
 	rpbuf->link.print_name_nbytes = cpu_to_le16(link->print_name_nbytes);
 
 	if (link->rptag == WIM_IO_REPARSE_TAG_SYMLINK)
@@ -143,7 +153,8 @@ make_link_reparse_point(const struct link_reparse_point *link,
 	/* We null-terminate the substitute and print names, although this isn't
 	 * strictly necessary.  Note that the nbytes fields do not include the
 	 * null terminators.  */
-	data = mempcpy(data, link->substitute_name, link->substitute_name_nbytes);
+	data = mempcpy(
+		data, link->substitute_name, link->substitute_name_nbytes);
 	*(utf16lechar *)data = cpu_to_le16(0);
 	data += sizeof(utf16lechar);
 	data = mempcpy(data, link->print_name, link->print_name_nbytes);
@@ -163,9 +174,9 @@ make_link_reparse_point(const struct link_reparse_point *link,
  * inode's reparse point stream.  The inode's streams must be resolved.  */
 static int
 wim_inode_get_reparse_point(const struct wim_inode *inode,
-			    struct reparse_buffer_disk *rpbuf,
-			    u16 *rpbuflen_ret,
-			    const struct blob_descriptor *blob)
+                            struct reparse_buffer_disk *rpbuf,
+                            u16 *rpbuflen_ret,
+                            const struct blob_descriptor *blob)
 {
 	int ret;
 	u16 blob_size = 0;
@@ -173,7 +184,8 @@ wim_inode_get_reparse_point(const struct wim_inode *inode,
 	if (!blob) {
 		const struct wim_inode_stream *strm;
 
-		strm = inode_get_unnamed_stream(inode, STREAM_TYPE_REPARSE_POINT);
+		strm = inode_get_unnamed_stream(inode,
+		                                STREAM_TYPE_REPARSE_POINT);
 		if (strm)
 			blob = stream_blob_resolved(strm);
 	}
@@ -182,7 +194,7 @@ wim_inode_get_reparse_point(const struct wim_inode *inode,
 		if (blob->size > REPARSE_DATA_MAX_SIZE)
 			return WIMLIB_ERR_INVALID_REPARSE_DATA;
 		blob_size = blob->size;
-		ret = read_blob_into_buf(blob, rpbuf->rpdata);
+		ret       = read_blob_into_buf(blob, rpbuf->rpdata);
 		if (ret)
 			return ret;
 	}
@@ -227,9 +239,12 @@ copy(char **buf_p, size_t *bufsize_p, const char *src, size_t src_size)
  * that the target is truncated and @bufsize is returned in the overflow case.
  */
 int
-wim_inode_readlink(const struct wim_inode *inode, char *buf, size_t bufsize,
-		   const struct blob_descriptor *blob,
-		   const char *altroot, size_t altroot_len)
+wim_inode_readlink(const struct wim_inode *inode,
+                   char *buf,
+                   size_t bufsize,
+                   const struct blob_descriptor *blob,
+                   const char *altroot,
+                   size_t altroot_len)
 {
 	struct reparse_buffer_disk rpbuf;
 	u16 rpbuflen;
@@ -253,8 +268,10 @@ wim_inode_readlink(const struct wim_inode *inode, char *buf, size_t bufsize,
 		return -EINVAL;
 
 	/* Translate the substitute name to a multibyte string.  */
-	if (utf16le_to_tstr(link.substitute_name, link.substitute_name_nbytes,
-			    &target_buffer, &target_len))
+	if (utf16le_to_tstr(link.substitute_name,
+	                    link.substitute_name_nbytes,
+	                    &target_buffer,
+	                    &target_len))
 		return -errno;
 	target = target_buffer;
 
@@ -278,7 +295,9 @@ wim_inode_readlink(const struct wim_inode *inode, char *buf, size_t bufsize,
 	 */
 	if (!link_is_relative_symlink(&link)) {
 		static const char *const nt_root_dirs[] = {
-			"\\??\\", "\\DosDevices\\", "\\Device\\",
+			"\\??\\",
+			"\\DosDevices\\",
+			"\\Device\\",
 		};
 		for (size_t i = 0; i < ARRAY_LEN(nt_root_dirs); i++) {
 			size_t len = strlen(nt_root_dirs[i]);
@@ -321,7 +340,7 @@ wim_inode_readlink(const struct wim_inode *inode, char *buf, size_t bufsize,
 		 * adjusted link target without prefixing it.  This usually
 		 * doesn't happen, but if it does then we need to change it to
 		 * "/" so that it is a valid target.  */
-		target = "/";
+		target     = "/";
 		target_len = 1;
 	}
 	copy(&buf_ptr, &bufsize, target, target_len);
@@ -332,8 +351,9 @@ wim_inode_readlink(const struct wim_inode *inode, char *buf, size_t bufsize,
 /* Given a UNIX-style symbolic link target, create a Windows-style reparse point
  * buffer and assign it to the specified inode.  */
 int
-wim_inode_set_symlink(struct wim_inode *inode, const char *_target,
-		      struct blob_table *blob_table)
+wim_inode_set_symlink(struct wim_inode *inode,
+                      const char *_target,
+                      struct blob_table *blob_table)
 
 {
 	int ret;
@@ -344,7 +364,8 @@ wim_inode_set_symlink(struct wim_inode *inode, const char *_target,
 	u16 rpbuflen;
 
 	/* Translate the link target to UTF-16LE.  */
-	ret = tstr_to_utf16le(_target, strlen(_target), &target, &target_nbytes);
+	ret = tstr_to_utf16le(
+		_target, strlen(_target), &target, &target_nbytes);
 	if (ret)
 		return ret;
 
@@ -359,7 +380,7 @@ wim_inode_set_symlink(struct wim_inode *inode, const char *_target,
 			*p = cpu_to_le16('/');
 	}
 
-	link.rptag = WIM_IO_REPARSE_TAG_SYMLINK;
+	link.rptag      = WIM_IO_REPARSE_TAG_SYMLINK;
 	link.rpreserved = 0;
 
 	/* Note: an absolute link that was rewritten to be relative to another
@@ -385,35 +406,34 @@ wim_inode_set_symlink(struct wim_inode *inode, const char *_target,
 		 * consistency, we have to use the fake C: drive approach.
 		 */
 		static const utf16lechar prefix[6] = {
-			cpu_to_le16('\\'),
-			cpu_to_le16('?'),
-			cpu_to_le16('?'),
-			cpu_to_le16('\\'),
-			cpu_to_le16('C'),
-			cpu_to_le16(':'),
+			cpu_to_le16('\\'), cpu_to_le16('?'), cpu_to_le16('?'),
+			cpu_to_le16('\\'), cpu_to_le16('C'), cpu_to_le16(':'),
 		};
 
 		/* Do not show \??\ in print name  */
 		const size_t num_unprintable_chars = 4;
 
-		link.symlink_flags = 0;
+		link.symlink_flags          = 0;
 		link.substitute_name_nbytes = sizeof(prefix) + target_nbytes;
 		link.substitute_name = alloca(link.substitute_name_nbytes);
 		memcpy(link.substitute_name, prefix, sizeof(prefix));
-		memcpy(link.substitute_name + ARRAY_LEN(prefix), target, target_nbytes);
-		link.print_name_nbytes = link.substitute_name_nbytes -
-					 (num_unprintable_chars * sizeof(utf16lechar));
+		memcpy(link.substitute_name + ARRAY_LEN(prefix),
+		       target,
+		       target_nbytes);
+		link.print_name_nbytes =
+			link.substitute_name_nbytes -
+			(num_unprintable_chars * sizeof(utf16lechar));
 		link.print_name = link.substitute_name + num_unprintable_chars;
 	} else {
 		/* UNIX link target was relative.  In this case we represent the
 		 * link as a symlink reparse point with SYMBOLIC_LINK_RELATIVE
 		 * set.  This causes Windows to interpret the link relative to
 		 * the directory containing the reparse point file.  */
-		link.symlink_flags = SYMBOLIC_LINK_RELATIVE;
+		link.symlink_flags          = SYMBOLIC_LINK_RELATIVE;
 		link.substitute_name_nbytes = target_nbytes;
-		link.substitute_name = target;
-		link.print_name_nbytes = target_nbytes;
-		link.print_name = target;
+		link.substitute_name        = target;
+		link.print_name_nbytes      = target_nbytes;
+		link.print_name             = target;
 	}
 
 	/* Generate the reparse buffer.  */
@@ -424,11 +444,11 @@ wim_inode_set_symlink(struct wim_inode *inode, const char *_target,
 	/* Save the reparse data with the inode.  */
 	ret = WIMLIB_ERR_NOMEM;
 	if (!inode_add_stream_with_data(inode,
-					STREAM_TYPE_REPARSE_POINT,
-					NO_STREAM_NAME,
-					rpbuf.rpdata,
-					rpbuflen - REPARSE_DATA_OFFSET,
-					blob_table))
+	                                STREAM_TYPE_REPARSE_POINT,
+	                                NO_STREAM_NAME,
+	                                rpbuf.rpdata,
+	                                rpbuflen - REPARSE_DATA_OFFSET,
+	                                blob_table))
 		goto out_free_target;
 
 	/* The inode is now a reparse point.  */

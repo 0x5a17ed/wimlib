@@ -39,7 +39,6 @@ struct blob_table;
  * different threads concurrently.
  */
 struct WIMStruct {
-
 	/* Information from the header of the WIM file.
 	 *
 	 * This is also maintained for a WIMStruct not backed by a file, but in
@@ -167,7 +166,8 @@ struct WIMStruct {
  * when the WIM does not contain the metadata described by its image count that
  * we return false.
  */
-static inline bool wim_has_metadata(const WIMStruct *wim)
+static inline bool
+wim_has_metadata(const WIMStruct *wim)
 {
 	return (wim->image_metadata != NULL || wim->hdr.image_count == 0);
 }
@@ -175,7 +175,8 @@ static inline bool wim_has_metadata(const WIMStruct *wim)
 /* Return true if and only if the WIM has an integrity table.
  *
  * If the WIM is not backed by a file, then this always returns false.  */
-static inline bool wim_has_integrity_table(const WIMStruct *wim)
+static inline bool
+wim_has_integrity_table(const WIMStruct *wim)
 {
 	return (wim->hdr.integrity_table_reshdr.offset_in_wim != 0);
 }
@@ -183,7 +184,8 @@ static inline bool wim_has_integrity_table(const WIMStruct *wim)
 /* Return true if and only if the WIM is in pipable format.
  *
  * If the WIM is not backed by a file, then this always returns false.  */
-static inline bool wim_is_pipable(const WIMStruct *wim)
+static inline bool
+wim_is_pipable(const WIMStruct *wim)
 {
 	return (wim->hdr.magic == PWM_MAGIC);
 }
@@ -198,8 +200,9 @@ int
 read_wim_header(WIMStruct *wim, struct wim_header *hdr);
 
 int
-write_wim_header(const struct wim_header *hdr, struct filedes *out_fd,
-		 off_t offset);
+write_wim_header(const struct wim_header *hdr,
+                 struct filedes *out_fd,
+                 off_t offset);
 
 int
 write_wim_header_flags(u32 hdr_flags, struct filedes *out_fd);
@@ -221,12 +224,14 @@ delete_wim_image(WIMStruct *wim, int image);
 
 /* Internal open flags (pass to open_wim_as_WIMStruct(), not wimlib_open_wim())
  */
-#define WIMLIB_OPEN_FLAG_FROM_PIPE	0x80000000
+#define WIMLIB_OPEN_FLAG_FROM_PIPE 0x80000000
 
 int
-open_wim_as_WIMStruct(const void *wim_filename_or_fd, int open_flags,
-		      WIMStruct **wim_ret,
-		      wimlib_progress_func_t progfunc, void *progctx);
+open_wim_as_WIMStruct(const void *wim_filename_or_fd,
+                      int open_flags,
+                      WIMStruct **wim_ret,
+                      wimlib_progress_func_t progfunc,
+                      void *progctx);
 
 int
 can_modify_wim(WIMStruct *wim);

@@ -123,15 +123,14 @@
 
 #include "wimlib/matchfinder_common.h"
 
-#define HC_MATCHFINDER_HASH3_ORDER	15
-#define HC_MATCHFINDER_HASH4_ORDER	16
+#define HC_MATCHFINDER_HASH3_ORDER 15
+#define HC_MATCHFINDER_HASH4_ORDER 16
 
 /* TEMPLATED functions and structures have MF_SUFFIX appended to their name.  */
 #undef TEMPLATED
-#define TEMPLATED(name)		CONCAT(name, MF_SUFFIX)
+#define TEMPLATED(name) CONCAT(name, MF_SUFFIX)
 
 struct TEMPLATED(hc_matchfinder) {
-
 	/* The hash table for finding length 3 matches  */
 	mf_pos_t hash3_tab[1UL << HC_MATCHFINDER_HASH3_ORDER];
 
@@ -150,12 +149,12 @@ static forceinline size_t
 TEMPLATED(hc_matchfinder_size)(size_t max_bufsize)
 {
 	return sizeof(struct TEMPLATED(hc_matchfinder)) +
-		(max_bufsize * sizeof(mf_pos_t));
+	       (max_bufsize * sizeof(mf_pos_t));
 }
 
 /* Prepare the matchfinder for a new input buffer.  */
 static forceinline void
-TEMPLATED(hc_matchfinder_init)(struct TEMPLATED(hc_matchfinder) *mf)
+TEMPLATED(hc_matchfinder_init)(struct TEMPLATED(hc_matchfinder) * mf)
 {
 	memset(mf, 0, sizeof(*mf));
 }
@@ -190,17 +189,18 @@ TEMPLATED(hc_matchfinder_init)(struct TEMPLATED(hc_matchfinder) *mf)
  * 'best_len' was found.
  */
 static forceinline u32
-TEMPLATED(hc_matchfinder_longest_match)(struct TEMPLATED(hc_matchfinder) * const mf,
-					const u8 * const in_begin,
-					const u8 * const in_next,
-					u32 best_len,
-					const u32 max_len,
-					const u32 nice_len,
-					const u32 max_search_depth,
-					u32 * const next_hashes,
-					u32 * const offset_ret)
+TEMPLATED(hc_matchfinder_longest_match)(
+	struct TEMPLATED(hc_matchfinder) *const mf,
+	const u8 *const in_begin,
+	const u8 *const in_next,
+	u32 best_len,
+	const u32 max_len,
+	const u32 nice_len,
+	const u32 max_search_depth,
+	u32 *const next_hashes,
+	u32 *const offset_ret)
 {
-	u32 depth_remaining = max_search_depth;
+	u32 depth_remaining     = max_search_depth;
 	const u8 *best_matchptr = in_next;
 	mf_pos_t cur_node3, cur_node4;
 	u32 hash3, hash4;
@@ -227,17 +227,18 @@ TEMPLATED(hc_matchfinder_longest_match)(struct TEMPLATED(hc_matchfinder) * const
 
 	/* Update for length 4 matches.  This prepends the node for the current
 	 * sequence to the linked list in the 'hash4' bucket.  */
-	mf->hash4_tab[hash4] = cur_pos;
+	mf->hash4_tab[hash4]  = cur_pos;
 	mf->next_tab[cur_pos] = cur_node4;
 
 	/* Compute the next hash codes.  */
 	next_hashseq = get_unaligned_le32(in_next + 1);
-	next_hashes[0] = lz_hash(next_hashseq & 0xFFFFFF, HC_MATCHFINDER_HASH3_ORDER);
+	next_hashes[0] =
+		lz_hash(next_hashseq & 0xFFFFFF, HC_MATCHFINDER_HASH3_ORDER);
 	next_hashes[1] = lz_hash(next_hashseq, HC_MATCHFINDER_HASH4_ORDER);
 	prefetchw(&mf->hash3_tab[next_hashes[0]]);
 	prefetchw(&mf->hash4_tab[next_hashes[1]]);
 
-	if (best_len < 4) {  /* No match of length >= 4 found yet?  */
+	if (best_len < 4) { /* No match of length >= 4 found yet?  */
 
 		/* Check for a length 3 match if needed.  */
 
@@ -248,8 +249,10 @@ TEMPLATED(hc_matchfinder_longest_match)(struct TEMPLATED(hc_matchfinder) * const
 
 		if (best_len < 3) {
 			matchptr = &in_begin[cur_node3];
-			if (load_u24_unaligned(matchptr) == loaded_u32_to_u24(seq4)) {
-				best_len = 3;
+			if (load_u24_unaligned(matchptr) ==
+			    loaded_u32_to_u24(seq4))
+			{
+				best_len      = 3;
 				best_matchptr = matchptr;
 			}
 		}
@@ -274,7 +277,7 @@ TEMPLATED(hc_matchfinder_longest_match)(struct TEMPLATED(hc_matchfinder) * const
 
 		/* Found a match of length >= 4.  Extend it to its full length.  */
 		best_matchptr = matchptr;
-		best_len = lz_extend(in_next, best_matchptr, 4, max_len);
+		best_len      = lz_extend(in_next, best_matchptr, 4, max_len);
 		if (best_len >= nice_len)
 			goto out;
 		cur_node4 = mf->next_tab[cur_node4];
@@ -296,14 +299,14 @@ TEMPLATED(hc_matchfinder_longest_match)(struct TEMPLATED(hc_matchfinder) * const
 			 * the first 4 bytes, or the last byte.  (The last byte,
 			 * the one which would extend the match length by 1, is
 			 * the most important.)  */
-		#if UNALIGNED_ACCESS_IS_FAST
+#if UNALIGNED_ACCESS_IS_FAST
 			if ((load_u32_unaligned(matchptr + best_len - 3) ==
 			     load_u32_unaligned(in_next + best_len - 3)) &&
 			    (load_u32_unaligned(matchptr) ==
 			     load_u32_unaligned(in_next)))
-		#else
+#else
 			if (matchptr[best_len] == in_next[best_len])
-		#endif
+#endif
 				break;
 
 			/* Continue to the next node in the list.  */
@@ -312,15 +315,15 @@ TEMPLATED(hc_matchfinder_longest_match)(struct TEMPLATED(hc_matchfinder) * const
 				goto out;
 		}
 
-	#if UNALIGNED_ACCESS_IS_FAST
+#if UNALIGNED_ACCESS_IS_FAST
 		len = 4;
-	#else
+#else
 		len = 0;
-	#endif
+#endif
 		len = lz_extend(in_next, matchptr, len, max_len);
 		if (len > best_len) {
 			/* This is the new longest match.  */
-			best_len = len;
+			best_len      = len;
 			best_matchptr = matchptr;
 			if (best_len >= nice_len)
 				goto out;
@@ -355,12 +358,12 @@ out:
  *	the sequence beginning at @in_next + @count.
  */
 static forceinline void
-TEMPLATED(hc_matchfinder_skip_bytes)(struct TEMPLATED(hc_matchfinder) * const mf,
-				     const u8 * const in_begin,
-				     const u8 *in_next,
-				     const u8 * const in_end,
-				     const u32 count,
-				     u32 * const next_hashes)
+TEMPLATED(hc_matchfinder_skip_bytes)(struct TEMPLATED(hc_matchfinder) *const mf,
+                                     const u8 *const in_begin,
+                                     const u8 *in_next,
+                                     const u8 *const in_end,
+                                     const u32 count,
+                                     u32 *const next_hashes)
 {
 	u32 cur_pos;
 	u32 hash3, hash4;
@@ -371,15 +374,16 @@ TEMPLATED(hc_matchfinder_skip_bytes)(struct TEMPLATED(hc_matchfinder) * const mf
 		return;
 
 	cur_pos = in_next - in_begin;
-	hash3 = next_hashes[0];
-	hash4 = next_hashes[1];
+	hash3   = next_hashes[0];
+	hash4   = next_hashes[1];
 	do {
-		mf->hash3_tab[hash3] = cur_pos;
+		mf->hash3_tab[hash3]  = cur_pos;
 		mf->next_tab[cur_pos] = mf->hash4_tab[hash4];
-		mf->hash4_tab[hash4] = cur_pos;
+		mf->hash4_tab[hash4]  = cur_pos;
 
 		next_hashseq = get_unaligned_le32(++in_next);
-		hash3 = lz_hash(next_hashseq & 0xFFFFFF, HC_MATCHFINDER_HASH3_ORDER);
+		hash3        = lz_hash(next_hashseq & 0xFFFFFF,
+                                HC_MATCHFINDER_HASH3_ORDER);
 		hash4 = lz_hash(next_hashseq, HC_MATCHFINDER_HASH4_ORDER);
 		cur_pos++;
 	} while (--remaining);

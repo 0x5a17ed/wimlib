@@ -18,8 +18,9 @@ time_t
 wim_timestamp_to_time_t(u64 timestamp);
 
 void
-wim_timestamp_to_wimlib_timespec(u64 timestamp, struct wimlib_timespec *wts,
-				 s32 *high_part_ret);
+wim_timestamp_to_wimlib_timespec(u64 timestamp,
+                                 struct wimlib_timespec *wts,
+                                 s32 *high_part_ret);
 
 struct timeval
 wim_timestamp_to_timeval(u64 timestamp);

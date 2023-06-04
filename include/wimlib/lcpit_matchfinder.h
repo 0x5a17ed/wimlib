@@ -56,8 +56,10 @@ u64
 lcpit_matchfinder_get_needed_memory(size_t max_bufsize);
 
 bool
-lcpit_matchfinder_init(struct lcpit_matchfinder *mf, size_t max_bufsize,
-		       u32 min_match_len, u32 nice_match_len);
+lcpit_matchfinder_init(struct lcpit_matchfinder *mf,
+                       size_t max_bufsize,
+                       u32 min_match_len,
+                       u32 nice_match_len);
 
 void
 lcpit_matchfinder_load_buffer(struct lcpit_matchfinder *mf, const u8 *T, u32 n);

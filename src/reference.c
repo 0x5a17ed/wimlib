@@ -31,8 +31,8 @@
 #include "wimlib/glob.h"
 #include "wimlib/wim.h"
 
-#define WIMLIB_REF_MASK_PUBLIC (WIMLIB_REF_FLAG_GLOB_ENABLE | \
-				WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH)
+#define WIMLIB_REF_MASK_PUBLIC \
+  (WIMLIB_REF_FLAG_GLOB_ENABLE | WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH)
 
 struct reference_info {
 	WIMStruct *dest_wim;
@@ -42,8 +42,9 @@ struct reference_info {
 };
 
 static void
-init_reference_info(struct reference_info *info, WIMStruct *dest_wim,
-		    int ref_flags)
+init_reference_info(struct reference_info *info,
+                    WIMStruct *dest_wim,
+                    int ref_flags)
 {
 	info->dest_wim = dest_wim;
 	INIT_LIST_HEAD(&info->new_blobs);
@@ -57,7 +58,8 @@ rollback_reference_info(struct reference_info *info)
 
 	while (!list_empty(&info->new_blobs)) {
 		blob = list_first_entry(&info->new_blobs,
-					struct blob_descriptor, blob_table_list);
+		                        struct blob_descriptor,
+		                        blob_table_list);
 		list_del(&blob->blob_table_list);
 		blob_table_unlink(info->dest_wim->blob_table, blob);
 		free_blob_descriptor(blob);
@@ -93,8 +95,10 @@ blob_clone_if_new(struct blob_descriptor *blob, void *_info)
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
-wimlib_reference_resources(WIMStruct *wim, WIMStruct **resource_wims,
-			   unsigned num_resource_wims, int ref_flags)
+wimlib_reference_resources(WIMStruct *wim,
+                           WIMStruct **resource_wims,
+                           unsigned num_resource_wims,
+                           int ref_flags)
 {
 	unsigned i;
 	struct reference_info info;
@@ -116,8 +120,8 @@ wimlib_reference_resources(WIMStruct *wim, WIMStruct **resource_wims,
 	init_reference_info(&info, wim, ref_flags);
 
 	for (i = 0; i < num_resource_wims; i++) {
-		ret = for_blob_in_table(resource_wims[i]->blob_table,
-					blob_clone_if_new, &info);
+		ret = for_blob_in_table(
+			resource_wims[i]->blob_table, blob_clone_if_new, &info);
 		if (ret)
 			break;
 	}
@@ -141,15 +145,18 @@ blob_gift(struct blob_descriptor *blob, void *_info)
 }
 
 static int
-reference_resource_path(struct reference_info *info, const tchar *path,
-			int open_flags)
+reference_resource_path(struct reference_info *info,
+                        const tchar *path,
+                        int open_flags)
 {
 	int ret;
 	WIMStruct *src_wim;
 
-	ret = wimlib_open_wim_with_progress(path, open_flags, &src_wim,
-					    info->dest_wim->progfunc,
-					    info->dest_wim->progctx);
+	ret = wimlib_open_wim_with_progress(path,
+	                                    open_flags,
+	                                    &src_wim,
+	                                    info->dest_wim->progfunc,
+	                                    info->dest_wim->progctx);
 	if (ret)
 		return ret;
 
@@ -161,8 +168,9 @@ reference_resource_path(struct reference_info *info, const tchar *path,
 
 static int
 reference_resource_paths(struct reference_info *info,
-			 const tchar * const *paths, unsigned num_paths,
-			 int open_flags)
+                         const tchar *const *paths,
+                         unsigned num_paths,
+                         int open_flags)
 {
 	for (unsigned i = 0; i < num_paths; i++) {
 		int ret = reference_resource_path(info, paths[i], open_flags);
@@ -174,7 +182,8 @@ reference_resource_paths(struct reference_info *info,
 
 static int
 reference_resource_glob(struct reference_info *info,
-			const tchar *refglob, int open_flags)
+                        const tchar *refglob,
+                        int open_flags)
 {
 	int ret;
 	glob_t globbuf;
@@ -186,31 +195,32 @@ reference_resource_glob(struct reference_info *info,
 			if (info->ref_flags &
 			    WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH)
 			{
-				ERROR("Found no files for glob \"%"TS"\"", refglob);
+				ERROR("Found no files for glob \"%" TS "\"",
+				      refglob);
 				return WIMLIB_ERR_GLOB_HAD_NO_MATCHES;
 			}
-			return reference_resource_path(info,
-						       refglob,
-						       open_flags);
+			return reference_resource_path(
+				info, refglob, open_flags);
 		}
-		ERROR_WITH_ERRNO("Failed to process glob \"%"TS"\"", refglob);
+		ERROR_WITH_ERRNO("Failed to process glob \"%" TS "\"", refglob);
 		if (ret == GLOB_NOSPACE)
 			return WIMLIB_ERR_NOMEM;
 		return WIMLIB_ERR_READ;
 	}
 
 	ret = reference_resource_paths(info,
-				       (const tchar * const *)globbuf.gl_pathv,
-				       globbuf.gl_pathc,
-				       open_flags);
+	                               (const tchar *const *)globbuf.gl_pathv,
+	                               globbuf.gl_pathc,
+	                               open_flags);
 	globfree(&globbuf);
 	return ret;
 }
 
 static int
 reference_resource_globs(struct reference_info *info,
-			 const tchar * const *globs, unsigned num_globs,
-			 int open_flags)
+                         const tchar *const *globs,
+                         unsigned num_globs,
+                         int open_flags)
 {
 	for (unsigned i = 0; i < num_globs; i++) {
 		int ret = reference_resource_glob(info, globs[i], open_flags);
@@ -223,8 +233,10 @@ reference_resource_globs(struct reference_info *info,
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_reference_resource_files(WIMStruct *wim,
-				const tchar * const *paths_or_globs,
-				unsigned count, int ref_flags, int open_flags)
+                                const tchar *const *paths_or_globs,
+                                unsigned count,
+                                int ref_flags,
+                                int open_flags)
 {
 	struct reference_info info;
 	int ret;
@@ -235,9 +247,11 @@ wimlib_reference_resource_files(WIMStruct *wim,
 	init_reference_info(&info, wim, ref_flags);
 
 	if (ref_flags & WIMLIB_REF_FLAG_GLOB_ENABLE)
-		ret = reference_resource_globs(&info, paths_or_globs, count, open_flags);
+		ret = reference_resource_globs(
+			&info, paths_or_globs, count, open_flags);
 	else
-		ret = reference_resource_paths(&info, paths_or_globs, count, open_flags);
+		ret = reference_resource_paths(
+			&info, paths_or_globs, count, open_flags);
 
 	if (unlikely(ret))
 		rollback_reference_info(&info);

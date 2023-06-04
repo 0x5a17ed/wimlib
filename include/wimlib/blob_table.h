@@ -64,7 +64,6 @@ struct blob_extraction_target {
  * message digest.
  */
 struct blob_descriptor {
-
 	/* List node for a hash bucket of the blob table  */
 	struct hlist_node hash_list;
 
@@ -168,15 +167,14 @@ struct blob_descriptor {
 		};
 
 		struct {
-
 			union {
-
 				/* BLOB_IN_FILE_ON_DISK
 				 * BLOB_IN_WINDOWS_FILE  */
 				struct {
 					union {
 						tchar *file_on_disk;
-						struct windows_file *windows_file;
+						struct windows_file
+							*windows_file;
 					};
 					struct wim_inode *file_inode;
 				};
@@ -184,18 +182,18 @@ struct blob_descriptor {
 				/* BLOB_IN_ATTACHED_BUFFER */
 				void *attached_buffer;
 
-			#ifdef WITH_FUSE
+#ifdef WITH_FUSE
 				/* BLOB_IN_STAGING_FILE  */
 				struct {
 					char *staging_file_name;
 					int staging_dir_fd;
 				};
-			#endif
+#endif
 
-			#ifdef WITH_NTFS_3G
+#ifdef WITH_NTFS_3G
 				/* BLOB_IN_NTFS_VOLUME  */
 				struct ntfs_location *ntfs_loc;
-			#endif
+#endif
 			};
 
 			/* List link for per-WIM-image list of unhashed blobs */
@@ -244,9 +242,11 @@ struct blob_descriptor {
 		 * references to the streams being extracted that use this blob.
 		 * out_refcnt tracks the number of slots filled.  */
 		union {
-			struct blob_extraction_target inline_blob_extraction_targets[3];
+			struct blob_extraction_target
+				inline_blob_extraction_targets[3];
 			struct {
-				struct blob_extraction_target *blob_extraction_targets;
+				struct blob_extraction_target
+					*blob_extraction_targets;
 				u32 alloc_blob_extraction_targets;
 			};
 		};
@@ -276,10 +276,10 @@ read_blob_table(WIMStruct *wim);
 
 int
 write_blob_table_from_blob_list(struct list_head *blob_list,
-				struct filedes *out_fd,
-				u16 part_number,
-				struct wim_reshdr *out_reshdr,
-				int write_resource_flags);
+                                struct filedes *out_fd,
+                                u16 part_number,
+                                struct wim_reshdr *out_reshdr,
+                                int write_resource_flags);
 
 struct blob_descriptor *
 new_blob_descriptor(void);
@@ -291,8 +291,9 @@ void
 blob_decrement_refcnt(struct blob_descriptor *blob, struct blob_table *table);
 
 void
-blob_subtract_refcnt(struct blob_descriptor *blob, struct blob_table *table,
-		     u32 count);
+blob_subtract_refcnt(struct blob_descriptor *blob,
+                     struct blob_table *table,
+                     u32 count);
 
 #ifdef WITH_FUSE
 void
@@ -316,26 +317,29 @@ lookup_blob(const struct blob_table *table, const u8 *hash);
 
 int
 for_blob_in_table(struct blob_table *table,
-		  int (*visitor)(struct blob_descriptor *, void *), void *arg);
+                  int (*visitor)(struct blob_descriptor *, void *),
+                  void *arg);
 
 int
-for_blob_in_table_sorted_by_sequential_order(struct blob_table *table,
-					     int (*visitor)(struct blob_descriptor *, void *),
-					     void *arg);
+for_blob_in_table_sorted_by_sequential_order(
+	struct blob_table *table,
+	int (*visitor)(struct blob_descriptor *, void *),
+	void *arg);
 
 struct wimlib_resource_entry;
 
 void
 blob_to_wimlib_resource_entry(const struct blob_descriptor *blob,
-			      struct wimlib_resource_entry *wentry);
+                              struct wimlib_resource_entry *wentry);
 
 int
-sort_blob_list(struct list_head *blob_list, size_t list_head_offset,
-	       int (*compar)(const void *, const void*));
+sort_blob_list(struct list_head *blob_list,
+               size_t list_head_offset,
+               int (*compar)(const void *, const void *));
 
 int
 sort_blob_list_by_sequential_order(struct list_head *blob_list,
-				   size_t list_head_offset);
+                                   size_t list_head_offset);
 
 int
 cmp_blobs_by_sequential_order(const void *p1, const void *p2);
@@ -355,11 +359,11 @@ blob_extraction_targets(const struct blob_descriptor *blob)
  */
 static inline void
 blob_set_is_located_in_wim_resource(struct blob_descriptor *blob,
-				    struct wim_resource_descriptor *rdesc,
-				    u64 offset_in_res)
+                                    struct wim_resource_descriptor *rdesc,
+                                    u64 offset_in_res)
 {
 	blob->blob_location = BLOB_IN_WIM;
-	blob->rdesc = rdesc;
+	blob->rdesc         = rdesc;
 	list_add_tail(&blob->rdesc_node, &rdesc->blob_list);
 	blob->offset_in_res = offset_in_res;
 }
@@ -373,11 +377,12 @@ blob_unset_is_located_in_wim_resource(struct blob_descriptor *blob)
 
 static inline void
 blob_set_is_located_in_attached_buffer(struct blob_descriptor *blob,
-				       void *buffer, size_t size)
+                                       void *buffer,
+                                       size_t size)
 {
-	blob->blob_location = BLOB_IN_ATTACHED_BUFFER;
+	blob->blob_location   = BLOB_IN_ATTACHED_BUFFER;
 	blob->attached_buffer = buffer;
-	blob->size = size;
+	blob->size            = size;
 }
 
 static inline bool
@@ -385,9 +390,9 @@ blob_is_in_file(const struct blob_descriptor *blob)
 {
 	return blob->blob_location == BLOB_IN_FILE_ON_DISK
 #ifdef _WIN32
-	    || blob->blob_location == BLOB_IN_WINDOWS_FILE
+	       || blob->blob_location == BLOB_IN_WINDOWS_FILE
 #endif
-	   ;
+		;
 }
 
 #ifdef _WIN32
@@ -406,30 +411,34 @@ blob_file_path(const struct blob_descriptor *blob)
 }
 
 struct blob_descriptor *
-new_blob_from_data_buffer(const void *buffer, size_t size,
-			  struct blob_table *blob_table);
+new_blob_from_data_buffer(const void *buffer,
+                          size_t size,
+                          struct blob_table *blob_table);
 
 struct blob_descriptor *
 after_blob_hashed(struct blob_descriptor *blob,
-		  struct blob_descriptor **back_ptr,
-		  struct blob_table *blob_table, struct wim_inode *inode);
+                  struct blob_descriptor **back_ptr,
+                  struct blob_table *blob_table,
+                  struct wim_inode *inode);
 
 int
-hash_unhashed_blob(struct blob_descriptor *blob, struct blob_table *blob_table,
-		   struct blob_descriptor **blob_ret);
+hash_unhashed_blob(struct blob_descriptor *blob,
+                   struct blob_table *blob_table,
+                   struct blob_descriptor **blob_ret);
 
 struct blob_descriptor **
 retrieve_pointer_to_unhashed_blob(struct blob_descriptor *blob);
 
 static inline void
 prepare_unhashed_blob(struct blob_descriptor *blob,
-		      struct wim_inode *back_inode, u32 stream_id,
-		      struct list_head *unhashed_blobs)
+                      struct wim_inode *back_inode,
+                      u32 stream_id,
+                      struct list_head *unhashed_blobs)
 {
 	if (!blob)
 		return;
-	blob->unhashed = 1;
-	blob->back_inode = back_inode;
+	blob->unhashed       = 1;
+	blob->back_inode     = back_inode;
 	blob->back_stream_id = stream_id;
 	list_add_tail(&blob->unhashed_list, unhashed_blobs);
 }

@@ -7,7 +7,7 @@
 
 #ifdef _WIN32
 
-#include "wimlib/types.h"
+#  include "wimlib/types.h"
 
 struct blob_descriptor;
 struct consume_chunk_callback;
@@ -21,12 +21,13 @@ free_windows_file(struct windows_file *file);
 
 int
 cmp_windows_files(const struct windows_file *file1,
-		  const struct windows_file *file2);
+                  const struct windows_file *file2);
 
 int
-read_windows_file_prefix(const struct blob_descriptor *blob, u64 size,
-			 const struct consume_chunk_callback *cb,
-			 bool recover_data);
+read_windows_file_prefix(const struct blob_descriptor *blob,
+                         u64 size,
+                         const struct consume_chunk_callback *cb,
+                         bool recover_data);
 
 int
 win32_global_init(int init_flags);

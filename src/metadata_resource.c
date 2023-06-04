@@ -119,7 +119,8 @@ read_metadata_resource(struct wim_image_metadata *imd)
 	if (ret)
 		goto out_free_buf;
 
-	ret = read_dentry_tree(buf, metadata_blob->size, sd->total_length, &root);
+	ret = read_dentry_tree(
+		buf, metadata_blob->size, sd->total_length, &root);
 	if (ret)
 		goto out_free_security_data;
 
@@ -136,7 +137,7 @@ read_metadata_resource(struct wim_image_metadata *imd)
 	fix_security_ids(imd, sd->num_entries);
 
 	/* Success; fill in the image_metadata structure.  */
-	imd->root_dentry = root;
+	imd->root_dentry   = root;
 	imd->security_data = sd;
 	INIT_LIST_HEAD(&imd->unhashed_blobs);
 	return 0;
@@ -160,8 +161,10 @@ recalculate_security_data_length(struct wim_security_data *sd)
 }
 
 static int
-prepare_metadata_resource(WIMStruct *wim, int image,
-			  u8 **buf_ret, size_t *len_ret)
+prepare_metadata_resource(WIMStruct *wim,
+                          int image,
+                          u8 **buf_ret,
+                          size_t *len_ret)
 {
 	u8 *buf;
 	u8 *p;
@@ -179,7 +182,7 @@ prepare_metadata_resource(WIMStruct *wim, int image,
 	imd = wim->image_metadata[image - 1];
 
 	root = imd->root_dentry;
-	sd = imd->security_data;
+	sd   = imd->security_data;
 
 	if (!root) {
 		/* Empty image; create a dummy root.  */
@@ -207,8 +210,9 @@ prepare_metadata_resource(WIMStruct *wim, int image,
 	if (likely(len == subdir_offset))
 		buf = MALLOC(len);
 	if (!buf) {
-		ERROR("Failed to allocate %"PRIu64" bytes for "
-		      "metadata resource", subdir_offset);
+		ERROR("Failed to allocate %" PRIu64 " bytes for "
+		      "metadata resource",
+		      subdir_offset);
 		return WIMLIB_ERR_NOMEM;
 	}
 
@@ -245,14 +249,14 @@ write_metadata_resource(WIMStruct *wim, int image, int write_resource_flags)
 	 * compression type, in the process updating the blob descriptor for the
 	 * metadata resource.  */
 	ret = write_wim_resource_from_buffer(buf,
-					     len,
-					     true,
-					     &wim->out_fd,
-					     wim->out_compression_type,
-					     wim->out_chunk_size,
-					     &imd->metadata_blob->out_reshdr,
-					     imd->metadata_blob->hash,
-					     write_resource_flags);
+	                                     len,
+	                                     true,
+	                                     &wim->out_fd,
+	                                     wim->out_compression_type,
+	                                     wim->out_chunk_size,
+	                                     &imd->metadata_blob->out_reshdr,
+	                                     imd->metadata_blob->hash,
+	                                     write_resource_flags);
 
 	FREE(buf);
 	return ret;

@@ -23,7 +23,7 @@
  * along with this file; if not, see https://www.gnu.org/licenses/.
  */
 
-#define WINVER 0x6000	/* Needed for LCIDToLocaleName() declaration  */
+#define WINVER 0x6000 /* Needed for LCIDToLocaleName() declaration  */
 
 #include <inttypes.h>
 #include <stdbool.h>
@@ -35,9 +35,10 @@ static struct {
 	char name[LOCALE_NAME_MAX_LENGTH];
 } map[65536];
 
-int main(void)
+int
+main(void)
 {
-	uint32_t num_languages = 0;
+	uint32_t num_languages     = 0;
 	uint32_t name_start_offset = 0;
 	uint32_t num_chars;
 	bool need_new_line = true;
@@ -45,14 +46,16 @@ int main(void)
 	for (uint32_t lcid = 0; lcid < 65536; lcid++) {
 		wchar_t locale_name[LOCALE_NAME_MAX_LENGTH];
 
-		if (LCIDToLocaleName(lcid, locale_name, LOCALE_NAME_MAX_LENGTH, 0)) {
+		if (LCIDToLocaleName(
+			    lcid, locale_name, LOCALE_NAME_MAX_LENGTH, 0))
+		{
 			size_t len = wcslen(locale_name);
 			for (size_t j = 0; j <= len; j++) {
 				if (locale_name[j] > 127) {
 					fprintf(stderr,
-						"ERROR: locale name \"%ls\" "
-						"includes non-ASCII characters",
-						locale_name);
+					        "ERROR: locale name \"%ls\" "
+					        "includes non-ASCII characters",
+					        locale_name);
 					return 1;
 				}
 				map[num_languages].name[j] = locale_name[j];
@@ -60,8 +63,9 @@ int main(void)
 			map[num_languages++].id = lcid;
 		} else if (GetLastError() != ERROR_INVALID_PARAMETER) {
 			fprintf(stderr,
-				"ERROR: LCIDToLocaleName(%"PRIx32"): %u\n",
-				lcid, (unsigned)GetLastError());
+			        "ERROR: LCIDToLocaleName(%" PRIx32 "): %u\n",
+			        lcid,
+			        (unsigned)GetLastError());
 			return 1;
 		}
 	}
@@ -69,30 +73,31 @@ int main(void)
 	printf("static const struct {\n");
 	printf("\tu16 id;\n");
 	printf("\tu16 name_start_offset;\n");
-	printf("} language_id_map[%"PRIu32"] = {", num_languages);
+	printf("} language_id_map[%" PRIu32 "] = {", num_languages);
 	for (uint32_t i = 0; i < num_languages; i++) {
 		if (need_new_line)
 			printf("\n\t");
-		printf("{0x%04x, %4"PRIu32"},", map[i].id, name_start_offset);
+		printf("{0x%04x, %4" PRIu32 "},", map[i].id, name_start_offset);
 		need_new_line = (i % 4 == 3);
 		if (!need_new_line)
 			putchar(' ');
 		name_start_offset += strlen(map[i].name) + 1;
 		if (name_start_offset > 65536) {
-			fprintf(stderr, "ERROR: total length of "
-				"language names is too long!");
+			fprintf(stderr,
+			        "ERROR: total length of "
+			        "language names is too long!");
 			return 1;
 		}
 	}
 	printf("\n};\n");
 	printf("\n");
 
-	printf("static const char language_names[%"PRIu32"] =\n",
+	printf("static const char language_names[%" PRIu32 "] =\n",
 	       name_start_offset);
 	printf("\t\"");
 	num_chars = 8;
 	for (uint32_t i = 0; i < num_languages; i++) {
-		size_t len = strlen(map[i].name);
+		size_t len    = strlen(map[i].name);
 		need_new_line = (num_chars + len + 3 > 80);
 		if (need_new_line) {
 			printf("\"\n");

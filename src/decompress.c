@@ -36,7 +36,7 @@ struct wimlib_decompressor {
 	void *private;
 };
 
-static const struct decompressor_ops * const decompressor_ops[] = {
+static const struct decompressor_ops *const decompressor_ops[] = {
 	[WIMLIB_COMPRESSION_TYPE_XPRESS] = &xpress_decompressor_ops,
 	[WIMLIB_COMPRESSION_TYPE_LZX]    = &lzx_decompressor_ops,
 	[WIMLIB_COMPRESSION_TYPE_LZMS]   = &lzms_decompressor_ops,
@@ -45,15 +45,14 @@ static const struct decompressor_ops * const decompressor_ops[] = {
 static bool
 decompressor_ctype_valid(int ctype)
 {
-	return (ctype >= 0 &&
-		ctype < ARRAY_LEN(decompressor_ops) &&
-		decompressor_ops[ctype] != NULL);
+	return (ctype >= 0 && ctype < ARRAY_LEN(decompressor_ops) &&
+	        decompressor_ops[ctype] != NULL);
 }
 
 WIMLIBAPI int
 wimlib_create_decompressor(enum wimlib_compression_type ctype,
-			   size_t max_block_size,
-			   struct wimlib_decompressor **dec_ret)
+                           size_t max_block_size,
+                           struct wimlib_decompressor **dec_ret)
 {
 	struct wimlib_decompressor *dec;
 	int ret;
@@ -74,12 +73,12 @@ wimlib_create_decompressor(enum wimlib_compression_type ctype,
 	dec = MALLOC(sizeof(*dec));
 	if (dec == NULL)
 		return WIMLIB_ERR_NOMEM;
-	dec->ops = decompressor_ops[ctype];
+	dec->ops            = decompressor_ops[ctype];
 	dec->max_block_size = max_block_size;
-	dec->private = NULL;
+	dec->private        = NULL;
 	if (dec->ops->create_decompressor) {
 		ret = dec->ops->create_decompressor(max_block_size,
-						    &dec->private);
+		                                    &dec->private);
 		if (ret) {
 			FREE(dec);
 			return ret;
@@ -90,16 +89,20 @@ wimlib_create_decompressor(enum wimlib_compression_type ctype,
 }
 
 WIMLIBAPI int
-wimlib_decompress(const void *compressed_data, size_t compressed_size,
-		  void *uncompressed_data, size_t uncompressed_size,
-		  struct wimlib_decompressor *dec)
+wimlib_decompress(const void *compressed_data,
+                  size_t compressed_size,
+                  void *uncompressed_data,
+                  size_t uncompressed_size,
+                  struct wimlib_decompressor *dec)
 {
 	if (unlikely(uncompressed_size > dec->max_block_size))
 		return -2;
 
-	return dec->ops->decompress(compressed_data, compressed_size,
-				    uncompressed_data, uncompressed_size,
-				    dec->private);
+	return dec->ops->decompress(compressed_data,
+	                            compressed_size,
+	                            uncompressed_data,
+	                            uncompressed_size,
+	                            dec->private);
 }
 
 WIMLIBAPI void

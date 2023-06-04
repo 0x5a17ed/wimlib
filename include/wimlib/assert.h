@@ -2,6 +2,6 @@
 #define _WIMLIB_ASSERT_H
 
 #include <assert.h>
-#define wimlib_assert(expr)	assert(expr)
+#define wimlib_assert(expr) assert(expr)
 
 #endif /* _WIMLIB_ASSERT_H */

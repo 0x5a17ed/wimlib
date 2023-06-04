@@ -47,10 +47,13 @@ struct verify_blob_list_ctx {
 };
 
 static int
-verify_continue_blob(const struct blob_descriptor *blob, u64 offset,
-		     const void *chunk, size_t size, void *_ctx)
+verify_continue_blob(const struct blob_descriptor *blob,
+                     u64 offset,
+                     const void *chunk,
+                     size_t size,
+                     void *_ctx)
 {
-	struct verify_blob_list_ctx *ctx = _ctx;
+	struct verify_blob_list_ctx *ctx     = _ctx;
 	union wimlib_progress_info *progress = ctx->progress;
 
 	if (offset + size == blob->size)
@@ -59,23 +62,23 @@ verify_continue_blob(const struct blob_descriptor *blob, u64 offset,
 	progress->verify_streams.completed_bytes += size;
 
 	if (progress->verify_streams.completed_bytes >= ctx->next_progress) {
-
 		int ret = call_progress(ctx->progfunc,
-					WIMLIB_PROGRESS_MSG_VERIFY_STREAMS,
-					progress, ctx->progctx);
+		                        WIMLIB_PROGRESS_MSG_VERIFY_STREAMS,
+		                        progress,
+		                        ctx->progctx);
 		if (ret)
 			return ret;
 
 		set_next_progress(progress->verify_streams.completed_bytes,
-				  progress->verify_streams.total_bytes,
-				  &ctx->next_progress);
+		                  progress->verify_streams.total_bytes,
+		                  &ctx->next_progress);
 	}
 	return 0;
 }
 
 static int
 verify_file_data_present(struct wim_image_metadata *imd,
-			 struct blob_table *blob_table)
+                         struct blob_table *blob_table)
 {
 	struct wim_inode *inode;
 	int ret;
@@ -98,8 +101,8 @@ wimlib_verify_wim(WIMStruct *wim, int verify_flags)
 	struct verify_blob_list_ctx ctx;
 	struct blob_descriptor *blob;
 	struct read_blob_callbacks cbs = {
-		.continue_blob	= verify_continue_blob,
-		.ctx		= &ctx,
+		.continue_blob = verify_continue_blob,
+		.ctx           = &ctx,
 	};
 
 	/* Check parameters  */
@@ -113,17 +116,18 @@ wimlib_verify_wim(WIMStruct *wim, int verify_flags)
 	/* Verify the images  */
 
 	if (wim_has_metadata(wim)) {
-
 		memset(&progress, 0, sizeof(progress));
-		progress.verify_image.wimfile = wim->filename;
+		progress.verify_image.wimfile      = wim->filename;
 		progress.verify_image.total_images = wim->hdr.image_count;
 
 		for (int i = 1; i <= wim->hdr.image_count; i++) {
-
 			progress.verify_image.current_image = i;
 
-			ret = call_progress(wim->progfunc, WIMLIB_PROGRESS_MSG_BEGIN_VERIFY_IMAGE,
-					    &progress, wim->progctx);
+			ret = call_progress(
+				wim->progfunc,
+				WIMLIB_PROGRESS_MSG_BEGIN_VERIFY_IMAGE,
+				&progress,
+				wim->progctx);
 			if (ret)
 				return ret;
 
@@ -131,19 +135,24 @@ wimlib_verify_wim(WIMStruct *wim, int verify_flags)
 			if (ret)
 				return ret;
 
-			ret = verify_file_data_present(wim_get_current_image_metadata(wim),
-						       wim->blob_table);
+			ret = verify_file_data_present(
+				wim_get_current_image_metadata(wim),
+				wim->blob_table);
 			if (ret)
 				return ret;
 
-			ret = call_progress(wim->progfunc, WIMLIB_PROGRESS_MSG_END_VERIFY_IMAGE,
-					    &progress, wim->progctx);
+			ret = call_progress(
+				wim->progfunc,
+				WIMLIB_PROGRESS_MSG_END_VERIFY_IMAGE,
+				&progress,
+				wim->progctx);
 			if (ret)
 				return ret;
 		}
 	} else {
-		WARNING("\"%"TS"\" does not contain image metadata.  Skipping image verification.",
-			wim->filename);
+		WARNING("\"%" TS
+		        "\" does not contain image metadata.  Skipping image verification.",
+		        wim->filename);
 	}
 
 	/* Verify the blobs: SHA-1 message digests must match  */
@@ -158,17 +167,20 @@ wimlib_verify_wim(WIMStruct *wim, int verify_flags)
 		progress.verify_streams.total_bytes += blob->size;
 	}
 
-	ctx.progfunc = wim->progfunc;
-	ctx.progctx = wim->progctx;
-	ctx.progress = &progress;
+	ctx.progfunc      = wim->progfunc;
+	ctx.progctx       = wim->progctx;
+	ctx.progress      = &progress;
 	ctx.next_progress = 0;
 
-	ret = call_progress(ctx.progfunc, WIMLIB_PROGRESS_MSG_VERIFY_STREAMS,
-			    ctx.progress, ctx.progctx);
+	ret = call_progress(ctx.progfunc,
+	                    WIMLIB_PROGRESS_MSG_VERIFY_STREAMS,
+	                    ctx.progress,
+	                    ctx.progctx);
 	if (ret)
 		return ret;
 
 	return read_blob_list(&blob_list,
-			      offsetof(struct blob_descriptor, extraction_list),
-			      &cbs, VERIFY_BLOB_HASHES);
+	                      offsetof(struct blob_descriptor, extraction_list),
+	                      &cbs,
+	                      VERIFY_BLOB_HASHES);
 }

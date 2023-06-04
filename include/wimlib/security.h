@@ -42,8 +42,7 @@ void
 destroy_sd_set(struct wim_sd_set *sd_set);
 
 s32
-sd_set_add_sd(struct wim_sd_set *sd_set, const char descriptor[],
-	      size_t size);
+sd_set_add_sd(struct wim_sd_set *sd_set, const char descriptor[], size_t size);
 
 int
 init_sd_set(struct wim_sd_set *sd_set, struct wim_security_data *sd);
@@ -52,12 +51,13 @@ struct wim_security_data *
 new_wim_security_data(void);
 
 int
-read_wim_security_data(const u8 *buf, size_t buf_len,
-		       struct wim_security_data **sd_ret);
+read_wim_security_data(const u8 *buf,
+                       size_t buf_len,
+                       struct wim_security_data **sd_ret);
 
 u8 *
-write_wim_security_data(const struct wim_security_data * restrict sd,
-			u8 * restrict p);
+write_wim_security_data(const struct wim_security_data *restrict sd,
+                        u8 *restrict p);
 
 void
 print_wim_security_data(const struct wim_security_data *sd);

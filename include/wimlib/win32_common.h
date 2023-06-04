@@ -31,17 +31,18 @@ typedef struct _RTL_RELATIVE_NAME_U {
 } RTL_RELATIVE_NAME_U, *PRTL_RELATIVE_NAME_U;
 
 #ifndef FSCTL_SET_PERSISTENT_VOLUME_STATE
-#define FSCTL_SET_PERSISTENT_VOLUME_STATE \
-	CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 142, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#  define FSCTL_SET_PERSISTENT_VOLUME_STATE \
+    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 142, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-#define PERSISTENT_VOLUME_STATE_SHORT_NAME_CREATION_DISABLED 0x00000001
+#  define PERSISTENT_VOLUME_STATE_SHORT_NAME_CREATION_DISABLED 0x00000001
 
 typedef struct _FILE_FS_PERSISTENT_VOLUME_INFORMATION {
 	ULONG VolumeFlags;
 	ULONG FlagMask;
 	ULONG Version;
 	ULONG Reserved;
-} FILE_FS_PERSISTENT_VOLUME_INFORMATION, *PFILE_FS_PERSISTENT_VOLUME_INFORMATION;
+} FILE_FS_PERSISTENT_VOLUME_INFORMATION,
+	*PFILE_FS_PERSISTENT_VOLUME_INFORMATION;
 #endif /* FSCTL_SET_PERSISTENT_VOLUME_STATE */
 
 /* ntdll functions  */
@@ -101,38 +102,38 @@ NtSetSecurityObject(IN HANDLE Handle,
 NTSTATUS
 NTAPI
 NtOpenSymbolicLinkObject(PHANDLE LinkHandle,
-			 ACCESS_MASK DesiredAccess,
-			 POBJECT_ATTRIBUTES ObjectAttributes);
+                         ACCESS_MASK DesiredAccess,
+                         POBJECT_ATTRIBUTES ObjectAttributes);
 
 NTSTATUS
 NTAPI
 NtQueryEaFile(IN HANDLE FileHandle,
-	      OUT PIO_STATUS_BLOCK IoStatusBlock,
-	      OUT PVOID Buffer,
-	      IN ULONG Length,
-	      IN BOOLEAN ReturnSingleEntry,
-	      IN PVOID EaList OPTIONAL,
-	      IN ULONG EaListLength,
-	      IN PULONG EaIndex OPTIONAL,
-	      IN BOOLEAN RestartScan);
+              OUT PIO_STATUS_BLOCK IoStatusBlock,
+              OUT PVOID Buffer,
+              IN ULONG Length,
+              IN BOOLEAN ReturnSingleEntry,
+              IN PVOID EaList OPTIONAL,
+              IN ULONG EaListLength,
+              IN PULONG EaIndex OPTIONAL,
+              IN BOOLEAN RestartScan);
 
 NTSTATUS
 NTAPI
 NtSetEaFile(IN HANDLE FileHandle,
-	    OUT PIO_STATUS_BLOCK IoStatusBlock,
-	    OUT PVOID Buffer,
-	    IN ULONG Length);
+            OUT PIO_STATUS_BLOCK IoStatusBlock,
+            OUT PVOID Buffer,
+            IN ULONG Length);
 
 /* Dynamically loaded ntdll functions */
 
-extern NTSTATUS (WINAPI *func_RtlDosPathNameToNtPathName_U_WithStatus)
-		(IN PCWSTR DosName,
-		 OUT PUNICODE_STRING NtName,
-		 OUT PCWSTR *PartName,
-		 OUT PRTL_RELATIVE_NAME_U RelativeName);
+extern NTSTATUS(WINAPI *func_RtlDosPathNameToNtPathName_U_WithStatus)(
+	IN PCWSTR DosName,
+	OUT PUNICODE_STRING NtName,
+	OUT PCWSTR *PartName,
+	OUT PRTL_RELATIVE_NAME_U RelativeName);
 
-extern NTSTATUS (WINAPI *func_RtlCreateSystemVolumeInformationFolder)
-			(PCUNICODE_STRING VolumeRootPath);
+extern NTSTATUS(WINAPI *func_RtlCreateSystemVolumeInformationFolder)(
+	PCUNICODE_STRING VolumeRootPath);
 
 /* Other utility functions */
 
@@ -145,11 +146,9 @@ win32_get_drive_path(const wchar_t *file_path, wchar_t drive_path[7]);
 bool
 win32_try_to_attach_wof(const wchar_t *drive);
 
-void __attribute__((cold))
-win32_warning(DWORD err, const wchar_t *format, ...);
+void __attribute__((cold)) win32_warning(DWORD err, const wchar_t *format, ...);
 
-void __attribute__((cold))
-win32_error(DWORD err, const wchar_t *format, ...);
+void __attribute__((cold)) win32_error(DWORD err, const wchar_t *format, ...);
 
 void __attribute__((cold))
 winnt_warning(NTSTATUS status, const wchar_t *format, ...);
@@ -158,7 +157,12 @@ void __attribute__((cold))
 winnt_error(NTSTATUS status, const wchar_t *format, ...);
 
 NTSTATUS
-winnt_fsctl(HANDLE h, u32 code, const void *in, u32 in_size,
-	    void *out, u32 out_size_avail, u32 *actual_out_size_ret);
+winnt_fsctl(HANDLE h,
+            u32 code,
+            const void *in,
+            u32 in_size,
+            void *out,
+            u32 out_size_avail,
+            u32 *actual_out_size_ret);
 
 #endif /* _WIMLIB_WIN32_COMMON_H */

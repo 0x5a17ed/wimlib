@@ -34,10 +34,10 @@ canonicalize_wim_path(const tchar *wim_path);
 
 #ifdef _WIN32
 #  define OS_PREFERRED_PATH_SEPARATOR L'\\'
-#  define is_any_path_separator(c) ((c) == L'/' || (c) == L'\\')
+#  define is_any_path_separator(c)    ((c) == L'/' || (c) == L'\\')
 #else
 #  define OS_PREFERRED_PATH_SEPARATOR '/'
-#  define is_any_path_separator(c) ((c) == '/' || (c) == '\\')
+#  define is_any_path_separator(c)    ((c) == '/' || (c) == '\\')
 #endif
 
 #define WIM_PATH_SEPARATOR WIMLIB_WIM_PATH_SEPARATOR

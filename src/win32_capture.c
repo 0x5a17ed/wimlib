@@ -23,25 +23,25 @@
 
 #ifdef _WIN32
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#  ifdef HAVE_CONFIG_H
+#    include "config.h"
+#  endif
 
-#include "wimlib/win32_common.h"
+#  include "wimlib/win32_common.h"
 
-#include "wimlib/assert.h"
-#include "wimlib/blob_table.h"
-#include "wimlib/dentry.h"
-#include "wimlib/encoding.h"
-#include "wimlib/endianness.h"
-#include "wimlib/error.h"
-#include "wimlib/object_id.h"
-#include "wimlib/paths.h"
-#include "wimlib/reparse.h"
-#include "wimlib/scan.h"
-#include "wimlib/win32_vss.h"
-#include "wimlib/wof.h"
-#include "wimlib/xattr.h"
+#  include "wimlib/assert.h"
+#  include "wimlib/blob_table.h"
+#  include "wimlib/dentry.h"
+#  include "wimlib/encoding.h"
+#  include "wimlib/endianness.h"
+#  include "wimlib/error.h"
+#  include "wimlib/object_id.h"
+#  include "wimlib/paths.h"
+#  include "wimlib/reparse.h"
+#  include "wimlib/scan.h"
+#  include "wimlib/win32_vss.h"
+#  include "wimlib/wof.h"
+#  include "wimlib/xattr.h"
 
 struct winnt_scan_ctx {
 	struct scan_params *params;
@@ -67,7 +67,6 @@ printable_path(const struct winnt_scan_ctx *ctx)
 
 /* Description of where data is located on a Windows filesystem  */
 struct windows_file {
-
 	/* Is the data the raw encrypted data of an EFS-encrypted file?  */
 	u64 is_encrypted : 1;
 
@@ -97,9 +96,12 @@ struct windows_file {
 
 /* Allocate a structure to describe the location of a data stream by path.  */
 static struct windows_file *
-alloc_windows_file(const wchar_t *path, size_t path_nchars,
-		   const wchar_t *stream_name, size_t stream_name_nchars,
-		   struct vss_snapshot *snapshot, bool is_encrypted)
+alloc_windows_file(const wchar_t *path,
+                   size_t path_nchars,
+                   const wchar_t *stream_name,
+                   size_t stream_name_nchars,
+                   struct vss_snapshot *snapshot,
+                   bool is_encrypted)
 {
 	size_t full_path_nbytes;
 	struct windows_file *file;
@@ -110,20 +112,20 @@ alloc_windows_file(const wchar_t *path, size_t path_nchars,
 		full_path_nbytes += (1 + stream_name_nchars) * sizeof(wchar_t);
 
 	file = MALLOC(sizeof(struct windows_file) + full_path_nbytes +
-		      sizeof(wchar_t));
+	              sizeof(wchar_t));
 	if (!file)
 		return NULL;
 
 	file->is_encrypted = is_encrypted;
-	file->is_file_id = 0;
-	file->sort_key = 0;
-	file->path_nbytes = full_path_nbytes;
-	file->snapshot = vss_get_snapshot(snapshot);
-	p = wmempcpy(file->path, path, path_nchars);
+	file->is_file_id   = 0;
+	file->sort_key     = 0;
+	file->path_nbytes  = full_path_nbytes;
+	file->snapshot     = vss_get_snapshot(snapshot);
+	p                  = wmempcpy(file->path, path, path_nchars);
 	if (stream_name_nchars) {
 		/* Named data stream  */
 		*p++ = L':';
-		p = wmempcpy(p, stream_name, stream_name_nchars);
+		p    = wmempcpy(p, stream_name, stream_name_nchars);
 	}
 	*p = L'\0';
 	return file;
@@ -131,37 +133,41 @@ alloc_windows_file(const wchar_t *path, size_t path_nchars,
 
 /* Allocate a structure to describe the location of a file by ID.  */
 static struct windows_file *
-alloc_windows_file_for_file_id(u64 file_id, const wchar_t *root_path,
-			       size_t root_path_nchars,
-			       struct vss_snapshot *snapshot)
+alloc_windows_file_for_file_id(u64 file_id,
+                               const wchar_t *root_path,
+                               size_t root_path_nchars,
+                               struct vss_snapshot *snapshot)
 {
 	size_t full_path_nbytes;
 	struct windows_file *file;
 	wchar_t *p;
 
-	full_path_nbytes = (root_path_nchars * sizeof(wchar_t)) +
-			   sizeof(file_id);
+	full_path_nbytes =
+		(root_path_nchars * sizeof(wchar_t)) + sizeof(file_id);
 	file = MALLOC(sizeof(struct windows_file) + full_path_nbytes +
-		      sizeof(wchar_t));
+	              sizeof(wchar_t));
 	if (!file)
 		return NULL;
 
 	file->is_encrypted = 0;
-	file->is_file_id = 1;
-	file->sort_key = 0;
-	file->path_nbytes = full_path_nbytes;
-	file->snapshot = vss_get_snapshot(snapshot);
-	p = wmempcpy(file->path, root_path, root_path_nchars);
-	p = mempcpy(p, &file_id, sizeof(file_id));
-	*p = L'\0';
+	file->is_file_id   = 1;
+	file->sort_key     = 0;
+	file->path_nbytes  = full_path_nbytes;
+	file->snapshot     = vss_get_snapshot(snapshot);
+	p                  = wmempcpy(file->path, root_path, root_path_nchars);
+	p                  = mempcpy(p, &file_id, sizeof(file_id));
+	*p                 = L'\0';
 	return file;
 }
 
 /* Add a stream, located on a Windows filesystem, to the specified WIM inode. */
 static int
-add_stream(struct wim_inode *inode, struct windows_file *windows_file,
-	   u64 stream_size, int stream_type, const utf16lechar *stream_name,
-	   struct list_head *unhashed_blobs)
+add_stream(struct wim_inode *inode,
+           struct windows_file *windows_file,
+           u64 stream_size,
+           int stream_type,
+           const utf16lechar *stream_name,
+           struct list_head *unhashed_blobs)
 {
 	struct blob_descriptor *blob = NULL;
 	struct wim_inode_stream *strm;
@@ -175,11 +181,11 @@ add_stream(struct wim_inode *inode, struct windows_file *windows_file,
 		blob = new_blob_descriptor();
 		if (!blob)
 			goto err_nomem;
-		blob->windows_file = windows_file;
+		blob->windows_file  = windows_file;
 		blob->blob_location = BLOB_IN_WINDOWS_FILE;
-		blob->file_inode = inode;
-		blob->size = stream_size;
-		windows_file = NULL;
+		blob->file_inode    = inode;
+		blob->size          = stream_size;
+		windows_file        = NULL;
 	}
 
 	strm = inode_add_stream(inode, stream_type, stream_name, blob);
@@ -219,7 +225,7 @@ free_windows_file(struct windows_file *file)
 
 int
 cmp_windows_files(const struct windows_file *file1,
-		  const struct windows_file *file2)
+                  const struct windows_file *file2)
 {
 	/* Compare by starting LCN (logical cluster number)  */
 	int v = cmp_u64(file1->sort_key, file2->sort_key);
@@ -227,8 +233,9 @@ cmp_windows_files(const struct windows_file *file1,
 		return v;
 
 	/* Fall back to comparing files by path (arbitrary heuristic).  */
-	v = memcmp(file1->path, file2->path,
-		   min(file1->path_nbytes, file2->path_nbytes));
+	v = memcmp(file1->path,
+	           file2->path,
+	           min(file1->path_nbytes, file2->path_nbytes));
 	if (v)
 		return v;
 
@@ -248,18 +255,21 @@ get_windows_file_path(const struct windows_file *file)
  * permissions to request on the handle.  SYNCHRONIZE permision is always added.
  */
 static NTSTATUS
-winnt_openat(HANDLE cur_dir, const wchar_t *path, size_t path_nchars,
-	     ACCESS_MASK perms, HANDLE *h_ret)
+winnt_openat(HANDLE cur_dir,
+             const wchar_t *path,
+             size_t path_nchars,
+             ACCESS_MASK perms,
+             HANDLE *h_ret)
 {
 	UNICODE_STRING name = {
-		.Length = path_nchars * sizeof(wchar_t),
+		.Length        = path_nchars * sizeof(wchar_t),
 		.MaximumLength = path_nchars * sizeof(wchar_t),
-		.Buffer = (wchar_t *)path,
+		.Buffer        = (wchar_t *)path,
 	};
 	OBJECT_ATTRIBUTES attr = {
-		.Length = sizeof(attr),
+		.Length        = sizeof(attr),
 		.RootDirectory = cur_dir,
-		.ObjectName = &name,
+		.ObjectName    = &name,
 	};
 	IO_STATUS_BLOCK iosb;
 	NTSTATUS status;
@@ -271,12 +281,13 @@ winnt_openat(HANDLE cur_dir, const wchar_t *path, size_t path_nchars,
 		options |= FILE_SEQUENTIAL_ONLY;
 	}
 retry:
-	status = NtOpenFile(h_ret, perms, &attr, &iosb,
-			    FILE_SHARE_VALID_FLAGS, options);
+	status = NtOpenFile(
+		h_ret, perms, &attr, &iosb, FILE_SHARE_VALID_FLAGS, options);
 	if (!NT_SUCCESS(status)) {
 		/* Try requesting fewer permissions  */
 		if (status == STATUS_ACCESS_DENIED ||
-		    status == STATUS_PRIVILEGE_NOT_HELD) {
+		    status == STATUS_PRIVILEGE_NOT_HELD)
+		{
 			if (perms & ACCESS_SYSTEM_SECURITY) {
 				perms &= ~ACCESS_SYSTEM_SECURITY;
 				goto retry;
@@ -291,8 +302,10 @@ retry:
 }
 
 static NTSTATUS
-winnt_open(const wchar_t *path, size_t path_nchars, ACCESS_MASK perms,
-	   HANDLE *h_ret)
+winnt_open(const wchar_t *path,
+           size_t path_nchars,
+           ACCESS_MASK perms,
+           HANDLE *h_ret)
 {
 	return winnt_openat(NULL, path, path_nchars, perms, h_ret);
 }
@@ -305,7 +318,7 @@ windows_file_to_string(const struct windows_file *file, u8 *buf, size_t bufsize)
 		memcpy(&file_id,
 		       (u8 *)file->path + file->path_nbytes - sizeof(file_id),
 		       sizeof(file_id));
-		swprintf((wchar_t *)buf, L"NTFS inode 0x%016"PRIx64, file_id);
+		swprintf((wchar_t *)buf, L"NTFS inode 0x%016" PRIx64, file_id);
 	} else if (file->path_nbytes + 3 * sizeof(wchar_t) <= bufsize) {
 		swprintf((wchar_t *)buf, L"\"%ls\"", file->path);
 	} else {
@@ -316,16 +329,17 @@ windows_file_to_string(const struct windows_file *file, u8 *buf, size_t bufsize)
 
 static int
 read_winnt_stream_prefix(const struct windows_file *file,
-			 u64 size, const struct consume_chunk_callback *cb)
+                         u64 size,
+                         const struct consume_chunk_callback *cb)
 {
 	IO_STATUS_BLOCK iosb;
 	UNICODE_STRING name = {
-		.Buffer = (wchar_t *)file->path,
-		.Length = file->path_nbytes,
+		.Buffer        = (wchar_t *)file->path,
+		.Length        = file->path_nbytes,
 		.MaximumLength = file->path_nbytes,
 	};
 	OBJECT_ATTRIBUTES attr = {
-		.Length = sizeof(attr),
+		.Length     = sizeof(attr),
 		.ObjectName = &name,
 	};
 	HANDLE h;
@@ -334,14 +348,15 @@ read_winnt_stream_prefix(const struct windows_file *file,
 	u64 bytes_remaining;
 	int ret;
 
-	status = NtOpenFile(&h, FILE_READ_DATA | SYNCHRONIZE,
-			    &attr, &iosb,
-			    FILE_SHARE_VALID_FLAGS,
-			    FILE_OPEN_REPARSE_POINT |
-				FILE_OPEN_FOR_BACKUP_INTENT |
-				FILE_SYNCHRONOUS_IO_NONALERT |
-				FILE_SEQUENTIAL_ONLY |
-				(file->is_file_id ? FILE_OPEN_BY_FILE_ID : 0));
+	status = NtOpenFile(
+		&h,
+		FILE_READ_DATA | SYNCHRONIZE,
+		&attr,
+		&iosb,
+		FILE_SHARE_VALID_FLAGS,
+		FILE_OPEN_REPARSE_POINT | FILE_OPEN_FOR_BACKUP_INTENT |
+			FILE_SYNCHRONOUS_IO_NONALERT | FILE_SEQUENTIAL_ONLY |
+			(file->is_file_id ? FILE_OPEN_BY_FILE_ID : 0));
 	if (unlikely(!NT_SUCCESS(status))) {
 		if (status == STATUS_SHARING_VIOLATION) {
 			ERROR("Can't open %ls for reading:\n"
@@ -349,13 +364,15 @@ read_winnt_stream_prefix(const struct windows_file *file,
 			      "Consider using snapshot (VSS) mode.",
 			      windows_file_to_string(file, buf, sizeof(buf)));
 		} else {
-			winnt_error(status, L"Can't open %ls for reading",
-				    windows_file_to_string(file, buf, sizeof(buf)));
+			winnt_error(
+				status,
+				L"Can't open %ls for reading",
+				windows_file_to_string(file, buf, sizeof(buf)));
 		}
 		return WIMLIB_ERR_OPEN;
 	}
 
-	ret = 0;
+	ret             = 0;
 	bytes_remaining = size;
 	while (bytes_remaining) {
 		IO_STATUS_BLOCK iosb;
@@ -366,27 +383,33 @@ read_winnt_stream_prefix(const struct windows_file *file,
 
 		count = min(sizeof(buf), bytes_remaining);
 
-	retry_read:
-		status = NtReadFile(h, NULL, NULL, NULL,
-				    &iosb, buf, count, NULL, NULL);
+retry_read:
+		status = NtReadFile(
+			h, NULL, NULL, NULL, &iosb, buf, count, NULL, NULL);
 		if (unlikely(!NT_SUCCESS(status))) {
 			if (status == STATUS_END_OF_FILE) {
 				ERROR("%ls: File was concurrently truncated",
-				      windows_file_to_string(file, buf, sizeof(buf)));
+				      windows_file_to_string(
+					      file, buf, sizeof(buf)));
 				ret = WIMLIB_ERR_CONCURRENT_MODIFICATION_DETECTED;
 			} else {
-				winnt_warning(status, L"Error reading data from %ls",
-					      windows_file_to_string(file, buf, sizeof(buf)));
+				winnt_warning(status,
+				              L"Error reading data from %ls",
+				              windows_file_to_string(
+						      file, buf, sizeof(buf)));
 
 				/* Currently these retries are purely a guess;
 				 * there is no reproducible problem that they solve.  */
 				if (--tries_remaining) {
 					int delay = 100;
-					if (status == STATUS_INSUFFICIENT_RESOURCES ||
-					    status == STATUS_NO_MEMORY) {
+					if (status ==
+					            STATUS_INSUFFICIENT_RESOURCES ||
+					    status == STATUS_NO_MEMORY)
+					{
 						delay *= 25;
 					}
-					WARNING("Retrying after %dms...", delay);
+					WARNING("Retrying after %dms...",
+					        delay);
 					Sleep(delay);
 					goto retry_read;
 				}
@@ -396,7 +419,7 @@ read_winnt_stream_prefix(const struct windows_file *file,
 			break;
 		} else if (unlikely(tries_remaining != max_tries)) {
 			WARNING("A read request had to be retried multiple times "
-				"before it succeeded!");
+			        "before it succeeded!");
 		}
 
 		bytes_read = iosb.Information;
@@ -438,8 +461,10 @@ win32_encrypted_export_cb(unsigned char *data, void *_ctx, unsigned long len)
 }
 
 static int
-read_win32_encrypted_file_prefix(const wchar_t *path, bool is_dir, u64 size,
-				 const struct consume_chunk_callback *cb)
+read_win32_encrypted_file_prefix(const wchar_t *path,
+                                 bool is_dir,
+                                 u64 size,
+                                 const struct consume_chunk_callback *cb)
 {
 	struct win32_encrypted_read_ctx export_ctx;
 	DWORD err;
@@ -450,31 +475,33 @@ read_win32_encrypted_file_prefix(const wchar_t *path, bool is_dir, u64 size,
 	if (is_dir)
 		flags |= CREATE_FOR_DIR;
 
-	export_ctx.cb = cb;
+	export_ctx.cb              = cb;
 	export_ctx.wimlib_err_code = 0;
 	export_ctx.bytes_remaining = size;
 
 	err = OpenEncryptedFileRaw(path, flags, &file_ctx);
 	if (err != ERROR_SUCCESS) {
-		win32_error(err,
-			    L"Failed to open encrypted file \"%ls\" for raw read",
-			    path);
+		win32_error(
+			err,
+			L"Failed to open encrypted file \"%ls\" for raw read",
+			path);
 		return WIMLIB_ERR_OPEN;
 	}
-	err = ReadEncryptedFileRaw(win32_encrypted_export_cb,
-				   &export_ctx, file_ctx);
+	err = ReadEncryptedFileRaw(
+		win32_encrypted_export_cb, &export_ctx, file_ctx);
 	if (err != ERROR_SUCCESS) {
 		ret = export_ctx.wimlib_err_code;
 		if (ret == 0) {
 			win32_error(err,
-				    L"Failed to read encrypted file \"%ls\"",
-				    path);
+			            L"Failed to read encrypted file \"%ls\"",
+			            path);
 			ret = WIMLIB_ERR_READ;
 		}
 	} else if (export_ctx.bytes_remaining != 0) {
-		ERROR("Only could read %"PRIu64" of %"PRIu64" bytes from "
+		ERROR("Only could read %" PRIu64 " of %" PRIu64 " bytes from "
 		      "encrypted file \"%ls\"",
-		      size - export_ctx.bytes_remaining, size,
+		      size - export_ctx.bytes_remaining,
+		      size,
 		      path);
 		ret = WIMLIB_ERR_READ;
 	} else {
@@ -487,15 +514,18 @@ read_win32_encrypted_file_prefix(const wchar_t *path, bool is_dir, u64 size,
 /* Read the first @size bytes from the file, or named data stream of a file,
  * described by @blob.  */
 int
-read_windows_file_prefix(const struct blob_descriptor *blob, u64 size,
-			 const struct consume_chunk_callback *cb,
-			 bool recover_data)
+read_windows_file_prefix(const struct blob_descriptor *blob,
+                         u64 size,
+                         const struct consume_chunk_callback *cb,
+                         bool recover_data)
 {
 	const struct windows_file *file = blob->windows_file;
 
 	if (unlikely(file->is_encrypted)) {
-		bool is_dir = (blob->file_inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY);
-		return read_win32_encrypted_file_prefix(file->path, is_dir, size, cb);
+		bool is_dir = (blob->file_inode->i_attributes &
+		               FILE_ATTRIBUTE_DIRECTORY);
+		return read_win32_encrypted_file_prefix(
+			file->path, is_dir, size, cb);
 	}
 
 	return read_winnt_stream_prefix(file, size, cb);
@@ -515,12 +545,12 @@ winnt_get_short_name(HANDLE h, struct wim_dentry *dentry)
 	u8 buf[128] __attribute__((aligned(8)));
 	const FILE_NAME_INFORMATION *info;
 
-	status = NtQueryInformationFile(h, &iosb, buf, sizeof(buf),
-					FileAlternateNameInformation);
+	status = NtQueryInformationFile(
+		h, &iosb, buf, sizeof(buf), FileAlternateNameInformation);
 	info = (const FILE_NAME_INFORMATION *)buf;
 	if (NT_SUCCESS(status) && info->FileNameLength != 0) {
-		dentry->d_short_name = utf16le_dupz(info->FileName,
-						    info->FileNameLength);
+		dentry->d_short_name =
+			utf16le_dupz(info->FileName, info->FileNameLength);
 		if (!dentry->d_short_name)
 			return STATUS_NO_MEMORY;
 		dentry->d_short_name_nbytes = info->FileNameLength;
@@ -533,8 +563,9 @@ winnt_get_short_name(HANDLE h, struct wim_dentry *dentry)
  * WIM image's security descriptor set.
  */
 static noinline_for_stack int
-winnt_load_security_descriptor(HANDLE h, struct wim_inode *inode,
-			       struct winnt_scan_ctx *ctx)
+winnt_load_security_descriptor(HANDLE h,
+                               struct wim_inode *inode,
+                               struct winnt_scan_ctx *ctx)
 {
 	SECURITY_INFORMATION requestedInformation;
 	u8 _buf[4096] __attribute__((aligned(8)));
@@ -557,14 +588,12 @@ winnt_load_security_descriptor(HANDLE h, struct wim_inode *inode,
 	 *
 	 * Older versions of Windows tolerate these new flags being passed in.
 	 */
-	requestedInformation = OWNER_SECURITY_INFORMATION |
-			       GROUP_SECURITY_INFORMATION |
-			       DACL_SECURITY_INFORMATION |
-			       SACL_SECURITY_INFORMATION |
-			       LABEL_SECURITY_INFORMATION |
-			       BACKUP_SECURITY_INFORMATION;
+	requestedInformation =
+		OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
+		DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION |
+		LABEL_SECURITY_INFORMATION | BACKUP_SECURITY_INFORMATION;
 
-	buf = _buf;
+	buf     = _buf;
 	bufsize = sizeof(_buf);
 
 	/*
@@ -596,11 +625,12 @@ winnt_load_security_descriptor(HANDLE h, struct wim_inode *inode,
 	 * ntdll function and therefore not officially part of the Win32 API.
 	 * Oh well.
 	 */
-	while (!NT_SUCCESS(status = NtQuerySecurityObject(h,
-							  requestedInformation,
-							  (PSECURITY_DESCRIPTOR)buf,
-							  bufsize,
-							  &len_needed)))
+	while (!NT_SUCCESS(
+		status = NtQuerySecurityObject(h,
+	                                       requestedInformation,
+	                                       (PSECURITY_DESCRIPTOR)buf,
+	                                       bufsize,
+	                                       &len_needed)))
 	{
 		switch (status) {
 		case STATUS_BUFFER_TOO_SMALL:
@@ -614,8 +644,10 @@ winnt_load_security_descriptor(HANDLE h, struct wim_inode *inode,
 			break;
 		case STATUS_PRIVILEGE_NOT_HELD:
 		case STATUS_ACCESS_DENIED:
-			if (ctx->params->add_flags & WIMLIB_ADD_FLAG_STRICT_ACLS) {
-		default:
+			if (ctx->params->add_flags &
+			    WIMLIB_ADD_FLAG_STRICT_ACLS)
+			{
+			default:
 				/* Permission denied in STRICT_ACLS mode, or
 				 * unknown error.  */
 				goto out;
@@ -623,9 +655,10 @@ winnt_load_security_descriptor(HANDLE h, struct wim_inode *inode,
 			if (requestedInformation & SACL_SECURITY_INFORMATION) {
 				/* Try again without the SACL.  */
 				ctx->num_get_sacl_priv_notheld++;
-				requestedInformation &= ~(SACL_SECURITY_INFORMATION |
-							  LABEL_SECURITY_INFORMATION |
-							  BACKUP_SECURITY_INFORMATION);
+				requestedInformation &=
+					~(SACL_SECURITY_INFORMATION |
+				          LABEL_SECURITY_INFORMATION |
+				          BACKUP_SECURITY_INFORMATION);
 				break;
 			}
 			/* Fake success (useful when capturing as
@@ -643,15 +676,17 @@ winnt_load_security_descriptor(HANDLE h, struct wim_inode *inode,
 
 	/* Add the security descriptor to the WIM image, and save its ID in
 	 * the file's inode.  */
-	inode->i_security_id = sd_set_add_sd(ctx->params->sd_set, buf, len_needed);
+	inode->i_security_id =
+		sd_set_add_sd(ctx->params->sd_set, buf, len_needed);
 	if (unlikely(inode->i_security_id < 0))
 		status = STATUS_NO_MEMORY;
 out:
 	if (unlikely(buf != _buf))
 		FREE(buf);
 	if (!NT_SUCCESS(status)) {
-		winnt_error(status, L"\"%ls\": Can't read security descriptor",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't read security descriptor",
+		            printable_path(ctx));
 		return WIMLIB_ERR_STAT;
 	}
 	return 0;
@@ -659,8 +694,9 @@ out:
 
 /* Load a file's object ID into the corresponding WIM inode.  */
 static noinline_for_stack int
-winnt_load_object_id(HANDLE h, struct wim_inode *inode,
-		     struct winnt_scan_ctx *ctx)
+winnt_load_object_id(HANDLE h,
+                     struct wim_inode *inode,
+                     struct winnt_scan_ctx *ctx)
 {
 	FILE_OBJECTID_BUFFER buffer;
 	NTSTATUS status;
@@ -669,14 +705,15 @@ winnt_load_object_id(HANDLE h, struct wim_inode *inode,
 	if (!(ctx->vol_flags & FILE_SUPPORTS_OBJECT_IDS))
 		return 0;
 
-	status = winnt_fsctl(h, FSCTL_GET_OBJECT_ID, NULL, 0,
-			     &buffer, sizeof(buffer), &len);
+	status = winnt_fsctl(
+		h, FSCTL_GET_OBJECT_ID, NULL, 0, &buffer, sizeof(buffer), &len);
 
 	if (status == STATUS_OBJECTID_NOT_FOUND) /* No object ID  */
 		return 0;
 
 	if (status == STATUS_INVALID_DEVICE_REQUEST ||
-	    status == STATUS_NOT_SUPPORTED /* Samba volume, WinXP */) {
+	    status == STATUS_NOT_SUPPORTED /* Samba volume, WinXP */)
+	{
 		/* The filesystem claimed to support object IDs, but we can't
 		 * actually read them.  This happens with Samba.  */
 		ctx->vol_flags &= ~FILE_SUPPORTS_OBJECT_IDS;
@@ -684,8 +721,9 @@ winnt_load_object_id(HANDLE h, struct wim_inode *inode,
 	}
 
 	if (!NT_SUCCESS(status)) {
-		winnt_error(status, L"\"%ls\": Can't read object ID",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't read object ID",
+		            printable_path(ctx));
 		return WIMLIB_ERR_STAT;
 	}
 
@@ -700,8 +738,10 @@ winnt_load_object_id(HANDLE h, struct wim_inode *inode,
 
 /* Load a file's extended attributes into the corresponding WIM inode.  */
 static noinline_for_stack int
-winnt_load_xattrs(HANDLE h, struct wim_inode *inode,
-		  struct winnt_scan_ctx *ctx, u32 ea_size)
+winnt_load_xattrs(HANDLE h,
+                  struct wim_inode *inode,
+                  struct winnt_scan_ctx *ctx,
+                  u32 ea_size)
 {
 	IO_STATUS_BLOCK iosb;
 	NTSTATUS status;
@@ -710,7 +750,6 @@ winnt_load_xattrs(HANDLE h, struct wim_inode *inode,
 	const FILE_FULL_EA_INFORMATION *ea;
 	struct wim_xattr_entry *entry;
 	int ret;
-
 
 	/*
 	 * EaSize from FILE_EA_INFORMATION is apparently supposed to give the
@@ -730,14 +769,15 @@ retry:
 		if (!buf) {
 			if (ea_size >= (1 << 20)) {
 				WARNING("\"%ls\": EaSize was extremely large (%u)",
-					printable_path(ctx), ea_size);
+				        printable_path(ctx),
+				        ea_size);
 			}
 			return WIMLIB_ERR_NOMEM;
 		}
 	}
 
-	status = NtQueryEaFile(h, &iosb, buf, ea_size,
-			       FALSE, NULL, 0, NULL, TRUE);
+	status = NtQueryEaFile(
+		h, &iosb, buf, ea_size, FALSE, NULL, 0, NULL, TRUE);
 
 	if (unlikely(!NT_SUCCESS(status))) {
 		if (status == STATUS_BUFFER_OVERFLOW) {
@@ -755,13 +795,14 @@ retry:
 			ret = 0;
 			goto out;
 		}
-		winnt_error(status, L"\"%ls\": Can't read extended attributes",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't read extended attributes",
+		            printable_path(ctx));
 		ret = WIMLIB_ERR_STAT;
 		goto out;
 	}
 
-	ea = (const FILE_FULL_EA_INFORMATION *)buf;
+	ea    = (const FILE_FULL_EA_INFORMATION *)buf;
 	entry = (struct wim_xattr_entry *)buf;
 	for (;;) {
 		/*
@@ -772,24 +813,25 @@ retry:
 		FILE_FULL_EA_INFORMATION _ea;
 
 		STATIC_ASSERT(offsetof(struct wim_xattr_entry, name) <=
-			      offsetof(FILE_FULL_EA_INFORMATION, EaName));
+		              offsetof(FILE_FULL_EA_INFORMATION, EaName));
 		wimlib_assert((u8 *)entry <= (const u8 *)ea);
 
 		memcpy(&_ea, ea, sizeof(_ea));
 
 		entry->value_len = cpu_to_le16(_ea.EaValueLength);
-		entry->name_len = _ea.EaNameLength;
-		entry->flags = _ea.Flags;
+		entry->name_len  = _ea.EaNameLength;
+		entry->flags     = _ea.Flags;
 		memmove(entry->name, ea->EaName, _ea.EaNameLength);
 		entry->name[_ea.EaNameLength] = '\0';
 		memmove(&entry->name[_ea.EaNameLength + 1],
-			&ea->EaName[_ea.EaNameLength + 1], _ea.EaValueLength);
-		entry = (struct wim_xattr_entry *)
-			 &entry->name[_ea.EaNameLength + 1 + _ea.EaValueLength];
+		        &ea->EaName[_ea.EaNameLength + 1],
+		        _ea.EaValueLength);
+		entry = (struct wim_xattr_entry *)&entry
+		                ->name[_ea.EaNameLength + 1 + _ea.EaValueLength];
 		if (_ea.NextEntryOffset == 0)
 			break;
-		ea = (const FILE_FULL_EA_INFORMATION *)
-			((const u8 *)ea + _ea.NextEntryOffset);
+		ea = (const FILE_FULL_EA_INFORMATION *)((const u8 *)ea +
+		                                        _ea.NextEntryOffset);
 	}
 	wimlib_assert((u8 *)entry - buf <= ea_size);
 
@@ -805,17 +847,17 @@ out:
 
 static int
 winnt_build_dentry_tree(struct wim_dentry **root_ret,
-			HANDLE cur_dir,
-			const wchar_t *relative_path,
-			size_t relative_path_nchars,
-			const wchar_t *filename,
-			struct winnt_scan_ctx *ctx,
-			bool recursive);
+                        HANDLE cur_dir,
+                        const wchar_t *relative_path,
+                        size_t relative_path_nchars,
+                        const wchar_t *filename,
+                        struct winnt_scan_ctx *ctx,
+                        bool recursive);
 
 static int
 winnt_recurse_directory(HANDLE h,
-			struct wim_dentry *parent,
-			struct winnt_scan_ctx *ctx)
+                        struct wim_dentry *parent,
+                        struct winnt_scan_ctx *ctx)
 {
 	void *buf;
 	const size_t bufsize = 8192;
@@ -830,54 +872,64 @@ winnt_recurse_directory(HANDLE h,
 	/* Using NtQueryDirectoryFile() we can re-use the same open handle,
 	 * which we opened with FILE_FLAG_BACKUP_SEMANTICS.  */
 
-	while (NT_SUCCESS(status = NtQueryDirectoryFile(h, NULL, NULL, NULL,
-							&iosb, buf, bufsize,
-							FileNamesInformation,
-							FALSE, NULL, FALSE)))
+	while (NT_SUCCESS(status = NtQueryDirectoryFile(h,
+	                                                NULL,
+	                                                NULL,
+	                                                NULL,
+	                                                &iosb,
+	                                                buf,
+	                                                bufsize,
+	                                                FileNamesInformation,
+	                                                FALSE,
+	                                                NULL,
+	                                                FALSE)))
 	{
 		const FILE_NAMES_INFORMATION *info = buf;
 		for (;;) {
 			if (!should_ignore_filename(info->FileName,
-						    info->FileNameLength / 2))
+			                            info->FileNameLength / 2))
 			{
 				struct wim_dentry *child;
 				size_t orig_path_nchars;
 				const wchar_t *filename;
 
-				ret = WIMLIB_ERR_NOMEM;
-				filename = pathbuf_append_name(ctx->params,
-							       info->FileName,
-							       info->FileNameLength / 2,
-							       &orig_path_nchars);
+				ret      = WIMLIB_ERR_NOMEM;
+				filename = pathbuf_append_name(
+					ctx->params,
+					info->FileName,
+					info->FileNameLength / 2,
+					&orig_path_nchars);
 				if (!filename)
 					goto out_free_buf;
 
 				ret = winnt_build_dentry_tree(
-							&child,
-							h,
-							filename,
-							info->FileNameLength / 2,
-							filename,
-							ctx,
-							true);
+					&child,
+					h,
+					filename,
+					info->FileNameLength / 2,
+					filename,
+					ctx,
+					true);
 
 				pathbuf_truncate(ctx->params, orig_path_nchars);
 
 				if (ret)
 					goto out_free_buf;
-				attach_scanned_tree(parent, child,
-						    ctx->params->blob_table);
+				attach_scanned_tree(
+					parent, child, ctx->params->blob_table);
 			}
 			if (info->NextEntryOffset == 0)
 				break;
-			info = (const FILE_NAMES_INFORMATION *)
-					((const u8 *)info + info->NextEntryOffset);
+			info = (const FILE_NAMES_INFORMATION
+			                *)((const u8 *)info +
+			                   info->NextEntryOffset);
 		}
 	}
 
 	if (unlikely(status != STATUS_NO_MORE_FILES)) {
-		winnt_error(status, L"\"%ls\": Can't read directory",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't read directory",
+		            printable_path(ctx));
 		ret = WIMLIB_ERR_READ;
 	}
 out_free_buf:
@@ -886,7 +938,7 @@ out_free_buf:
 }
 
 /* Reparse point fixup status code  */
-#define RP_FIXED	(-1)
+#  define RP_FIXED (-1)
 
 static bool
 file_has_ino_and_dev(HANDLE h, u64 ino, u64 dev)
@@ -896,23 +948,22 @@ file_has_ino_and_dev(HANDLE h, u64 ino, u64 dev)
 	FILE_INTERNAL_INFORMATION int_info;
 	FILE_FS_VOLUME_INFORMATION vol_info;
 
-	status = NtQueryInformationFile(h, &iosb, &int_info, sizeof(int_info),
-					FileInternalInformation);
+	status = NtQueryInformationFile(
+		h, &iosb, &int_info, sizeof(int_info), FileInternalInformation);
 	if (!NT_SUCCESS(status))
 		return false;
 
 	if (int_info.IndexNumber.QuadPart != ino)
 		return false;
 
-	status = NtQueryVolumeInformationFile(h, &iosb,
-					      &vol_info, sizeof(vol_info),
-					      FileFsVolumeInformation);
+	status = NtQueryVolumeInformationFile(
+		h, &iosb, &vol_info, sizeof(vol_info), FileFsVolumeInformation);
 	if (!(NT_SUCCESS(status) || status == STATUS_BUFFER_OVERFLOW))
 		return false;
 
 	if (iosb.Information <
-	     offsetof(FILE_FS_VOLUME_INFORMATION, VolumeSerialNumber) +
-	     sizeof(vol_info.VolumeSerialNumber))
+	    offsetof(FILE_FS_VOLUME_INFORMATION, VolumeSerialNumber) +
+	            sizeof(vol_info.VolumeSerialNumber))
 		return false;
 
 	return (vol_info.VolumeSerialNumber == dev);
@@ -926,8 +977,10 @@ file_has_ino_and_dev(HANDLE h, u64 ino, u64 dev)
  * \??\E: opens the E: device itself and not the filesystem root directory.
  */
 static const wchar_t *
-winnt_relativize_link_target(const wchar_t *target, size_t target_nbytes,
-			     u64 ino, u64 dev)
+winnt_relativize_link_target(const wchar_t *target,
+                             size_t target_nbytes,
+                             u64 ino,
+                             u64 dev)
 {
 	UNICODE_STRING name;
 	OBJECT_ATTRIBUTES attr;
@@ -947,20 +1000,20 @@ winnt_relativize_link_target(const wchar_t *target, size_t target_nbytes,
 		return target;
 
 	/* UNC path???  */
-	if ((target_end - target) >= 2 &&
-	    target[0] == L'\\' && target[1] == L'\\')
+	if ((target_end - target) >= 2 && target[0] == L'\\' &&
+	    target[1] == L'\\')
 		return target;
 
-	attr.Length = sizeof(attr);
-	attr.RootDirectory = NULL;
-	attr.ObjectName = &name;
-	attr.Attributes = 0;
-	attr.SecurityDescriptor = NULL;
+	attr.Length                   = sizeof(attr);
+	attr.RootDirectory            = NULL;
+	attr.ObjectName               = &name;
+	attr.Attributes               = 0;
+	attr.SecurityDescriptor       = NULL;
 	attr.SecurityQualityOfService = NULL;
 
 	name.Buffer = (wchar_t *)target;
 	name.Length = 0;
-	p = target;
+	p           = target;
 	do {
 		HANDLE h;
 		const wchar_t *orig_p = p;
@@ -979,19 +1032,19 @@ winnt_relativize_link_target(const wchar_t *target, size_t target_nbytes,
 
 		/* Try opening the file  */
 		status = NtOpenFile(&h,
-				    FILE_READ_ATTRIBUTES | FILE_TRAVERSE,
-				    &attr,
-				    &iosb,
-				    FILE_SHARE_VALID_FLAGS,
-				    FILE_OPEN_FOR_BACKUP_INTENT);
+		                    FILE_READ_ATTRIBUTES | FILE_TRAVERSE,
+		                    &attr,
+		                    &iosb,
+		                    FILE_SHARE_VALID_FLAGS,
+		                    FILE_OPEN_FOR_BACKUP_INTENT);
 
 		if (NT_SUCCESS(status)) {
 			/* Reset root directory  */
 			if (attr.RootDirectory)
 				NtClose(attr.RootDirectory);
 			attr.RootDirectory = h;
-			name.Buffer = (wchar_t *)p;
-			name.Length = 0;
+			name.Buffer        = (wchar_t *)p;
+			name.Length        = 0;
 
 			if (file_has_ino_and_dev(h, ino, dev))
 				goto out_close_root_dir;
@@ -1010,7 +1063,8 @@ out_close_root_dir:
 
 static int
 winnt_rpfix_progress(struct scan_params *params,
-		     const struct link_reparse_point *link, int scan_status)
+                     const struct link_reparse_point *link,
+                     int scan_status)
 {
 	size_t print_name_nchars = link->print_name_nbytes / sizeof(wchar_t);
 	wchar_t print_name0[print_name_nchars + 1];
@@ -1023,8 +1077,9 @@ winnt_rpfix_progress(struct scan_params *params,
 }
 
 static int
-winnt_try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
-		struct scan_params *params)
+winnt_try_rpfix(struct reparse_buffer_disk *rpbuf,
+                u16 *rpbuflen_p,
+                struct scan_params *params)
 {
 	struct link_reparse_point link;
 	const wchar_t *rel_target;
@@ -1061,15 +1116,15 @@ winnt_try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
 		return 0;
 
 	rel_target = winnt_relativize_link_target(link.substitute_name,
-						  link.substitute_name_nbytes,
-						  params->capture_root_ino,
-						  params->capture_root_dev);
+	                                          link.substitute_name_nbytes,
+	                                          params->capture_root_ino,
+	                                          params->capture_root_dev);
 
 	if (rel_target == link.substitute_name) {
 		/* Target points outside of the tree being captured or had an
 		 * unrecognized path format.  Don't adjust it.  */
-		return winnt_rpfix_progress(params, &link,
-					    WIMLIB_SCAN_DENTRY_NOT_FIXED_SYMLINK);
+		return winnt_rpfix_progress(
+			params, &link, WIMLIB_SCAN_DENTRY_NOT_FIXED_SYMLINK);
 	}
 
 	/* We have an absolute target pointing within the directory being
@@ -1082,30 +1137,30 @@ winnt_try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
 	 * what exactly the prefix is, as long as it looks like an absolute
 	 * path.  */
 
-	static const wchar_t prefix[6] = L"\\??\\X:";
+	static const wchar_t prefix[6]            = L"\\??\\X:";
 	static const size_t num_unprintable_chars = 4;
 
 	size_t rel_target_nbytes =
-		link.substitute_name_nbytes - ((const u8 *)rel_target -
-					       (const u8 *)link.substitute_name);
+		link.substitute_name_nbytes -
+		((const u8 *)rel_target - (const u8 *)link.substitute_name);
 
 	wchar_t tmp[(sizeof(prefix) + rel_target_nbytes) / sizeof(wchar_t)];
 
 	memcpy(tmp, prefix, sizeof(prefix));
 	memcpy(tmp + ARRAY_LEN(prefix), rel_target, rel_target_nbytes);
 
-	link.substitute_name = tmp;
+	link.substitute_name        = tmp;
 	link.substitute_name_nbytes = sizeof(tmp);
 
-	link.print_name = link.substitute_name + num_unprintable_chars;
+	link.print_name        = link.substitute_name + num_unprintable_chars;
 	link.print_name_nbytes = link.substitute_name_nbytes -
-				 (num_unprintable_chars * sizeof(wchar_t));
+	                         (num_unprintable_chars * sizeof(wchar_t));
 
 	if (make_link_reparse_point(&link, rpbuf, rpbuflen_p))
 		return 0;
 
-	ret = winnt_rpfix_progress(params, &link,
-				   WIMLIB_SCAN_DENTRY_FIXED_SYMLINK);
+	ret = winnt_rpfix_progress(
+		params, &link, WIMLIB_SCAN_DENTRY_FIXED_SYMLINK);
 	if (ret)
 		return ret;
 	return RP_FIXED;
@@ -1116,8 +1171,9 @@ winnt_try_rpfix(struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_p,
  * RPFIX mode is enabled, then also rewrite its target to be relative to the
  * capture root.  */
 static noinline_for_stack int
-winnt_load_reparse_data(HANDLE h, struct wim_inode *inode,
-			struct winnt_scan_ctx *ctx)
+winnt_load_reparse_data(HANDLE h,
+                        struct wim_inode *inode,
+                        struct winnt_scan_ctx *ctx)
 {
 	struct reparse_buffer_disk rpbuf;
 	NTSTATUS status;
@@ -1128,15 +1184,21 @@ winnt_load_reparse_data(HANDLE h, struct wim_inode *inode,
 	if (inode->i_attributes & FILE_ATTRIBUTE_ENCRYPTED) {
 		/* See comment above assign_stream_types_encrypted()  */
 		WARNING("Ignoring reparse data of encrypted file \"%ls\"",
-			printable_path(ctx));
+		        printable_path(ctx));
 		return 0;
 	}
 
-	status = winnt_fsctl(h, FSCTL_GET_REPARSE_POINT,
-			     NULL, 0, &rpbuf, sizeof(rpbuf), &len);
+	status = winnt_fsctl(h,
+	                     FSCTL_GET_REPARSE_POINT,
+	                     NULL,
+	                     0,
+	                     &rpbuf,
+	                     sizeof(rpbuf),
+	                     &len);
 	if (!NT_SUCCESS(status)) {
-		winnt_error(status, L"\"%ls\": Can't get reparse point",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't get reparse point",
+		            printable_path(ctx));
 		return WIMLIB_ERR_READLINK;
 	}
 
@@ -1175,21 +1237,22 @@ winnt_load_reparse_data(HANDLE h, struct wim_inode *inode,
 	inode->i_rp_reserved = le16_to_cpu(rpbuf.rpreserved);
 
 	if (!inode_add_stream_with_data(inode,
-					STREAM_TYPE_REPARSE_POINT,
-					NO_STREAM_NAME,
-					rpbuf.rpdata,
-					rpbuflen - REPARSE_DATA_OFFSET,
-					ctx->params->blob_table))
+	                                STREAM_TYPE_REPARSE_POINT,
+	                                NO_STREAM_NAME,
+	                                rpbuf.rpdata,
+	                                rpbuflen - REPARSE_DATA_OFFSET,
+	                                ctx->params->blob_table))
 		return WIMLIB_ERR_NOMEM;
 
 	return 0;
 }
 
 static DWORD WINAPI
-win32_tally_encrypted_size_cb(unsigned char *_data, void *_size_ret,
-			      unsigned long len)
+win32_tally_encrypted_size_cb(unsigned char *_data,
+                              void *_size_ret,
+                              unsigned long len)
 {
-	*(u64*)_size_ret += len;
+	*(u64 *)_size_ret += len;
 	return ERROR_SUCCESS;
 }
 
@@ -1206,18 +1269,19 @@ win32_get_encrypted_file_size(const wchar_t *path, bool is_dir, u64 *size_ret)
 
 	err = OpenEncryptedFileRaw(path, flags, &file_ctx);
 	if (err != ERROR_SUCCESS) {
-		win32_error(err,
-			    L"Failed to open encrypted file \"%ls\" for raw read",
-			    path);
+		win32_error(
+			err,
+			L"Failed to open encrypted file \"%ls\" for raw read",
+			path);
 		return WIMLIB_ERR_OPEN;
 	}
 	*size_ret = 0;
-	err = ReadEncryptedFileRaw(win32_tally_encrypted_size_cb,
-				   size_ret, file_ctx);
+	err       = ReadEncryptedFileRaw(
+                win32_tally_encrypted_size_cb, size_ret, file_ctx);
 	if (err != ERROR_SUCCESS) {
 		win32_error(err,
-			    L"Failed to read raw encrypted data from \"%ls\"",
-			    path);
+		            L"Failed to read raw encrypted data from \"%ls\"",
+		            path);
 		ret = WIMLIB_ERR_READ;
 	} else {
 		ret = 0;
@@ -1227,12 +1291,11 @@ win32_get_encrypted_file_size(const wchar_t *path, bool is_dir, u64 *size_ret)
 }
 
 static int
-winnt_scan_efsrpc_raw_data(struct wim_inode *inode,
-			   struct winnt_scan_ctx *ctx)
+winnt_scan_efsrpc_raw_data(struct wim_inode *inode, struct winnt_scan_ctx *ctx)
 {
-	wchar_t *path = ctx->params->cur_path;
+	wchar_t *path      = ctx->params->cur_path;
 	size_t path_nchars = ctx->params->cur_path_nchars;
-	const bool is_dir = (inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY);
+	const bool is_dir  = (inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY);
 	struct windows_file *windows_file;
 	u64 size;
 	int ret;
@@ -1248,18 +1311,24 @@ winnt_scan_efsrpc_raw_data(struct wim_inode *inode,
 	/* Empty EFSRPC data does not make sense  */
 	wimlib_assert(size != 0);
 
-	windows_file = alloc_windows_file(path, path_nchars, NULL, 0,
-					  ctx->snapshot, true);
-	ret = add_stream(inode, windows_file, size, STREAM_TYPE_EFSRPC_RAW_DATA,
-			 NO_STREAM_NAME, ctx->params->unhashed_blobs);
+	windows_file = alloc_windows_file(
+		path, path_nchars, NULL, 0, ctx->snapshot, true);
+	ret = add_stream(inode,
+	                 windows_file,
+	                 size,
+	                 STREAM_TYPE_EFSRPC_RAW_DATA,
+	                 NO_STREAM_NAME,
+	                 ctx->params->unhashed_blobs);
 out:
 	path[1] = L'?';
 	return ret;
 }
 
 static bool
-get_data_stream_name(const wchar_t *raw_stream_name, size_t raw_stream_name_nchars,
-		     const wchar_t **stream_name_ret, size_t *stream_name_nchars_ret)
+get_data_stream_name(const wchar_t *raw_stream_name,
+                     size_t raw_stream_name_nchars,
+                     const wchar_t **stream_name_ret,
+                     size_t *stream_name_nchars_ret)
 {
 	const wchar_t *sep, *type, *end;
 
@@ -1285,15 +1354,17 @@ get_data_stream_name(const wchar_t *raw_stream_name, size_t raw_stream_name_ncha
 	if (wmemcmp(type, L"$DATA", 5))
 		return false;
 
-	*stream_name_ret = raw_stream_name;
+	*stream_name_ret        = raw_stream_name;
 	*stream_name_nchars_ret = sep - raw_stream_name;
 	return true;
 }
 
 static int
-winnt_scan_data_stream(wchar_t *raw_stream_name, size_t raw_stream_name_nchars,
-		       u64 stream_size, struct wim_inode *inode,
-		       struct winnt_scan_ctx *ctx)
+winnt_scan_data_stream(wchar_t *raw_stream_name,
+                       size_t raw_stream_name_nchars,
+                       u64 stream_size,
+                       struct wim_inode *inode,
+                       struct winnt_scan_ctx *ctx)
 {
 	wchar_t *stream_name;
 	size_t stream_name_nchars;
@@ -1302,19 +1373,26 @@ winnt_scan_data_stream(wchar_t *raw_stream_name, size_t raw_stream_name_nchars,
 	/* Given the raw stream name (which is something like
 	 * :streamname:$DATA), extract just the stream name part (streamname).
 	 * Ignore any non-$DATA streams.  */
-	if (!get_data_stream_name(raw_stream_name, raw_stream_name_nchars,
-				  (const wchar_t **)&stream_name,
-				  &stream_name_nchars))
+	if (!get_data_stream_name(raw_stream_name,
+	                          raw_stream_name_nchars,
+	                          (const wchar_t **)&stream_name,
+	                          &stream_name_nchars))
 		return 0;
 
 	stream_name[stream_name_nchars] = L'\0';
 
 	windows_file = alloc_windows_file(ctx->params->cur_path,
-					  ctx->params->cur_path_nchars,
-					  stream_name, stream_name_nchars,
-					  ctx->snapshot, false);
-	return add_stream(inode, windows_file, stream_size, STREAM_TYPE_DATA,
-			  stream_name, ctx->params->unhashed_blobs);
+	                                  ctx->params->cur_path_nchars,
+	                                  stream_name,
+	                                  stream_name_nchars,
+	                                  ctx->snapshot,
+	                                  false);
+	return add_stream(inode,
+	                  windows_file,
+	                  stream_size,
+	                  STREAM_TYPE_DATA,
+	                  stream_name,
+	                  ctx->params->unhashed_blobs);
 }
 
 /*
@@ -1327,8 +1405,10 @@ winnt_scan_data_stream(wchar_t *raw_stream_name, size_t raw_stream_name_nchars,
  * files, even when running as the Administrator.
  */
 static noinline_for_stack int
-winnt_scan_data_streams(HANDLE h, struct wim_inode *inode, u64 file_size,
-			struct winnt_scan_ctx *ctx)
+winnt_scan_data_streams(HANDLE h,
+                        struct wim_inode *inode,
+                        u64 file_size,
+                        struct winnt_scan_ctx *ctx)
 {
 	int ret;
 	u8 _buf[4096] __attribute__((aligned(8)));
@@ -1338,45 +1418,41 @@ winnt_scan_data_streams(HANDLE h, struct wim_inode *inode, u64 file_size,
 	NTSTATUS status;
 	FILE_STREAM_INFORMATION *info;
 
-	buf = _buf;
+	buf     = _buf;
 	bufsize = sizeof(_buf);
 
 	if (!(ctx->vol_flags & FILE_NAMED_STREAMS))
 		goto unnamed_only;
 
 	/* Get a buffer containing the stream information.  */
-	while (!NT_SUCCESS(status = NtQueryInformationFile(h,
-							   &iosb,
-							   buf,
-							   bufsize,
-							   FileStreamInformation)))
+	while (!NT_SUCCESS(
+		status = NtQueryInformationFile(
+			h, &iosb, buf, bufsize, FileStreamInformation)))
 	{
-
 		switch (status) {
-		case STATUS_BUFFER_OVERFLOW:
-			{
-				u8 *newbuf;
+		case STATUS_BUFFER_OVERFLOW: {
+			u8 *newbuf;
 
-				bufsize *= 2;
-				if (buf == _buf)
-					newbuf = MALLOC(bufsize);
-				else
-					newbuf = REALLOC(buf, bufsize);
-				if (!newbuf) {
-					ret = WIMLIB_ERR_NOMEM;
-					goto out_free_buf;
-				}
-				buf = newbuf;
+			bufsize *= 2;
+			if (buf == _buf)
+				newbuf = MALLOC(bufsize);
+			else
+				newbuf = REALLOC(buf, bufsize);
+			if (!newbuf) {
+				ret = WIMLIB_ERR_NOMEM;
+				goto out_free_buf;
 			}
-			break;
+			buf = newbuf;
+		} break;
 		case STATUS_NOT_IMPLEMENTED:
 		case STATUS_NOT_SUPPORTED:
 		case STATUS_INVALID_INFO_CLASS:
 			goto unnamed_only;
 		default:
-			winnt_error(status,
-				    L"\"%ls\": Failed to query stream information",
-				    printable_path(ctx));
+			winnt_error(
+				status,
+				L"\"%ls\": Failed to query stream information",
+				printable_path(ctx));
 			ret = WIMLIB_ERR_READ;
 			goto out_free_buf;
 		}
@@ -1393,9 +1469,10 @@ winnt_scan_data_streams(HANDLE h, struct wim_inode *inode, u64 file_size,
 	for (;;) {
 		/* Load the stream information.  */
 		ret = winnt_scan_data_stream(info->StreamName,
-					     info->StreamNameLength / 2,
-					     info->StreamSize.QuadPart,
-					     inode, ctx);
+		                             info->StreamNameLength / 2,
+		                             info->StreamSize.QuadPart,
+		                             inode,
+		                             ctx);
 		if (ret)
 			goto out_free_buf;
 
@@ -1404,8 +1481,8 @@ winnt_scan_data_streams(HANDLE h, struct wim_inode *inode, u64 file_size,
 			break;
 		}
 		/* Advance to next stream information.  */
-		info = (FILE_STREAM_INFORMATION *)
-				((u8 *)info + info->NextEntryOffset);
+		info = (FILE_STREAM_INFORMATION *)((u8 *)info +
+		                                   info->NextEntryOffset);
 	}
 	ret = 0;
 	goto out_free_buf;
@@ -1413,8 +1490,8 @@ winnt_scan_data_streams(HANDLE h, struct wim_inode *inode, u64 file_size,
 unnamed_only:
 	/* The volume does not support named streams.  Only capture the unnamed
 	 * data stream.  */
-	if (inode->i_attributes & (FILE_ATTRIBUTE_DIRECTORY |
-				   FILE_ATTRIBUTE_REPARSE_POINT))
+	if (inode->i_attributes &
+	    (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))
 	{
 		ret = 0;
 		goto out_free_buf;
@@ -1422,8 +1499,8 @@ unnamed_only:
 
 	{
 		wchar_t stream_name[] = L"::$DATA";
-		ret = winnt_scan_data_stream(stream_name, 7, file_size,
-					     inode, ctx);
+		ret                   = winnt_scan_data_stream(
+                        stream_name, 7, file_size, inode, ctx);
 	}
 out_free_buf:
 	/* Free buffer if allocated on heap.  */
@@ -1447,8 +1524,13 @@ get_sort_key(HANDLE h)
 	STARTING_VCN_INPUT_BUFFER in = { .StartingVcn.QuadPart = 0 };
 	RETRIEVAL_POINTERS_BUFFER out;
 
-	if (!NT_SUCCESS(winnt_fsctl(h, FSCTL_GET_RETRIEVAL_POINTERS,
-				    &in, sizeof(in), &out, sizeof(out), NULL)))
+	if (!NT_SUCCESS(winnt_fsctl(h,
+	                            FSCTL_GET_RETRIEVAL_POINTERS,
+	                            &in,
+	                            sizeof(in),
+	                            &out,
+	                            sizeof(out),
+	                            NULL)))
 		return 0;
 
 	return extract_starting_lcn(&out);
@@ -1459,7 +1541,7 @@ set_sort_key(struct wim_inode *inode, u64 sort_key)
 {
 	for (unsigned i = 0; i < inode->i_num_streams; i++) {
 		struct wim_inode_stream *strm = &inode->i_streams[i];
-		struct blob_descriptor *blob = stream_blob_resolved(strm);
+		struct blob_descriptor *blob  = stream_blob_resolved(strm);
 		if (blob && blob->blob_location == BLOB_IN_WINDOWS_FILE)
 			blob->windows_file->sort_key = sort_key;
 	}
@@ -1467,11 +1549,11 @@ set_sort_key(struct wim_inode *inode, u64 sort_key)
 
 static inline bool
 should_try_to_use_wimboot_hash(const struct wim_inode *inode,
-			       const struct winnt_scan_ctx *ctx)
+                               const struct winnt_scan_ctx *ctx)
 {
 	/* Directories and encrypted files aren't valid for external backing. */
-	if (inode->i_attributes & (FILE_ATTRIBUTE_DIRECTORY |
-				   FILE_ATTRIBUTE_ENCRYPTED))
+	if (inode->i_attributes &
+	    (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_ENCRYPTED))
 		return false;
 
 	/* If the file is a reparse point, then try the hash fixup if it's a WOF
@@ -1479,7 +1561,7 @@ should_try_to_use_wimboot_hash(const struct wim_inode *inode,
 	 * fixup if WOF may be attached. */
 	if (inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 		return (inode->i_reparse_tag == WIM_IO_REPARSE_TAG_WOF) &&
-			(ctx->params->add_flags & WIMLIB_ADD_FLAG_WIMBOOT);
+		       (ctx->params->add_flags & WIMLIB_ADD_FLAG_WIMBOOT);
 	return !ctx->wof_not_attached;
 }
 
@@ -1500,10 +1582,11 @@ should_try_to_use_wimboot_hash(const struct wim_inode *inode,
  * executed.  Otherwise it returns an error code.
  */
 static noinline_for_stack int
-try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
-			struct winnt_scan_ctx *ctx)
+try_to_use_wimboot_hash(HANDLE h,
+                        struct wim_inode *inode,
+                        struct winnt_scan_ctx *ctx)
 {
-	struct blob_table *blob_table = ctx->params->blob_table;
+	struct blob_table *blob_table         = ctx->params->blob_table;
 	struct wim_inode_stream *reparse_strm = NULL;
 	struct wim_inode_stream *strm;
 	struct blob_descriptor *blob;
@@ -1521,11 +1604,12 @@ try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
 		/* The file has a WOF reparse point, so WOF must be detached.
 		 * We can read the reparse point directly.  */
 		ctx->wof_not_attached = true;
-		reparse_strm = inode_get_unnamed_stream(inode, STREAM_TYPE_REPARSE_POINT);
+		reparse_strm          = inode_get_unnamed_stream(
+                        inode, STREAM_TYPE_REPARSE_POINT);
 		reparse_blob = stream_blob_resolved(reparse_strm);
 
 		if (!reparse_blob || reparse_blob->size < sizeof(*rpdata))
-			return 0;  /* Not a WIM-backed file  */
+			return 0; /* Not a WIM-backed file  */
 
 		ret = read_blob_into_buf(reparse_blob, rpdata);
 		if (ret)
@@ -1534,7 +1618,7 @@ try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
 		if (rpdata->wof_info.Version != WOF_CURRENT_VERSION ||
 		    rpdata->wof_info.Provider != WOF_PROVIDER_WIM ||
 		    rpdata->wim_info.version != 2)
-			return 0;  /* Not a WIM-backed file  */
+			return 0; /* Not a WIM-backed file  */
 
 		/* Okay, this is a WIM backed file.  Get its SHA-1 hash.  */
 		copy_hash(hash, rpdata->wim_info.unnamed_data_stream_hash);
@@ -1547,12 +1631,18 @@ try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
 
 		/* WOF may be attached.  Try reading this file's external
 		 * backing info.  */
-		status = winnt_fsctl(h, FSCTL_GET_EXTERNAL_BACKING,
-				     NULL, 0, &out, sizeof(out), NULL);
+		status = winnt_fsctl(h,
+		                     FSCTL_GET_EXTERNAL_BACKING,
+		                     NULL,
+		                     0,
+		                     &out,
+		                     sizeof(out),
+		                     NULL);
 
 		/* Is WOF not attached?  */
 		if (status == STATUS_INVALID_DEVICE_REQUEST ||
-		    status == STATUS_NOT_SUPPORTED) {
+		    status == STATUS_NOT_SUPPORTED)
+		{
 			ctx->wof_not_attached = true;
 			return 0;
 		}
@@ -1568,9 +1658,10 @@ try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
 
 		/* Was there some other failure?  */
 		if (status != STATUS_SUCCESS) {
-			winnt_error(status,
-				    L"\"%ls\": FSCTL_GET_EXTERNAL_BACKING failed",
-				    printable_path(ctx));
+			winnt_error(
+				status,
+				L"\"%ls\": FSCTL_GET_EXTERNAL_BACKING failed",
+				printable_path(ctx));
 			return WIMLIB_ERR_STAT;
 		}
 
@@ -1599,8 +1690,8 @@ try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
 			return 0;
 		back_ptr = retrieve_pointer_to_unhashed_blob(blob);
 		copy_hash(blob->hash, hash);
-		if (after_blob_hashed(blob, back_ptr, blob_table,
-				      inode) != blob)
+		if (after_blob_hashed(blob, back_ptr, blob_table, inode) !=
+		    blob)
 			free_blob_descriptor(blob);
 	}
 
@@ -1608,7 +1699,7 @@ try_to_use_wimboot_hash(HANDLE h, struct wim_inode *inode,
 	if (reparse_strm) {
 		inode_remove_stream(inode, reparse_strm, blob_table);
 		inode->i_attributes &= ~(FILE_ATTRIBUTE_REPARSE_POINT |
-					 FILE_ATTRIBUTE_SPARSE_FILE);
+		                         FILE_ATTRIBUTE_SPARSE_FILE);
 		if (inode->i_attributes == 0)
 			inode->i_attributes = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -1634,20 +1725,22 @@ get_file_info(HANDLE h, struct file_info *info)
 	NTSTATUS status;
 	FILE_ALL_INFORMATION all_info;
 
-	status = NtQueryInformationFile(h, &iosb, &all_info, sizeof(all_info),
-					FileAllInformation);
+	status = NtQueryInformationFile(
+		h, &iosb, &all_info, sizeof(all_info), FileAllInformation);
 
 	if (unlikely(!NT_SUCCESS(status) && status != STATUS_BUFFER_OVERFLOW))
 		return status;
 
-	info->attributes = all_info.BasicInformation.FileAttributes;
-	info->num_links = all_info.StandardInformation.NumberOfLinks;
+	info->attributes    = all_info.BasicInformation.FileAttributes;
+	info->num_links     = all_info.StandardInformation.NumberOfLinks;
 	info->creation_time = all_info.BasicInformation.CreationTime.QuadPart;
-	info->last_write_time = all_info.BasicInformation.LastWriteTime.QuadPart;
-	info->last_access_time = all_info.BasicInformation.LastAccessTime.QuadPart;
-	info->ino = all_info.InternalInformation.IndexNumber.QuadPart;
+	info->last_write_time =
+		all_info.BasicInformation.LastWriteTime.QuadPart;
+	info->last_access_time =
+		all_info.BasicInformation.LastAccessTime.QuadPart;
+	info->ino         = all_info.InternalInformation.IndexNumber.QuadPart;
 	info->end_of_file = all_info.StandardInformation.EndOfFile.QuadPart;
-	info->ea_size = all_info.EaInformation.EaSize;
+	info->ea_size     = all_info.EaInformation.EaSize;
 	return STATUS_SUCCESS;
 }
 
@@ -1663,31 +1756,35 @@ get_volume_information(HANDLE h, struct winnt_scan_ctx *ctx)
 	NTSTATUS status;
 
 	/* Get volume flags  */
-	status = NtQueryVolumeInformationFile(h, &iosb, attr_info,
-					      sizeof(_attr_info),
-					      FileFsAttributeInformation);
+	status = NtQueryVolumeInformationFile(h,
+	                                      &iosb,
+	                                      attr_info,
+	                                      sizeof(_attr_info),
+	                                      FileFsAttributeInformation);
 	if (NT_SUCCESS(status)) {
 		ctx->vol_flags = attr_info->FileSystemAttributes;
-		ctx->is_ntfs = (attr_info->FileSystemNameLength == 4 * sizeof(wchar_t)) &&
-				!wmemcmp(attr_info->FileSystemName, L"NTFS", 4);
+		ctx->is_ntfs   = (attr_info->FileSystemNameLength ==
+                                4 * sizeof(wchar_t)) &&
+		               !wmemcmp(attr_info->FileSystemName, L"NTFS", 4);
 	} else {
-		winnt_warning(status, L"\"%ls\": Can't get volume attributes",
-			      printable_path(ctx));
+		winnt_warning(status,
+		              L"\"%ls\": Can't get volume attributes",
+		              printable_path(ctx));
 	}
 
 	/* Get volume ID.  */
-	status = NtQueryVolumeInformationFile(h, &iosb, &vol_info,
-					      sizeof(vol_info),
-					      FileFsVolumeInformation);
+	status = NtQueryVolumeInformationFile(
+		h, &iosb, &vol_info, sizeof(vol_info), FileFsVolumeInformation);
 	if ((NT_SUCCESS(status) || status == STATUS_BUFFER_OVERFLOW) &&
-	    (iosb.Information >= offsetof(FILE_FS_VOLUME_INFORMATION,
-					  VolumeSerialNumber) +
-	     sizeof(vol_info.VolumeSerialNumber)))
+	    (iosb.Information >=
+	     offsetof(FILE_FS_VOLUME_INFORMATION, VolumeSerialNumber) +
+	             sizeof(vol_info.VolumeSerialNumber)))
 	{
 		ctx->params->capture_root_dev = vol_info.VolumeSerialNumber;
 	} else {
-		winnt_warning(status, L"\"%ls\": Can't get volume ID",
-			      printable_path(ctx));
+		winnt_warning(status,
+		              L"\"%ls\": Can't get volume ID",
+		              printable_path(ctx));
 	}
 
 	/* Get inode number.  */
@@ -1695,23 +1792,24 @@ get_volume_information(HANDLE h, struct winnt_scan_ctx *ctx)
 	if (NT_SUCCESS(status)) {
 		ctx->params->capture_root_ino = file_info.ino;
 	} else {
-		winnt_warning(status, L"\"%ls\": Can't get file information",
-			      printable_path(ctx));
+		winnt_warning(status,
+		              L"\"%ls\": Can't get file information",
+		              printable_path(ctx));
 	}
 }
 
 static int
 winnt_build_dentry_tree(struct wim_dentry **root_ret,
-			HANDLE cur_dir,
-			const wchar_t *relative_path,
-			size_t relative_path_nchars,
-			const wchar_t *filename,
-			struct winnt_scan_ctx *ctx,
-			bool recursive)
+                        HANDLE cur_dir,
+                        const wchar_t *relative_path,
+                        size_t relative_path_nchars,
+                        const wchar_t *filename,
+                        struct winnt_scan_ctx *ctx,
+                        bool recursive)
 {
 	struct wim_dentry *root = NULL;
 	struct wim_inode *inode = NULL;
-	HANDLE h = NULL;
+	HANDLE h                = NULL;
 	int ret;
 	NTSTATUS status;
 	struct file_info file_info;
@@ -1729,14 +1827,16 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 	 * file is a directory, it can significantly slow things down to request
 	 * this permission on all nondirectories.  Perhaps it causes Windows to
 	 * start prefetching the file contents...  */
-	status = winnt_openat(cur_dir, relative_path, relative_path_nchars,
-			      FILE_READ_ATTRIBUTES | FILE_READ_EA |
-				READ_CONTROL | ACCESS_SYSTEM_SECURITY,
-			      &h);
+	status = winnt_openat(cur_dir,
+	                      relative_path,
+	                      relative_path_nchars,
+	                      FILE_READ_ATTRIBUTES | FILE_READ_EA |
+	                              READ_CONTROL | ACCESS_SYSTEM_SECURITY,
+	                      &h);
 	if (unlikely(!NT_SUCCESS(status))) {
 		if (status == STATUS_DELETE_PENDING) {
 			WARNING("\"%ls\": Deletion pending; skipping file",
-				printable_path(ctx));
+			        printable_path(ctx));
 			ret = 0;
 			goto out;
 		}
@@ -1748,8 +1848,9 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 			ret = WIMLIB_ERR_OPEN;
 			goto out;
 		}
-		winnt_error(status, L"\"%ls\": Can't open file",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't open file",
+		            printable_path(ctx));
 		if (status == STATUS_FVE_LOCKED_VOLUME)
 			ret = WIMLIB_ERR_FVE_LOCKED_VOLUME;
 		else
@@ -1760,8 +1861,9 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 	/* Get information about the file.  */
 	status = get_file_info(h, &file_info);
 	if (!NT_SUCCESS(status)) {
-		winnt_error(status, L"\"%ls\": Can't get file information",
-			    printable_path(ctx));
+		winnt_error(status,
+		            L"\"%ls\": Can't get file information",
+		            printable_path(ctx));
 		ret = WIMLIB_ERR_STAT;
 		goto out;
 	}
@@ -1779,11 +1881,11 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 	 * among multiple calls to win32_build_dentry_tree() that are scanning
 	 * files on different volumes.  */
 	ret = inode_table_new_dentry(ctx->params->inode_table,
-				     filename,
-				     file_info.ino,
-				     ctx->params->capture_root_dev,
-				     (file_info.num_links <= 1),
-				     &root);
+	                             filename,
+	                             file_info.ino,
+	                             ctx->params->capture_root_dev,
+	                             (file_info.num_links <= 1),
+	                             &root);
 	if (ret)
 		goto out;
 
@@ -1807,15 +1909,15 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 		goto out_progress;
 	}
 
-	inode->i_attributes = file_info.attributes;
-	inode->i_creation_time = file_info.creation_time;
-	inode->i_last_write_time = file_info.last_write_time;
+	inode->i_attributes       = file_info.attributes;
+	inode->i_creation_time    = file_info.creation_time;
+	inode->i_last_write_time  = file_info.last_write_time;
 	inode->i_last_access_time = file_info.last_access_time;
 
 	/* Get the file's security descriptor, unless we are capturing in
 	 * NO_ACLS mode or the volume does not support security descriptors.  */
-	if (!(ctx->params->add_flags & WIMLIB_ADD_FLAG_NO_ACLS)
-	    && (ctx->vol_flags & FILE_PERSISTENT_ACLS))
+	if (!(ctx->params->add_flags & WIMLIB_ADD_FLAG_NO_ACLS) &&
+	    (ctx->vol_flags & FILE_PERSISTENT_ACLS))
 	{
 		ret = winnt_load_security_descriptor(h, inode, ctx);
 		if (ret)
@@ -1853,7 +1955,7 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 		 * file, we have to close the file and re-open it later if
 		 * needed.  */
 		NtClose(h);
-		h = NULL;
+		h   = NULL;
 		ret = winnt_scan_efsrpc_raw_data(inode, ctx);
 		if (ret)
 			goto out;
@@ -1868,10 +1970,8 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 		 * Note: WIMGAPI (as of Windows 8.1) gets wrong and stores both
 		 * the EFSRPC data and the named data stream(s)...!
 		 */
-		ret = winnt_scan_data_streams(h,
-					      inode,
-					      file_info.end_of_file,
-					      ctx);
+		ret = winnt_scan_data_streams(
+			h, inode, file_info.end_of_file, ctx);
 		if (ret)
 			goto out;
 	}
@@ -1885,7 +1985,6 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 	set_sort_key(inode, sort_key);
 
 	if (inode_is_directory(inode) && recursive) {
-
 		/* Directory: recurse to children.  */
 
 		/* Re-open the directory with FILE_LIST_DIRECTORY access.  */
@@ -1893,12 +1992,15 @@ winnt_build_dentry_tree(struct wim_dentry **root_ret,
 			NtClose(h);
 			h = NULL;
 		}
-		status = winnt_openat(cur_dir, relative_path,
-				      relative_path_nchars, FILE_LIST_DIRECTORY,
-				      &h);
+		status = winnt_openat(cur_dir,
+		                      relative_path,
+		                      relative_path_nchars,
+		                      FILE_LIST_DIRECTORY,
+		                      &h);
 		if (!NT_SUCCESS(status)) {
-			winnt_error(status, L"\"%ls\": Can't open directory",
-				    printable_path(ctx));
+			winnt_error(status,
+			            L"\"%ls\": Can't open directory",
+			            printable_path(ctx));
 			ret = WIMLIB_ERR_OPEN;
 			goto out;
 		}
@@ -1911,12 +2013,11 @@ out_progress:
 	ret = 0;
 	if (recursive) { /* if !recursive, caller handles progress */
 		if (likely(root))
-			ret = do_scan_progress(ctx->params,
-					       WIMLIB_SCAN_DENTRY_OK, inode);
+			ret = do_scan_progress(
+				ctx->params, WIMLIB_SCAN_DENTRY_OK, inode);
 		else
-			ret = do_scan_progress(ctx->params,
-					       WIMLIB_SCAN_DENTRY_EXCLUDED,
-					       NULL);
+			ret = do_scan_progress(
+				ctx->params, WIMLIB_SCAN_DENTRY_EXCLUDED, NULL);
 	}
 out:
 	if (likely(h))
@@ -1924,7 +2025,7 @@ out:
 	if (unlikely(ret)) {
 		free_dentry_tree(root, ctx->params->blob_table);
 		root = NULL;
-		ret = report_scan_error(ctx->params, ret);
+		ret  = report_scan_error(ctx->params, ret);
 	}
 	*root_ret = root;
 	return ret;
@@ -1934,31 +2035,32 @@ static void
 winnt_do_scan_warnings(const wchar_t *path, const struct winnt_scan_ctx *ctx)
 {
 	if (likely(ctx->num_get_sacl_priv_notheld == 0 &&
-		   ctx->num_get_sd_access_denied == 0))
+	           ctx->num_get_sd_access_denied == 0))
 		return;
 
-	WARNING("Scan of \"%ls\" complete, but with one or more warnings:", path);
+	WARNING("Scan of \"%ls\" complete, but with one or more warnings:",
+	        path);
 	if (ctx->num_get_sacl_priv_notheld != 0) {
 		WARNING("- Could not capture SACL (System Access Control List)\n"
-			"            on %lu files or directories.",
-			ctx->num_get_sacl_priv_notheld);
+		        "            on %lu files or directories.",
+		        ctx->num_get_sacl_priv_notheld);
 	}
 	if (ctx->num_get_sd_access_denied != 0) {
 		WARNING("- Could not capture security descriptor at all\n"
-			"            on %lu files or directories.",
-			ctx->num_get_sd_access_denied);
+		        "            on %lu files or directories.",
+		        ctx->num_get_sd_access_denied);
 	}
 	WARNING("To fully capture all security descriptors, run the program\n"
-		"          with Administrator rights.");
+	        "          with Administrator rights.");
 }
 
 /*----------------------------------------------------------------------------*
  *                         Fast MFT scan implementation                       *
  *----------------------------------------------------------------------------*/
 
-#define ENABLE_FAST_MFT_SCAN	1
+#  define ENABLE_FAST_MFT_SCAN 1
 
-#ifdef ENABLE_FAST_MFT_SCAN
+#  ifdef ENABLE_FAST_MFT_SCAN
 
 typedef struct {
 	u64 StartingCluster;
@@ -1972,22 +2074,24 @@ typedef struct {
 
 /* The FSCTL_QUERY_FILE_LAYOUT ioctl.  This ioctl can be used on Windows 8 and
  * later to scan the MFT of an NTFS volume.  */
-#define FSCTL_QUERY_FILE_LAYOUT		CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 157, METHOD_NEITHER, FILE_ANY_ACCESS)
+#    define FSCTL_QUERY_FILE_LAYOUT \
+      CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 157, METHOD_NEITHER, FILE_ANY_ACCESS)
 
 /* The input to FSCTL_QUERY_FILE_LAYOUT  */
 typedef struct {
 	u32 NumberOfPairs;
-#define QUERY_FILE_LAYOUT_RESTART					0x00000001
-#define QUERY_FILE_LAYOUT_INCLUDE_NAMES					0x00000002
-#define QUERY_FILE_LAYOUT_INCLUDE_STREAMS				0x00000004
-#define QUERY_FILE_LAYOUT_INCLUDE_EXTENTS				0x00000008
-#define QUERY_FILE_LAYOUT_INCLUDE_EXTRA_INFO				0x00000010
-#define QUERY_FILE_LAYOUT_INCLUDE_STREAMS_WITH_NO_CLUSTERS_ALLOCATED	0x00000020
+#    define QUERY_FILE_LAYOUT_RESTART            0x00000001
+#    define QUERY_FILE_LAYOUT_INCLUDE_NAMES      0x00000002
+#    define QUERY_FILE_LAYOUT_INCLUDE_STREAMS    0x00000004
+#    define QUERY_FILE_LAYOUT_INCLUDE_EXTENTS    0x00000008
+#    define QUERY_FILE_LAYOUT_INCLUDE_EXTRA_INFO 0x00000010
+#    define QUERY_FILE_LAYOUT_INCLUDE_STREAMS_WITH_NO_CLUSTERS_ALLOCATED \
+      0x00000020
 	u32 Flags;
-#define QUERY_FILE_LAYOUT_FILTER_TYPE_NONE		0
-#define QUERY_FILE_LAYOUT_FILTER_TYPE_CLUSTERS		1
-#define QUERY_FILE_LAYOUT_FILTER_TYPE_FILEID		2
-#define QUERY_FILE_LAYOUT_NUM_FILTER_TYPES		3
+#    define QUERY_FILE_LAYOUT_FILTER_TYPE_NONE     0
+#    define QUERY_FILE_LAYOUT_FILTER_TYPE_CLUSTERS 1
+#    define QUERY_FILE_LAYOUT_FILTER_TYPE_FILEID   2
+#    define QUERY_FILE_LAYOUT_NUM_FILTER_TYPES     3
 	u32 FilterType;
 	u32 Reserved;
 	union {
@@ -2000,7 +2104,7 @@ typedef struct {
 typedef struct {
 	u32 FileEntryCount;
 	u32 FirstFileOffset;
-#define QUERY_FILE_LAYOUT_SINGLE_INSTANCED				0x00000001
+#    define QUERY_FILE_LAYOUT_SINGLE_INSTANCED 0x00000001
 	u32 Flags;
 	u32 Reserved;
 } QUERY_FILE_LAYOUT_OUTPUT;
@@ -2035,8 +2139,8 @@ typedef struct {
 /* Filename (or dentry) information returned by FSCTL_QUERY_FILE_LAYOUT  */
 typedef struct {
 	u32 NextNameOffset;
-#define FILE_LAYOUT_NAME_ENTRY_PRIMARY	0x00000001
-#define FILE_LAYOUT_NAME_ENTRY_DOS	0x00000002
+#    define FILE_LAYOUT_NAME_ENTRY_PRIMARY 0x00000001
+#    define FILE_LAYOUT_NAME_ENTRY_DOS     0x00000002
 	u32 Flags;
 	u64 ParentFileReferenceNumber;
 	u32 FileNameLength;
@@ -2048,10 +2152,10 @@ typedef struct {
 typedef struct {
 	u32 Version;
 	u32 NextStreamOffset;
-#define STREAM_LAYOUT_ENTRY_IMMOVABLE			0x00000001
-#define STREAM_LAYOUT_ENTRY_PINNED			0x00000002
-#define STREAM_LAYOUT_ENTRY_RESIDENT			0x00000004
-#define STREAM_LAYOUT_ENTRY_NO_CLUSTERS_ALLOCATED	0x00000008
+#    define STREAM_LAYOUT_ENTRY_IMMOVABLE             0x00000001
+#    define STREAM_LAYOUT_ENTRY_PINNED                0x00000002
+#    define STREAM_LAYOUT_ENTRY_RESIDENT              0x00000004
+#    define STREAM_LAYOUT_ENTRY_NO_CLUSTERS_ALLOCATED 0x00000008
 	u32 Flags;
 	u32 ExtentInformationOffset;
 	u64 AllocationSize;
@@ -2062,10 +2166,9 @@ typedef struct {
 	wchar_t StreamIdentifier[1];
 } STREAM_LAYOUT_ENTRY;
 
-
 typedef struct {
-#define STREAM_EXTENT_ENTRY_AS_RETRIEVAL_POINTERS	0x00000001
-#define STREAM_EXTENT_ENTRY_ALL_EXTENTS			0x00000002
+#    define STREAM_EXTENT_ENTRY_AS_RETRIEVAL_POINTERS 0x00000001
+#    define STREAM_EXTENT_ENTRY_ALL_EXTENTS           0x00000002
 	u32 Flags;
 	union {
 		RETRIEVAL_POINTERS_BUFFER RetrievalPointers;
@@ -2073,20 +2176,20 @@ typedef struct {
 } STREAM_EXTENT_ENTRY;
 
 /* Extract the MFT number part of the full inode number  */
-#define NTFS_MFT_NO(ref)	((ref) & (((u64)1 << 48) - 1))
+#    define NTFS_MFT_NO(ref) ((ref) & (((u64)1 << 48) - 1))
 
 /* Is the file the root directory of the NTFS volume?  The root directory always
  * occupies MFT record 5.  */
-#define NTFS_IS_ROOT_FILE(ino)	(NTFS_MFT_NO(ino) == 5)
+#    define NTFS_IS_ROOT_FILE(ino) (NTFS_MFT_NO(ino) == 5)
 
 /* Is the file a special NTFS file, other than the root directory?  The special
  * files are the first 16 records in the MFT.  */
-#define NTFS_IS_SPECIAL_FILE(ino)			\
-	(NTFS_MFT_NO(ino) <= 15 && !NTFS_IS_ROOT_FILE(ino))
+#    define NTFS_IS_SPECIAL_FILE(ino) \
+      (NTFS_MFT_NO(ino) <= 15 && !NTFS_IS_ROOT_FILE(ino))
 
-#define NTFS_SPECIAL_STREAM_OBJECT_ID		0x00000001
-#define NTFS_SPECIAL_STREAM_EA			0x00000002
-#define NTFS_SPECIAL_STREAM_EA_INFORMATION	0x00000004
+#    define NTFS_SPECIAL_STREAM_OBJECT_ID      0x00000001
+#    define NTFS_SPECIAL_STREAM_EA             0x00000002
+#    define NTFS_SPECIAL_STREAM_EA_INFORMATION 0x00000004
 
 /* Intermediate inode structure.  This is used to temporarily save information
  * from FSCTL_QUERY_FILE_LAYOUT before creating the full 'struct wim_inode'.  */
@@ -2134,28 +2237,32 @@ struct ntfs_inode_map {
 	struct avl_tree_node *root;
 };
 
-#define NTFS_INODE(node)				\
-	avl_tree_entry((node), struct ntfs_inode, index_node)
+#    define NTFS_INODE(node) \
+      avl_tree_entry((node), struct ntfs_inode, index_node)
 
-#define SKIP_ALIGNED(p, size)	((void *)(p) + ALIGN((size), 8))
+#    define SKIP_ALIGNED(p, size) ((void *)(p) + ALIGN((size), 8))
 
 /* Get a pointer to the first dentry of the inode.  */
-#define FIRST_DENTRY(ni) SKIP_ALIGNED((ni), sizeof(struct ntfs_inode))
+#    define FIRST_DENTRY(ni) SKIP_ALIGNED((ni), sizeof(struct ntfs_inode))
 
 /* Get a pointer to the first stream of the inode.  */
-#define FIRST_STREAM(ni) ((const void *)ni + ni->first_stream_offset)
+#    define FIRST_STREAM(ni) ((const void *)ni + ni->first_stream_offset)
 
 /* Advance to the next dentry of the inode.  */
-#define NEXT_DENTRY(nd)	 SKIP_ALIGNED((nd), sizeof(struct ntfs_dentry) +   \
-				(wcslen((nd)->name) + 1) * sizeof(wchar_t))
+#    define NEXT_DENTRY(nd)                     \
+      SKIP_ALIGNED((nd),                        \
+		   sizeof(struct ntfs_dentry) + \
+			   (wcslen((nd)->name) + 1) * sizeof(wchar_t))
 
 /* Advance to the next stream of the inode.  */
-#define NEXT_STREAM(ns)	 SKIP_ALIGNED((ns), sizeof(struct ntfs_stream) +   \
-				(wcslen((ns)->name) + 1) * sizeof(wchar_t))
+#    define NEXT_STREAM(ns)                     \
+      SKIP_ALIGNED((ns),                        \
+		   sizeof(struct ntfs_stream) + \
+			   (wcslen((ns)->name) + 1) * sizeof(wchar_t))
 
 static int
 _avl_cmp_ntfs_inodes(const struct avl_tree_node *node1,
-		     const struct avl_tree_node *node2)
+                     const struct avl_tree_node *node2)
 {
 	return cmp_u64(NTFS_INODE(node1)->ino, NTFS_INODE(node2)->ino);
 }
@@ -2164,8 +2271,9 @@ _avl_cmp_ntfs_inodes(const struct avl_tree_node *node1,
 static void
 ntfs_inode_map_add_inode(struct ntfs_inode_map *map, struct ntfs_inode *ni)
 {
-	if (avl_tree_insert(&map->root, &ni->index_node, _avl_cmp_ntfs_inodes)) {
-		WARNING("Inode 0x%016"PRIx64" is a duplicate!", ni->ino);
+	if (avl_tree_insert(&map->root, &ni->index_node, _avl_cmp_ntfs_inodes))
+	{
+		WARNING("Inode 0x%016" PRIx64 " is a duplicate!", ni->ino);
 		FREE(ni);
 	}
 }
@@ -2178,7 +2286,8 @@ ntfs_inode_map_lookup(struct ntfs_inode_map *map, u64 ino)
 	struct avl_tree_node *res;
 
 	tmp.ino = ino;
-	res = avl_tree_lookup_node(map->root, &tmp.index_node, _avl_cmp_ntfs_inodes);
+	res     = avl_tree_lookup_node(
+                map->root, &tmp.index_node, _avl_cmp_ntfs_inodes);
 	if (!res)
 		return NULL;
 	return NTFS_INODE(res);
@@ -2198,7 +2307,8 @@ ntfs_inode_map_destroy(struct ntfs_inode_map *map)
 {
 	struct ntfs_inode *ni;
 
-	avl_tree_for_each_in_postorder(ni, map->root, struct ntfs_inode, index_node)
+	avl_tree_for_each_in_postorder(
+		ni, map->root, struct ntfs_inode, index_node)
 		FREE(ni);
 }
 
@@ -2206,17 +2316,16 @@ static bool
 file_has_streams(const FILE_LAYOUT_ENTRY *file)
 {
 	return (file->FirstStreamOffset != 0) &&
-		!(file->FileAttributes & FILE_ATTRIBUTE_ENCRYPTED);
+	       !(file->FileAttributes & FILE_ATTRIBUTE_ENCRYPTED);
 }
 
 static bool
 is_valid_name_entry(const FILE_LAYOUT_NAME_ENTRY *name)
 {
-	return name->FileNameLength > 0 &&
-		name->FileNameLength % 2 == 0 &&
-		!wmemchr(name->FileName, L'\0', name->FileNameLength / 2) &&
-		(!(name->Flags & FILE_LAYOUT_NAME_ENTRY_DOS) ||
-		 name->FileNameLength <= 24);
+	return name->FileNameLength > 0 && name->FileNameLength % 2 == 0 &&
+	       !wmemchr(name->FileName, L'\0', name->FileNameLength / 2) &&
+	       (!(name->Flags & FILE_LAYOUT_NAME_ENTRY_DOS) ||
+	        name->FileNameLength <= 24);
 }
 
 /* Validate the FILE_LAYOUT_NAME_ENTRYs of the specified file and compute the
@@ -2224,30 +2333,32 @@ is_valid_name_entry(const FILE_LAYOUT_NAME_ENTRY *name)
  * information.  */
 static int
 validate_names_and_compute_total_length(const FILE_LAYOUT_ENTRY *file,
-					size_t *total_length_ret)
+                                        size_t *total_length_ret)
 {
 	const FILE_LAYOUT_NAME_ENTRY *name =
 		(const void *)file + file->FirstNameOffset;
-	size_t total = 0;
+	size_t total          = 0;
 	size_t num_long_names = 0;
 
 	for (;;) {
 		if (unlikely(!is_valid_name_entry(name))) {
 			ERROR("Invalid FILE_LAYOUT_NAME_ENTRY! "
-			      "FileReferenceNumber=0x%016"PRIx64", "
-			      "FileNameLength=%"PRIu32", "
-			      "FileName=%.*ls, Flags=0x%08"PRIx32,
+			      "FileReferenceNumber=0x%016" PRIx64 ", "
+			      "FileNameLength=%" PRIu32 ", "
+			      "FileName=%.*ls, Flags=0x%08" PRIx32,
 			      file->FileReferenceNumber,
 			      name->FileNameLength,
 			      (int)(name->FileNameLength / 2),
-			      name->FileName, name->Flags);
+			      name->FileName,
+			      name->Flags);
 			return WIMLIB_ERR_UNSUPPORTED;
 		}
 		if (name->Flags != FILE_LAYOUT_NAME_ENTRY_DOS) {
 			num_long_names++;
 			total += ALIGN(sizeof(struct ntfs_dentry) +
-				       name->FileNameLength + sizeof(wchar_t),
-				       8);
+			                       name->FileNameLength +
+			                       sizeof(wchar_t),
+			               8);
 		}
 		if (name->NextNameOffset == 0)
 			break;
@@ -2255,7 +2366,7 @@ validate_names_and_compute_total_length(const FILE_LAYOUT_ENTRY *file,
 	}
 
 	if (unlikely(num_long_names == 0)) {
-		ERROR("Inode 0x%016"PRIx64" has no long names!",
+		ERROR("Inode 0x%016" PRIx64 " has no long names!",
 		      file->FileReferenceNumber);
 		return WIMLIB_ERR_UNSUPPORTED;
 	}
@@ -2268,14 +2379,15 @@ static bool
 is_valid_stream_entry(const STREAM_LAYOUT_ENTRY *stream)
 {
 	return stream->StreamIdentifierLength % 2 == 0 &&
-		!wmemchr(stream->StreamIdentifier , L'\0',
-			 stream->StreamIdentifierLength / 2);
+	       !wmemchr(stream->StreamIdentifier,
+	                L'\0',
+	                stream->StreamIdentifierLength / 2);
 }
 
 /* assumes that 'id' is a wide string literal */
-#define stream_has_identifier(stream, id)				\
-	((stream)->StreamIdentifierLength == sizeof(id) - 2 &&		\
-	 !memcmp((stream)->StreamIdentifier, id, sizeof(id) - 2))
+#    define stream_has_identifier(stream, id)                \
+      ((stream)->StreamIdentifierLength == sizeof(id) - 2 && \
+       !memcmp((stream)->StreamIdentifier, id, sizeof(id) - 2))
 /*
  * If the specified STREAM_LAYOUT_ENTRY represents a DATA stream as opposed to
  * some other type of NTFS stream such as a STANDARD_INFORMATION stream, return
@@ -2284,8 +2396,10 @@ is_valid_stream_entry(const STREAM_LAYOUT_ENTRY *stream)
  * characters.  Otherwise return false.
  */
 static bool
-use_stream(const FILE_LAYOUT_ENTRY *file, const STREAM_LAYOUT_ENTRY *stream,
-	   const wchar_t **stream_name_ret, size_t *stream_name_nchars_ret)
+use_stream(const FILE_LAYOUT_ENTRY *file,
+           const STREAM_LAYOUT_ENTRY *stream,
+           const wchar_t **stream_name_ret,
+           size_t *stream_name_nchars_ret)
 {
 	const wchar_t *stream_name;
 	size_t stream_name_nchars;
@@ -2293,11 +2407,12 @@ use_stream(const FILE_LAYOUT_ENTRY *file, const STREAM_LAYOUT_ENTRY *stream,
 	if (stream->StreamIdentifierLength == 0) {
 		/* The unnamed data stream may be given as an empty string
 		 * rather than as "::$DATA".  Handle it both ways.  */
-		stream_name = L"";
+		stream_name        = L"";
 		stream_name_nchars = 0;
 	} else if (!get_data_stream_name(stream->StreamIdentifier,
-					 stream->StreamIdentifierLength / 2,
-					 &stream_name, &stream_name_nchars))
+	                                 stream->StreamIdentifierLength / 2,
+	                                 &stream_name,
+	                                 &stream_name_nchars))
 		return false;
 
 	/* Skip the unnamed data stream for directories.  */
@@ -2305,7 +2420,7 @@ use_stream(const FILE_LAYOUT_ENTRY *file, const STREAM_LAYOUT_ENTRY *stream,
 	    (file->FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return false;
 
-	*stream_name_ret = stream_name;
+	*stream_name_ret        = stream_name;
 	*stream_name_nchars_ret = stream_name_nchars;
 	return true;
 }
@@ -2316,12 +2431,12 @@ use_stream(const FILE_LAYOUT_ENTRY *file, const STREAM_LAYOUT_ENTRY *stream,
  * stream types that were found.  */
 static int
 validate_streams_and_compute_total_length(const FILE_LAYOUT_ENTRY *file,
-					  size_t *total_length_ret,
-					  u32 *special_streams_ret)
+                                          size_t *total_length_ret,
+                                          u32 *special_streams_ret)
 {
 	const STREAM_LAYOUT_ENTRY *stream =
 		(const void *)file + file->FirstStreamOffset;
-	size_t total = 0;
+	size_t total        = 0;
 	u32 special_streams = 0;
 
 	for (;;) {
@@ -2330,24 +2445,27 @@ validate_streams_and_compute_total_length(const FILE_LAYOUT_ENTRY *file,
 
 		if (unlikely(!is_valid_stream_entry(stream))) {
 			WARNING("Invalid STREAM_LAYOUT_ENTRY! "
-				"FileReferenceNumber=0x%016"PRIx64", "
-				"StreamIdentifierLength=%"PRIu32", "
-				"StreamIdentifier=%.*ls",
-				file->FileReferenceNumber,
-				stream->StreamIdentifierLength,
-				(int)(stream->StreamIdentifierLength / 2),
-				stream->StreamIdentifier);
+			        "FileReferenceNumber=0x%016" PRIx64 ", "
+			        "StreamIdentifierLength=%" PRIu32 ", "
+			        "StreamIdentifier=%.*ls",
+			        file->FileReferenceNumber,
+			        stream->StreamIdentifierLength,
+			        (int)(stream->StreamIdentifierLength / 2),
+			        stream->StreamIdentifier);
 			return WIMLIB_ERR_UNSUPPORTED;
 		}
 
 		if (use_stream(file, stream, &name, &name_nchars)) {
 			total += ALIGN(sizeof(struct ntfs_stream) +
-				       (name_nchars + 1) * sizeof(wchar_t), 8);
+			                       (name_nchars + 1) *
+			                               sizeof(wchar_t),
+			               8);
 		} else if (stream_has_identifier(stream, L"::$OBJECT_ID")) {
 			special_streams |= NTFS_SPECIAL_STREAM_OBJECT_ID;
 		} else if (stream_has_identifier(stream, L"::$EA")) {
 			special_streams |= NTFS_SPECIAL_STREAM_EA;
-		} else if (stream_has_identifier(stream, L"::$EA_INFORMATION")) {
+		} else if (stream_has_identifier(stream, L"::$EA_INFORMATION"))
+		{
 			special_streams |= NTFS_SPECIAL_STREAM_EA_INFORMATION;
 		}
 		if (stream->NextStreamOffset == 0)
@@ -2355,14 +2473,15 @@ validate_streams_and_compute_total_length(const FILE_LAYOUT_ENTRY *file,
 		stream = (const void *)stream + stream->NextStreamOffset;
 	}
 
-	*total_length_ret = total;
+	*total_length_ret    = total;
 	*special_streams_ret = special_streams;
 	return 0;
 }
 
 static void *
-load_name_information(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode *ni,
-		      void *p)
+load_name_information(const FILE_LAYOUT_ENTRY *file,
+                      struct ntfs_inode *ni,
+                      void *p)
 {
 	const FILE_LAYOUT_NAME_ENTRY *name =
 		(const void *)file + file->FirstNameOffset;
@@ -2375,19 +2494,23 @@ load_name_information(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode *ni,
 		 * Also, there should be at most one short name per inode.  */
 		if (name->Flags & FILE_LAYOUT_NAME_ENTRY_DOS) {
 			memcpy(ni->short_name,
-			       name->FileName, name->FileNameLength);
+			       name->FileName,
+			       name->FileNameLength);
 			ni->short_name[name->FileNameLength / 2] = L'\0';
 		}
 		if (name->Flags != FILE_LAYOUT_NAME_ENTRY_DOS) {
 			ni->num_aliases++;
 			nd->offset_from_inode = (u8 *)nd - (u8 *)ni;
-			nd->is_primary = ((name->Flags &
-					   FILE_LAYOUT_NAME_ENTRY_PRIMARY) != 0);
+			nd->is_primary =
+				((name->Flags &
+			          FILE_LAYOUT_NAME_ENTRY_PRIMARY) != 0);
 			nd->parent_ino = name->ParentFileReferenceNumber;
 			memcpy(nd->name, name->FileName, name->FileNameLength);
 			nd->name[name->FileNameLength / 2] = L'\0';
 			p += ALIGN(sizeof(struct ntfs_dentry) +
-				   name->FileNameLength + sizeof(wchar_t), 8);
+			                   name->FileNameLength +
+			                   sizeof(wchar_t),
+			           8);
 		}
 		if (name->NextNameOffset == 0)
 			break;
@@ -2409,12 +2532,14 @@ load_starting_lcn(const STREAM_LAYOUT_ENTRY *stream)
 	if (!(entry->Flags & STREAM_EXTENT_ENTRY_AS_RETRIEVAL_POINTERS))
 		return 0;
 
-	return extract_starting_lcn(&entry->ExtentInformation.RetrievalPointers);
+	return extract_starting_lcn(
+		&entry->ExtentInformation.RetrievalPointers);
 }
 
 static void *
-load_stream_information(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode *ni,
-			void *p)
+load_stream_information(const FILE_LAYOUT_ENTRY *file,
+                        struct ntfs_inode *ni,
+                        void *p)
 {
 	const STREAM_LAYOUT_ENTRY *stream =
 		(const void *)file + file->FirstStreamOffset;
@@ -2433,7 +2558,8 @@ load_stream_information(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode *ni,
 			wmemcpy(ns->name, name, name_nchars);
 			ns->name[name_nchars] = L'\0';
 			p += ALIGN(sizeof(struct ntfs_stream) +
-				   (name_nchars + 1) * sizeof(wchar_t), 8);
+			                   (name_nchars + 1) * sizeof(wchar_t),
+			           8);
 		}
 		if (stream->NextStreamOffset == 0)
 			break;
@@ -2470,8 +2596,8 @@ load_one_file(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode_map *inode_map)
 	}
 
 	if (file_has_streams(file)) {
-		ret = validate_streams_and_compute_total_length(file, &n,
-								&special_streams);
+		ret = validate_streams_and_compute_total_length(
+			file, &n, &special_streams);
 		if (ret)
 			return ret;
 		inode_size += n;
@@ -2483,13 +2609,13 @@ load_one_file(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode_map *inode_map)
 	if (!ni)
 		return WIMLIB_ERR_NOMEM;
 
-	ni->ino = file->FileReferenceNumber;
-	ni->attributes = info->BasicInformation.FileAttributes;
-	ni->creation_time = info->BasicInformation.CreationTime;
-	ni->last_write_time = info->BasicInformation.LastWriteTime;
+	ni->ino              = file->FileReferenceNumber;
+	ni->attributes       = info->BasicInformation.FileAttributes;
+	ni->creation_time    = info->BasicInformation.CreationTime;
+	ni->last_write_time  = info->BasicInformation.LastWriteTime;
 	ni->last_access_time = info->BasicInformation.LastAccessTime;
-	ni->security_id = info->SecurityId;
-	ni->special_streams = special_streams;
+	ni->security_id      = info->SecurityId;
+	ni->special_streams  = special_streams;
 
 	p = FIRST_DENTRY(ni);
 
@@ -2515,24 +2641,25 @@ load_one_file(const FILE_LAYOUT_ENTRY *file, struct ntfs_inode_map *inode_map)
 static int
 load_files_from_mft(const wchar_t *path, struct ntfs_inode_map *inode_map)
 {
-	HANDLE h = NULL;
-	QUERY_FILE_LAYOUT_INPUT in = (QUERY_FILE_LAYOUT_INPUT) {
+	HANDLE h                   = NULL;
+	QUERY_FILE_LAYOUT_INPUT in = (QUERY_FILE_LAYOUT_INPUT){
 		.NumberOfPairs = 0,
-		.Flags = QUERY_FILE_LAYOUT_RESTART |
-			 QUERY_FILE_LAYOUT_INCLUDE_NAMES |
-			 QUERY_FILE_LAYOUT_INCLUDE_STREAMS |
-			 QUERY_FILE_LAYOUT_INCLUDE_EXTENTS |
-			 QUERY_FILE_LAYOUT_INCLUDE_EXTRA_INFO |
-			 QUERY_FILE_LAYOUT_INCLUDE_STREAMS_WITH_NO_CLUSTERS_ALLOCATED,
+		.Flags =
+			QUERY_FILE_LAYOUT_RESTART |
+			QUERY_FILE_LAYOUT_INCLUDE_NAMES |
+			QUERY_FILE_LAYOUT_INCLUDE_STREAMS |
+			QUERY_FILE_LAYOUT_INCLUDE_EXTENTS |
+			QUERY_FILE_LAYOUT_INCLUDE_EXTRA_INFO |
+			QUERY_FILE_LAYOUT_INCLUDE_STREAMS_WITH_NO_CLUSTERS_ALLOCATED,
 		.FilterType = QUERY_FILE_LAYOUT_FILTER_TYPE_NONE,
 	};
-	size_t outsize = 32768;
+	size_t outsize                = 32768;
 	QUERY_FILE_LAYOUT_OUTPUT *out = NULL;
 	int ret;
 	NTSTATUS status;
 
-	status = winnt_open(path, wcslen(path),
-			    FILE_READ_DATA | FILE_READ_ATTRIBUTES, &h);
+	status = winnt_open(
+		path, wcslen(path), FILE_READ_DATA | FILE_READ_ATTRIBUTES, &h);
 	if (!NT_SUCCESS(status)) {
 		ret = -1; /* Silently try standard recursive scan instead  */
 		goto out;
@@ -2548,9 +2675,12 @@ load_files_from_mft(const wchar_t *path, struct ntfs_inode_map *inode_map)
 
 		/* Execute FSCTL_QUERY_FILE_LAYOUT until it fails.  */
 		while (NT_SUCCESS(status = winnt_fsctl(h,
-						       FSCTL_QUERY_FILE_LAYOUT,
-						       &in, sizeof(in),
-						       out, outsize, NULL)))
+		                                       FSCTL_QUERY_FILE_LAYOUT,
+		                                       &in,
+		                                       sizeof(in),
+		                                       out,
+		                                       outsize,
+		                                       NULL)))
 		{
 			const FILE_LAYOUT_ENTRY *file =
 				(const void *)out + out->FirstFileOffset;
@@ -2560,7 +2690,8 @@ load_files_from_mft(const wchar_t *path, struct ntfs_inode_map *inode_map)
 					goto out;
 				if (file->NextFileOffset == 0)
 					break;
-				file = (const void *)file + file->NextFileOffset;
+				file = (const void *)file +
+				       file->NextFileOffset;
 			}
 			in.Flags &= ~QUERY_FILE_LAYOUT_RESTART;
 		}
@@ -2577,14 +2708,15 @@ load_files_from_mft(const wchar_t *path, struct ntfs_inode_map *inode_map)
 	if (status != STATUS_END_OF_FILE) {
 		if (status == STATUS_INVALID_DEVICE_REQUEST /* old OS */ ||
 		    status == STATUS_NOT_SUPPORTED /* Samba volume, WinXP */ ||
-		    status == STATUS_INVALID_PARAMETER /* not root directory */ )
+		    status == STATUS_INVALID_PARAMETER /* not root directory */)
 		{
 			/* Silently try standard recursive scan instead  */
 			ret = -1;
 		} else {
-			winnt_error(status,
-				    L"Error enumerating files on volume \"%ls\"",
-				    path);
+			winnt_error(
+				status,
+				L"Error enumerating files on volume \"%ls\"",
+				path);
 			/* Try standard recursive scan instead  */
 			ret = WIMLIB_ERR_UNSUPPORTED;
 		}
@@ -2616,21 +2748,23 @@ build_children_lists(struct ntfs_inode_map *map, struct ntfs_inode **root_ret)
 			continue;
 		}
 
-		n = ni->num_aliases;
+		n  = ni->num_aliases;
 		nd = FIRST_DENTRY(ni);
 		for (;;) {
 			struct ntfs_inode *parent;
 
 			parent = ntfs_inode_map_lookup(map, nd->parent_ino);
 			if (unlikely(!parent)) {
-				ERROR("Parent inode 0x%016"PRIx64" of"
+				ERROR("Parent inode 0x%016" PRIx64 " of"
 				      "directory entry \"%ls\" (inode "
-				      "0x%016"PRIx64") was missing from the "
+				      "0x%016" PRIx64 ") was missing from the "
 				      "MFT listing!",
-				      nd->parent_ino, nd->name, ni->ino);
+				      nd->parent_ino,
+				      nd->name,
+				      ni->ino);
 				return WIMLIB_ERR_UNSUPPORTED;
 			}
-			nd->next_child = parent->first_child;
+			nd->next_child      = parent->first_child;
 			parent->first_child = nd;
 			if (!--n)
 				break;
@@ -2651,15 +2785,15 @@ struct security_map {
 	struct avl_tree_node *root;
 };
 
-#define SECURITY_MAP_NODE(node)				\
-	avl_tree_entry((node), struct security_map_node, index_node)
+#    define SECURITY_MAP_NODE(node) \
+      avl_tree_entry((node), struct security_map_node, index_node)
 
 static int
 _avl_cmp_security_map_nodes(const struct avl_tree_node *node1,
-			    const struct avl_tree_node *node2)
+                            const struct avl_tree_node *node2)
 {
 	return cmp_u32(SECURITY_MAP_NODE(node1)->disk_security_id,
-		       SECURITY_MAP_NODE(node2)->disk_security_id);
+	               SECURITY_MAP_NODE(node2)->disk_security_id);
 }
 
 static s32
@@ -2668,24 +2802,25 @@ security_map_lookup(struct security_map *map, u32 disk_security_id)
 	struct security_map_node tmp;
 	const struct avl_tree_node *res;
 
-	if (disk_security_id == 0)  /* No on-disk security ID; uncacheable  */
+	if (disk_security_id == 0) /* No on-disk security ID; uncacheable  */
 		return -1;
 
 	tmp.disk_security_id = disk_security_id;
-	res = avl_tree_lookup_node(map->root, &tmp.index_node,
-				   _avl_cmp_security_map_nodes);
+	res                  = avl_tree_lookup_node(
+                map->root, &tmp.index_node, _avl_cmp_security_map_nodes);
 	if (!res)
 		return -1;
 	return SECURITY_MAP_NODE(res)->wim_security_id;
 }
 
 static int
-security_map_insert(struct security_map *map, u32 disk_security_id,
-		    u32 wim_security_id)
+security_map_insert(struct security_map *map,
+                    u32 disk_security_id,
+                    u32 wim_security_id)
 {
 	struct security_map_node *node;
 
-	if (disk_security_id == 0)  /* No on-disk security ID; uncacheable  */
+	if (disk_security_id == 0) /* No on-disk security ID; uncacheable  */
 		return 0;
 
 	node = MALLOC(sizeof(*node));
@@ -2693,9 +2828,9 @@ security_map_insert(struct security_map *map, u32 disk_security_id,
 		return WIMLIB_ERR_NOMEM;
 
 	node->disk_security_id = disk_security_id;
-	node->wim_security_id = wim_security_id;
-	avl_tree_insert(&map->root, &node->index_node,
-			_avl_cmp_security_map_nodes);
+	node->wim_security_id  = wim_security_id;
+	avl_tree_insert(
+		&map->root, &node->index_node, _avl_cmp_security_map_nodes);
 	return 0;
 }
 
@@ -2704,8 +2839,8 @@ security_map_destroy(struct security_map *map)
 {
 	struct security_map_node *node;
 
-	avl_tree_for_each_in_postorder(node, map->root,
-				       struct security_map_node, index_node)
+	avl_tree_for_each_in_postorder(
+		node, map->root, struct security_map_node, index_node)
 		FREE(node);
 }
 
@@ -2724,13 +2859,14 @@ security_map_destroy(struct security_map *map)
  */
 static int
 generate_wim_structures_recursive(struct wim_dentry **root_ret,
-				  const wchar_t *filename, bool is_primary_name,
-				  struct ntfs_inode *ni,
-				  struct winnt_scan_ctx *ctx,
-				  struct ntfs_inode_map *inode_map,
-				  struct security_map *security_map)
+                                  const wchar_t *filename,
+                                  bool is_primary_name,
+                                  struct ntfs_inode *ni,
+                                  struct winnt_scan_ctx *ctx,
+                                  struct ntfs_inode_map *inode_map,
+                                  struct security_map *security_map)
 {
-	int ret = 0;
+	int ret                 = 0;
 	struct wim_dentry *root = NULL;
 	struct wim_inode *inode = NULL;
 	const struct ntfs_stream *ns;
@@ -2743,14 +2879,17 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 	 * in particular, can't be properly handled here because a commonly used
 	 * filter driver (WOF) hides reparse points from regular filesystem APIs
 	 * but not from FSCTL_QUERY_FILE_LAYOUT.  */
-	if (ni->attributes & (FILE_ATTRIBUTE_REPARSE_POINT |
-			      FILE_ATTRIBUTE_ENCRYPTED) ||
+	if (ni->attributes &
+	            (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_ENCRYPTED) ||
 	    ni->special_streams != 0)
 	{
-		ret = winnt_build_dentry_tree(&root, NULL,
-					      ctx->params->cur_path,
-					      ctx->params->cur_path_nchars,
-					      filename, ctx, false);
+		ret = winnt_build_dentry_tree(&root,
+		                              NULL,
+		                              ctx->params->cur_path,
+		                              ctx->params->cur_path_nchars,
+		                              filename,
+		                              ctx,
+		                              false);
 		if (ret) /* Error? */
 			goto out;
 		if (!root) /* Excluded? */
@@ -2767,9 +2906,12 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 		goto out;
 
 	/* Create the WIM dentry and possibly a new WIM inode  */
-	ret = inode_table_new_dentry(ctx->params->inode_table, filename,
-				     ni->ino, ctx->params->capture_root_dev,
-				     false, &root);
+	ret = inode_table_new_dentry(ctx->params->inode_table,
+	                             filename,
+	                             ni->ino,
+	                             ctx->params->capture_root_dev,
+	                             false,
+	                             &root);
 	if (ret)
 		goto out;
 
@@ -2778,8 +2920,8 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 	/* Set the short name if needed.  */
 	if (is_primary_name && *ni->short_name) {
 		size_t nbytes = wcslen(ni->short_name) * sizeof(wchar_t);
-		root->d_short_name = memdup(ni->short_name,
-					    nbytes + sizeof(wchar_t));
+		root->d_short_name =
+			memdup(ni->short_name, nbytes + sizeof(wchar_t));
 		if (!root->d_short_name) {
 			ret = WIMLIB_ERR_NOMEM;
 			goto out;
@@ -2793,9 +2935,9 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 	}
 
 	/* The file attributes and timestamps were cached from the MFT.  */
-	inode->i_attributes = ni->attributes;
-	inode->i_creation_time = ni->creation_time;
-	inode->i_last_write_time = ni->last_write_time;
+	inode->i_attributes       = ni->attributes;
+	inode->i_creation_time    = ni->creation_time;
+	inode->i_last_write_time  = ni->last_write_time;
 	inode->i_last_access_time = ni->last_access_time;
 
 	/* Set the security descriptor if needed.  */
@@ -2815,13 +2957,15 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 			 * into the security map.  */
 
 			status = winnt_open(ctx->params->cur_path,
-					    ctx->params->cur_path_nchars,
-					    READ_CONTROL |
-						ACCESS_SYSTEM_SECURITY, &h);
+			                    ctx->params->cur_path_nchars,
+			                    READ_CONTROL |
+			                            ACCESS_SYSTEM_SECURITY,
+			                    &h);
 			if (!NT_SUCCESS(status)) {
-				winnt_error(status, L"Can't open \"%ls\" to "
-					    "read security descriptor",
-					    printable_path(ctx));
+				winnt_error(status,
+				            L"Can't open \"%ls\" to "
+				            "read security descriptor",
+				            printable_path(ctx));
 				ret = WIMLIB_ERR_OPEN;
 				goto out;
 			}
@@ -2830,8 +2974,9 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 			if (ret)
 				goto out;
 
-			ret = security_map_insert(security_map, ni->security_id,
-						  inode->i_security_id);
+			ret = security_map_insert(security_map,
+			                          ni->security_id,
+			                          inode->i_security_id);
 			if (ret)
 				goto out;
 		}
@@ -2848,24 +2993,30 @@ generate_wim_structures_recursive(struct wim_dentry **root_ret,
 		 * Otherwise, only save the inode number (file ID).  */
 		if (*ns->name ||
 		    !(ctx->vol_flags & FILE_SUPPORTS_OPEN_BY_FILE_ID) ||
-		    !(ctx->params->add_flags & WIMLIB_ADD_FLAG_FILE_PATHS_UNNEEDED))
+		    !(ctx->params->add_flags &
+		      WIMLIB_ADD_FLAG_FILE_PATHS_UNNEEDED))
 		{
-			windows_file = alloc_windows_file(ctx->params->cur_path,
-							  ctx->params->cur_path_nchars,
-							  ns->name,
-							  wcslen(ns->name),
-							  ctx->snapshot,
-							  false);
+			windows_file =
+				alloc_windows_file(ctx->params->cur_path,
+			                           ctx->params->cur_path_nchars,
+			                           ns->name,
+			                           wcslen(ns->name),
+			                           ctx->snapshot,
+			                           false);
 		} else {
-			windows_file = alloc_windows_file_for_file_id(ni->ino,
-								      ctx->params->cur_path,
-								      ctx->params->root_path_nchars,
-								      ctx->snapshot);
+			windows_file = alloc_windows_file_for_file_id(
+				ni->ino,
+				ctx->params->cur_path,
+				ctx->params->root_path_nchars,
+				ctx->snapshot);
 		}
 
-		ret = add_stream(inode, windows_file, ns->size,
-				 STREAM_TYPE_DATA, ns->name,
-				 ctx->params->unhashed_blobs);
+		ret = add_stream(inode,
+		                 windows_file,
+		                 ns->size,
+		                 STREAM_TYPE_DATA,
+		                 ns->name,
+		                 ctx->params->unhashed_blobs);
 		if (ret)
 			goto out;
 		ns = NEXT_STREAM(ns);
@@ -2886,35 +3037,39 @@ process_children:
 			const struct ntfs_dentry *next = nd->next_child;
 
 			ret = WIMLIB_ERR_NOMEM;
-			if (!pathbuf_append_name(ctx->params, nd->name,
-						 wcslen(nd->name),
-						 &orig_path_nchars))
+			if (!pathbuf_append_name(ctx->params,
+			                         nd->name,
+			                         wcslen(nd->name),
+			                         &orig_path_nchars))
 				goto out;
 
 			ret = generate_wim_structures_recursive(
-					&child,
-					nd->name,
-					nd->is_primary,
-					(void *)nd - nd->offset_from_inode,
-					ctx,
-					inode_map,
-					security_map);
+				&child,
+				nd->name,
+				nd->is_primary,
+				(void *)nd - nd->offset_from_inode,
+				ctx,
+				inode_map,
+				security_map);
 
 			pathbuf_truncate(ctx->params, orig_path_nchars);
 
 			if (ret)
 				goto out;
 
-			attach_scanned_tree(root, child, ctx->params->blob_table);
+			attach_scanned_tree(
+				root, child, ctx->params->blob_table);
 			nd = next;
 		}
 	}
 
 out_progress:
 	if (likely(root))
-		ret = do_scan_progress(ctx->params, WIMLIB_SCAN_DENTRY_OK, inode);
+		ret = do_scan_progress(
+			ctx->params, WIMLIB_SCAN_DENTRY_OK, inode);
 	else
-		ret = do_scan_progress(ctx->params, WIMLIB_SCAN_DENTRY_EXCLUDED, NULL);
+		ret = do_scan_progress(
+			ctx->params, WIMLIB_SCAN_DENTRY_EXCLUDED, NULL);
 out:
 	if (--ni->num_aliases == 0) {
 		/* Memory usage optimization: when we don't need the ntfs_inode
@@ -2931,13 +3086,13 @@ out:
 
 static int
 winnt_build_dentry_tree_fast(struct wim_dentry **root_ret,
-			     struct winnt_scan_ctx *ctx)
+                             struct winnt_scan_ctx *ctx)
 {
-	struct ntfs_inode_map inode_map = { .root = NULL };
+	struct ntfs_inode_map inode_map  = { .root = NULL };
 	struct security_map security_map = { .root = NULL };
-	struct ntfs_inode *root = NULL;
-	wchar_t *path = ctx->params->cur_path;
-	size_t path_nchars = ctx->params->cur_path_nchars;
+	struct ntfs_inode *root          = NULL;
+	wchar_t *path                    = ctx->params->cur_path;
+	size_t path_nchars               = ctx->params->cur_path_nchars;
 	bool adjust_path;
 	int ret;
 
@@ -2959,22 +3114,23 @@ winnt_build_dentry_tree_fast(struct wim_dentry **root_ret,
 
 	if (!root) {
 		ERROR("The MFT listing for volume \"%ls\" did not include a "
-		      "root directory!", path);
+		      "root directory!",
+		      path);
 		ret = WIMLIB_ERR_UNSUPPORTED;
 		goto out;
 	}
 
 	root->num_aliases = 1;
 
-	ret = generate_wim_structures_recursive(root_ret, L"", false, root, ctx,
-						&inode_map, &security_map);
+	ret = generate_wim_structures_recursive(
+		root_ret, L"", false, root, ctx, &inode_map, &security_map);
 out:
 	ntfs_inode_map_destroy(&inode_map);
 	security_map_destroy(&security_map);
 	return ret;
 }
 
-#endif /* ENABLE_FAST_MFT_SCAN */
+#  endif /* ENABLE_FAST_MFT_SCAN */
 
 /*----------------------------------------------------------------------------*
  *                 Entry point for directory tree scans on Windows            *
@@ -2982,8 +3138,8 @@ out:
 
 int
 win32_build_dentry_tree(struct wim_dentry **root_ret,
-			const wchar_t *root_disk_path,
-			struct scan_params *params)
+                        const wchar_t *root_disk_path,
+                        struct scan_params *params)
 {
 	struct winnt_scan_ctx ctx = { .params = params };
 	UNICODE_STRING ntpath;
@@ -2992,7 +3148,8 @@ win32_build_dentry_tree(struct wim_dentry **root_ret,
 	int ret;
 
 	if (params->add_flags & WIMLIB_ADD_FLAG_SNAPSHOT)
-		ret = vss_create_snapshot(root_disk_path, &ntpath, &ctx.snapshot);
+		ret = vss_create_snapshot(
+			root_disk_path, &ntpath, &ctx.snapshot);
 	else
 		ret = win32_path_to_nt_path(root_disk_path, &ntpath);
 
@@ -3011,8 +3168,10 @@ win32_build_dentry_tree(struct wim_dentry **root_ret,
 	if (ret)
 		goto out;
 
-	status = winnt_open(params->cur_path, params->cur_path_nchars,
-			    FILE_READ_ATTRIBUTES, &h);
+	status = winnt_open(params->cur_path,
+	                    params->cur_path_nchars,
+	                    FILE_READ_ATTRIBUTES,
+	                    &h);
 	if (!NT_SUCCESS(status)) {
 		winnt_error(status, L"Can't open \"%ls\"", root_disk_path);
 		if (status == STATUS_FVE_LOCKED_VOLUME)
@@ -3026,20 +3185,25 @@ win32_build_dentry_tree(struct wim_dentry **root_ret,
 
 	NtClose(h);
 
-#ifdef ENABLE_FAST_MFT_SCAN
+#  ifdef ENABLE_FAST_MFT_SCAN
 	if (ctx.is_ntfs && !_wgetenv(L"WIMLIB_DISABLE_QUERY_FILE_LAYOUT")) {
 		ret = winnt_build_dentry_tree_fast(root_ret, &ctx);
 		if (ret >= 0 && ret != WIMLIB_ERR_UNSUPPORTED)
 			goto out;
 		if (ret >= 0) {
 			WARNING("A problem occurred during the fast MFT scan.\n"
-				"          Falling back to the standard "
-				"recursive directory tree scan.");
+			        "          Falling back to the standard "
+			        "recursive directory tree scan.");
 		}
 	}
-#endif
-	ret = winnt_build_dentry_tree(root_ret, NULL, params->cur_path,
-				      params->cur_path_nchars, L"", &ctx, true);
+#  endif
+	ret = winnt_build_dentry_tree(root_ret,
+	                              NULL,
+	                              params->cur_path,
+	                              params->cur_path_nchars,
+	                              L"",
+	                              &ctx,
+	                              true);
 out:
 	vss_put_snapshot(ctx.snapshot);
 	if (ret == 0)

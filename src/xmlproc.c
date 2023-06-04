@@ -49,9 +49,12 @@ tstrdupz(const tchar *str, size_t len)
 }
 
 static struct xml_node *
-xml_new_node(struct xml_node *parent, enum xml_node_type type,
-	     const tchar *name, size_t name_len,
-	     const tchar *value, size_t value_len)
+xml_new_node(struct xml_node *parent,
+             enum xml_node_type type,
+             const tchar *name,
+             size_t name_len,
+             const tchar *value,
+             size_t value_len)
 {
 	struct xml_node *node = CALLOC(1, sizeof(*node));
 
@@ -85,8 +88,8 @@ oom:
 struct xml_node *
 xml_new_element(struct xml_node *parent, const tchar *name)
 {
-	return xml_new_node(parent, XML_ELEMENT_NODE, name, tstrlen(name),
-			    NULL, 0);
+	return xml_new_node(
+		parent, XML_ELEMENT_NODE, name, tstrlen(name), NULL, 0);
 }
 
 /*
@@ -94,8 +97,9 @@ xml_new_element(struct xml_node *parent, const tchar *name)
  * non-NULL add the new ELEMENT under @parent which should be another ELEMENT.
  */
 struct xml_node *
-xml_new_element_with_text(struct xml_node *parent, const tchar *name,
-			  const tchar *text)
+xml_new_element_with_text(struct xml_node *parent,
+                          const tchar *name,
+                          const tchar *text)
 {
 	struct xml_node *element = xml_new_element(parent, name);
 
@@ -110,7 +114,7 @@ xml_new_element_with_text(struct xml_node *parent, const tchar *name,
 void
 xml_add_child(struct xml_node *parent, struct xml_node *child)
 {
-	xml_unlink_node(child);	/* Shouldn't be needed, but be safe. */
+	xml_unlink_node(child); /* Shouldn't be needed, but be safe. */
 	child->parent = parent;
 	list_add_tail(&child->sibling_link, &parent->children);
 }
@@ -169,8 +173,8 @@ xml_element_get_text(const struct xml_node *element)
 int
 xml_element_set_text(struct xml_node *element, const tchar *text)
 {
-	struct xml_node *text_node = xml_new_node(NULL, XML_TEXT_NODE, NULL, 0,
-						  text, tstrlen(text));
+	struct xml_node *text_node =
+		xml_new_node(NULL, XML_TEXT_NODE, NULL, 0, text, tstrlen(text));
 	if (!text_node)
 		return WIMLIB_ERR_NOMEM;
 	xml_free_children(element);
@@ -180,22 +184,24 @@ xml_element_set_text(struct xml_node *element, const tchar *text)
 
 static int
 xml_element_append_text(struct xml_node *element,
-			const tchar *text, size_t text_len)
+                        const tchar *text,
+                        size_t text_len)
 {
 	struct xml_node *last_child;
 
 	if (!list_empty(&element->children) &&
-	    (last_child =
-	     list_last_entry(&element->children, struct xml_node,
-			     sibling_link))->type == XML_TEXT_NODE) {
+	    (last_child = list_last_entry(
+		     &element->children, struct xml_node, sibling_link))
+	                    ->type == XML_TEXT_NODE)
+	{
 		/*
 		 * The new TEXT would directly follow another TEXT, so simplify
 		 * the tree by just appending to the existing TEXT.  (This case
 		 * can theoretically be reached via the use of CDATA...)
 		 */
 		size_t old_len = tstrlen(last_child->value);
-		tchar *new_value = CALLOC(old_len + text_len + 1,
-					  sizeof(new_value[0]));
+		tchar *new_value =
+			CALLOC(old_len + text_len + 1, sizeof(new_value[0]));
 		if (!new_value)
 			return WIMLIB_ERR_NOMEM;
 		tmemcpy(new_value, last_child->value, old_len);
@@ -227,9 +233,12 @@ xml_get_attrib(const struct xml_node *element, const tchar *name)
 int
 xml_set_attrib(struct xml_node *element, const tchar *name, const tchar *value)
 {
-	struct xml_node *attrib = xml_new_node(NULL, XML_ATTRIBUTE_NODE,
-					       name, tstrlen(name),
-					       value, tstrlen(value));
+	struct xml_node *attrib = xml_new_node(NULL,
+	                                       XML_ATTRIBUTE_NODE,
+	                                       name,
+	                                       tstrlen(name),
+	                                       value,
+	                                       tstrlen(value));
 	if (!attrib)
 		return WIMLIB_ERR_NOMEM;
 	xml_replace_child(element, attrib);
@@ -249,11 +258,12 @@ xml_replace_child(struct xml_node *parent, struct xml_node *replacement)
 
 	xml_node_for_each_child(parent, child) {
 		if (child->type == replacement->type &&
-		    !tstrcmp(child->name, replacement->name)) {
+		    !tstrcmp(child->name, replacement->name))
+		{
 			list_replace(&child->sibling_link,
-				     &replacement->sibling_link);
+			             &replacement->sibling_link);
 			replacement->parent = parent;
-			child->parent = NULL;
+			child->parent       = NULL;
 			xml_free_node(child);
 			return;
 		}
@@ -266,9 +276,12 @@ xml_clone_tree(struct xml_node *orig)
 {
 	struct xml_node *clone, *orig_child, *clone_child;
 
-	clone = xml_new_node(NULL, orig->type,
-			orig->name, orig->name ? tstrlen(orig->name) : 0,
-			orig->value, orig->value ? tstrlen(orig->value) : 0);
+	clone = xml_new_node(NULL,
+	                     orig->type,
+	                     orig->name,
+	                     orig->name ? tstrlen(orig->name) : 0,
+	                     orig->value,
+	                     orig->value ? tstrlen(orig->value) : 0);
 	if (!clone)
 		return NULL;
 	xml_node_for_each_child(orig, orig_child) {
@@ -306,16 +319,15 @@ static inline bool
 is_name_start_char(tchar c)
 {
 	return (c & 0x7f) != c /* overly lenient for now */ ||
-		(c >= 'A' && c <= 'Z') ||
-		(c >= 'a' && c <= 'z') ||
-		c == ':' || c == '_';
+	       (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ':' ||
+	       c == '_';
 }
 
 static inline bool
 is_name_char(tchar c)
 {
-	return is_name_start_char(c) ||
-		(c >= '0' && c <= '9') || c == '-' || c == '.';
+	return is_name_start_char(c) || (c >= '0' && c <= '9') || c == '-' ||
+	       c == '.';
 }
 
 /* Allow characters used in element "paths"; see do_xml_path_walk() */
@@ -348,16 +360,22 @@ xml_legal_value(const tchar *p)
 }
 
 #if TCHAR_IS_UTF16LE
-#define BYTE_ORDER_MARK	(tchar[]){ 0xfeff, 0 }
+#  define BYTE_ORDER_MARK \
+    (tchar[])             \
+    {                     \
+      0xfeff, 0           \
+    }
 #else
-#define BYTE_ORDER_MARK	"\xEF\xBB\xBF"
+#  define BYTE_ORDER_MARK "\xEF\xBB\xBF"
 #endif
 
 /*----------------------------------------------------------------------------*
  *                               XML parsing                                  *
  *----------------------------------------------------------------------------*/
 
-#define CHECK(cond)	if (!(cond)) goto bad
+#define CHECK(cond) \
+  if (!(cond))      \
+  goto bad
 
 static inline void
 skip_whitespace(const tchar **pp)
@@ -373,7 +391,7 @@ static inline bool
 skip_string(const tchar **pp, const tchar *str)
 {
 	const tchar *p = *pp;
-	size_t len = tstrlen(str);
+	size_t len     = tstrlen(str);
 
 	if (tstrncmp(p, str, len))
 		return false;
@@ -405,7 +423,8 @@ skip_misc(const tchar **pp)
 		if (skip_string(&p, T("<?")) && !find_and_skip(&p, T("?>")))
 			return false;
 		/* Discard DOCTYPE declaration for now. */
-		if (skip_string(&p, T("<!DOCTYPE")) && !find_and_skip(&p, T(">")))
+		if (skip_string(&p, T("<!DOCTYPE")) &&
+		    !find_and_skip(&p, T(">")))
 			return false;
 		/* Discard top-level comments for now. */
 		if (skip_string(&p, T("<!--")) && !find_and_skip(&p, T("-->")))
@@ -466,14 +485,16 @@ unescape_string(const tchar *str, size_t len, tchar **unescaped_ret)
 	return 0;
 
 bad:
-	ERROR("Error unescaping string '%.*"TS"'", (int)len, str);
+	ERROR("Error unescaping string '%.*" TS "'", (int)len, str);
 	FREE(unescaped);
 	return WIMLIB_ERR_XML;
 }
 
 static int
-parse_element(const tchar **pp, struct xml_node *parent, int depth,
-	      struct xml_node **node_ret);
+parse_element(const tchar **pp,
+              struct xml_node *parent,
+              int depth,
+              struct xml_node **node_ret);
 
 static int
 parse_contents(const tchar **pp, struct xml_node *element, int depth)
@@ -493,8 +514,8 @@ parse_contents(const tchar **pp, struct xml_node *element, int depth)
 			ret = unescape_string(raw_text, p - raw_text, &text);
 			if (ret)
 				return ret;
-			ret = xml_element_append_text(element, text,
-						      tstrlen(text));
+			ret = xml_element_append_text(
+				element, text, tstrlen(text));
 			FREE(text);
 			if (ret)
 				return ret;
@@ -512,8 +533,8 @@ parse_contents(const tchar **pp, struct xml_node *element, int depth)
 				raw_text = p;
 				if (!find_and_skip(&p, T("]]>")))
 					return WIMLIB_ERR_XML;
-				ret = xml_element_append_text(element, raw_text,
-							      p - 3 - raw_text);
+				ret = xml_element_append_text(
+					element, raw_text, p - 3 - raw_text);
 				if (ret)
 					return ret;
 				continue;
@@ -534,10 +555,12 @@ parse_contents(const tchar **pp, struct xml_node *element, int depth)
 }
 
 static int
-parse_element(const tchar **pp, struct xml_node *parent, int depth,
-	      struct xml_node **element_ret)
+parse_element(const tchar **pp,
+              struct xml_node *parent,
+              int depth,
+              struct xml_node **element_ret)
 {
-	const tchar *p = *pp;
+	const tchar *p           = *pp;
 	struct xml_node *element = NULL;
 	const tchar *name_start;
 	size_t name_len;
@@ -552,8 +575,8 @@ parse_element(const tchar **pp, struct xml_node *parent, int depth,
 		p++;
 	name_len = p - name_start;
 	CHECK(name_len > 0);
-	element = xml_new_node(parent, XML_ELEMENT_NODE, name_start, name_len,
-			       NULL, 0);
+	element = xml_new_node(
+		parent, XML_ELEMENT_NODE, name_start, name_len, NULL, 0);
 	if (!element) {
 		ret = WIMLIB_ERR_NOMEM;
 		goto error;
@@ -584,14 +607,18 @@ parse_element(const tchar **pp, struct xml_node *parent, int depth,
 		CHECK(*p == quote);
 		attr_value_len = p - attr_value_start;
 		p++;
-		ret = unescape_string(attr_value_start, attr_value_len,
-				      &attr_value);
+		ret = unescape_string(
+			attr_value_start, attr_value_len, &attr_value);
 		if (ret)
 			goto error;
-		ret = xml_new_node(element, XML_ATTRIBUTE_NODE,
-				   attr_name_start, attr_name_len,
-				   attr_value, tstrlen(attr_value))
-			? 0 : WIMLIB_ERR_NOMEM;
+		ret = xml_new_node(element,
+		                   XML_ATTRIBUTE_NODE,
+		                   attr_name_start,
+		                   attr_name_len,
+		                   attr_value,
+		                   tstrlen(attr_value)) ?
+		              0 :
+		              WIMLIB_ERR_NOMEM;
 		FREE(attr_value);
 		if (ret)
 			goto error;
@@ -665,13 +692,13 @@ xml_write(struct xml_out_buf *buf, const tchar *str, size_t len)
 {
 	if (buf->count + len + 1 > buf->capacity) {
 		size_t new_capacity = max(buf->capacity * 2, 4096);
-		tchar *new_buf = REALLOC(buf->buf,
-					 new_capacity * sizeof(str[0]));
+		tchar *new_buf =
+			REALLOC(buf->buf, new_capacity * sizeof(str[0]));
 		if (!new_buf) {
 			buf->oom = true;
 			return;
 		}
-		buf->buf = new_buf;
+		buf->buf      = new_buf;
 		buf->capacity = new_capacity;
 	}
 	tmemcpy(&buf->buf[buf->count], str, len);

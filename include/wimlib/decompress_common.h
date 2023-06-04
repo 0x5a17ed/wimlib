@@ -45,7 +45,6 @@
  * to be stored in little endian 16-bit coding units, with the bits ordered high
  * to low.  */
 struct input_bitstream {
-
 	/* Bits that have been read from the input buffer.  The bits are
 	 * left-justified; the next bit is always bit 31.  */
 	u32 bitbuf;
@@ -64,10 +63,10 @@ struct input_bitstream {
 static forceinline void
 init_input_bitstream(struct input_bitstream *is, const void *buffer, u32 size)
 {
-	is->bitbuf = 0;
+	is->bitbuf   = 0;
 	is->bitsleft = 0;
-	is->next = buffer;
-	is->end = is->next + size;
+	is->next     = buffer;
+	is->end      = is->next + size;
 }
 
 /* Note: for performance reasons, the following methods don't return error codes
@@ -200,7 +199,7 @@ static forceinline void
 bitstream_align(struct input_bitstream *is)
 {
 	is->bitsleft = 0;
-	is->bitbuf = 0;
+	is->bitbuf   = 0;
 }
 
 /******************************************************************************/
@@ -232,12 +231,12 @@ bitstream_align(struct input_bitstream *is)
  *	length: codeword length in bits, minus the number of bits with which the
  *		root table is indexed
  */
-#define DECODE_TABLE_SYMBOL_SHIFT  4
-#define DECODE_TABLE_MAX_SYMBOL	   ((1 << (16 - DECODE_TABLE_SYMBOL_SHIFT)) - 1)
-#define DECODE_TABLE_MAX_LENGTH    ((1 << DECODE_TABLE_SYMBOL_SHIFT) - 1)
-#define DECODE_TABLE_LENGTH_MASK   DECODE_TABLE_MAX_LENGTH
+#define DECODE_TABLE_SYMBOL_SHIFT 4
+#define DECODE_TABLE_MAX_SYMBOL   ((1 << (16 - DECODE_TABLE_SYMBOL_SHIFT)) - 1)
+#define DECODE_TABLE_MAX_LENGTH   ((1 << DECODE_TABLE_SYMBOL_SHIFT) - 1)
+#define DECODE_TABLE_LENGTH_MASK  DECODE_TABLE_MAX_LENGTH
 #define MAKE_DECODE_TABLE_ENTRY(symbol, length) \
-	(((symbol) << DECODE_TABLE_SYMBOL_SHIFT) | (length))
+  (((symbol) << DECODE_TABLE_SYMBOL_SHIFT) | (length))
 
 /*
  * Read and return the next Huffman-encoded symbol from the given bitstream
@@ -250,8 +249,10 @@ bitstream_align(struct input_bitstream *is)
  * lzms_decompress.c; keep them in sync!
  */
 static forceinline unsigned
-read_huffsym(struct input_bitstream *is, const u16 decode_table[],
-	     unsigned table_bits, unsigned max_codeword_len)
+read_huffsym(struct input_bitstream *is,
+             const u16 decode_table[],
+             unsigned table_bits,
+             unsigned max_codeword_len)
 {
 	unsigned entry;
 	unsigned symbol;
@@ -279,7 +280,7 @@ read_huffsym(struct input_bitstream *is, const u16 decode_table[],
 	{
 		/* Subtable required */
 		bitstream_remove_bits(is, table_bits);
-		entry = decode_table[symbol + bitstream_peek_bits(is, length)];
+		entry  = decode_table[symbol + bitstream_peek_bits(is, length)];
 		symbol = entry >> DECODE_TABLE_SYMBOL_SHIFT;
 		length = entry & DECODE_TABLE_LENGTH_MASK;
 	}
@@ -312,84 +313,104 @@ read_huffsym(struct input_bitstream *is, const u16 decode_table[],
  * requested parameters, so they cannot be used, at least without other changes
  * to the decode table --- see DECODE_TABLE_SIZE().
  */
-#define DECODE_TABLE_ENOUGH(num_syms, table_bits, max_codeword_len) ( \
-	((num_syms) == 8 && (table_bits) == 7 && (max_codeword_len) == 15) ? 128 : \
-	((num_syms) == 8 && (table_bits) == 5 && (max_codeword_len) == 7) ? 36 : \
-	((num_syms) == 8 && (table_bits) == 6 && (max_codeword_len) == 7) ? 66 : \
-	((num_syms) == 8 && (table_bits) == 7 && (max_codeword_len) == 7) ? 128 : \
-	((num_syms) == 20 && (table_bits) == 5 && (max_codeword_len) == 15) ? 1062 : \
-	((num_syms) == 20 && (table_bits) == 6 && (max_codeword_len) == 15) ? 582 : \
-	((num_syms) == 20 && (table_bits) == 7 && (max_codeword_len) == 15) ? 390 : \
-	((num_syms) == 54 && (table_bits) == 9 && (max_codeword_len) == 15) ? 618 : \
-	((num_syms) == 54 && (table_bits) == 10 && (max_codeword_len) == 15) ? 1098 : \
-	((num_syms) == 249 && (table_bits) == 9 && (max_codeword_len) == 16) ? 878 : \
-	((num_syms) == 249 && (table_bits) == 10 && (max_codeword_len) == 16) ? 1326 : \
-	((num_syms) == 249 && (table_bits) == 11 && (max_codeword_len) == 16) ? 2318 : \
-	((num_syms) == 256 && (table_bits) == 9 && (max_codeword_len) == 15) ? 822 : \
-	((num_syms) == 256 && (table_bits) == 10 && (max_codeword_len) == 15) ? 1302 : \
-	((num_syms) == 256 && (table_bits) == 11 && (max_codeword_len) == 15) ? 2310 : \
-	((num_syms) == 512 && (table_bits) == 10 && (max_codeword_len) == 15) ? 1558 : \
-	((num_syms) == 512 && (table_bits) == 11 && (max_codeword_len) == 15) ? 2566 : \
-	((num_syms) == 512 && (table_bits) == 12 && (max_codeword_len) == 15) ? 4606 : \
-	((num_syms) == 656 && (table_bits) == 10 && (max_codeword_len) == 16) ? 1734 : \
-	((num_syms) == 656 && (table_bits) == 11 && (max_codeword_len) == 16) ? 2726 : \
-	((num_syms) == 656 && (table_bits) == 12 && (max_codeword_len) == 16) ? 4758 : \
-	((num_syms) == 799 && (table_bits) == 9 && (max_codeword_len) == 15) ? 1366 : \
-	((num_syms) == 799 && (table_bits) == 10 && (max_codeword_len) == 15) ? 1846 : \
-	((num_syms) == 799 && (table_bits) == 11 && (max_codeword_len) == 15) ? 2854 : \
-	-1)
+#define DECODE_TABLE_ENOUGH(num_syms, table_bits, max_codeword_len)           \
+  (((num_syms) == 8 && (table_bits) == 7 && (max_codeword_len) == 15) ? 128 : \
+   ((num_syms) == 8 && (table_bits) == 5 && (max_codeword_len) == 7)  ? 36 :  \
+   ((num_syms) == 8 && (table_bits) == 6 && (max_codeword_len) == 7)  ? 66 :  \
+   ((num_syms) == 8 && (table_bits) == 7 && (max_codeword_len) == 7)  ? 128 : \
+   ((num_syms) == 20 && (table_bits) == 5 && (max_codeword_len) == 15) ?      \
+	                                                               1062 : \
+   ((num_syms) == 20 && (table_bits) == 6 && (max_codeword_len) == 15) ?      \
+	                                                               582 :  \
+   ((num_syms) == 20 && (table_bits) == 7 && (max_codeword_len) == 15) ?      \
+	                                                               390 :  \
+   ((num_syms) == 54 && (table_bits) == 9 && (max_codeword_len) == 15) ?      \
+	                                                               618 :  \
+   ((num_syms) == 54 && (table_bits) == 10 && (max_codeword_len) == 15) ?     \
+	                                                               1098 : \
+   ((num_syms) == 249 && (table_bits) == 9 && (max_codeword_len) == 16) ?     \
+	                                                               878 :  \
+   ((num_syms) == 249 && (table_bits) == 10 && (max_codeword_len) == 16) ?    \
+	                                                               1326 : \
+   ((num_syms) == 249 && (table_bits) == 11 && (max_codeword_len) == 16) ?    \
+	                                                               2318 : \
+   ((num_syms) == 256 && (table_bits) == 9 && (max_codeword_len) == 15) ?     \
+	                                                               822 :  \
+   ((num_syms) == 256 && (table_bits) == 10 && (max_codeword_len) == 15) ?    \
+	                                                               1302 : \
+   ((num_syms) == 256 && (table_bits) == 11 && (max_codeword_len) == 15) ?    \
+	                                                               2310 : \
+   ((num_syms) == 512 && (table_bits) == 10 && (max_codeword_len) == 15) ?    \
+	                                                               1558 : \
+   ((num_syms) == 512 && (table_bits) == 11 && (max_codeword_len) == 15) ?    \
+	                                                               2566 : \
+   ((num_syms) == 512 && (table_bits) == 12 && (max_codeword_len) == 15) ?    \
+	                                                               4606 : \
+   ((num_syms) == 656 && (table_bits) == 10 && (max_codeword_len) == 16) ?    \
+	                                                               1734 : \
+   ((num_syms) == 656 && (table_bits) == 11 && (max_codeword_len) == 16) ?    \
+	                                                               2726 : \
+   ((num_syms) == 656 && (table_bits) == 12 && (max_codeword_len) == 16) ?    \
+	                                                               4758 : \
+   ((num_syms) == 799 && (table_bits) == 9 && (max_codeword_len) == 15) ?     \
+	                                                               1366 : \
+   ((num_syms) == 799 && (table_bits) == 10 && (max_codeword_len) == 15) ?    \
+	                                                               1846 : \
+   ((num_syms) == 799 && (table_bits) == 11 && (max_codeword_len) == 15) ?    \
+	                                                               2854 : \
+	                                                               -1)
 
 /* Wrapper around DECODE_TABLE_ENOUGH() that does additional compile-time
  * validation. */
-#define DECODE_TABLE_SIZE(num_syms, table_bits, max_codeword_len) (	\
-									\
-	/* All values must be positive. */				\
-	STATIC_ASSERT_ZERO((num_syms) > 0) +				\
-	STATIC_ASSERT_ZERO((table_bits) > 0) +				\
-	STATIC_ASSERT_ZERO((max_codeword_len) > 0) +			\
-									\
-	/* There cannot be more symbols than possible codewords. */	\
-	STATIC_ASSERT_ZERO((num_syms) <= 1U << (max_codeword_len)) +	\
-									\
-	/* There is no reason for the root table to be indexed with
-	 * more bits than the maximum codeword length. */		\
-	STATIC_ASSERT_ZERO((table_bits) <= (max_codeword_len)) +	\
-									\
-	/* The maximum symbol value must fit in the 'symbol' field. */	\
-	STATIC_ASSERT_ZERO((num_syms) - 1 <= DECODE_TABLE_MAX_SYMBOL) +	\
-									\
-	/* The maximum codeword length in the root table must fit in
-	 * the 'length' field. */					\
-	STATIC_ASSERT_ZERO((table_bits) <= DECODE_TABLE_MAX_LENGTH) +	\
-									\
-	/* The maximum codeword length in a subtable must fit in the
-	 * 'length' field. */						\
-	STATIC_ASSERT_ZERO((max_codeword_len) - (table_bits) <=		\
-			   DECODE_TABLE_MAX_LENGTH) +			\
-									\
-	/* The minimum subtable index must be greater than the maximum
+#define DECODE_TABLE_SIZE(num_syms, table_bits, max_codeword_len)           \
+  (                                                                         \
+                                                                            \
+	  /* All values must be positive. */                                \
+	  STATIC_ASSERT_ZERO((num_syms) > 0) +                              \
+	  STATIC_ASSERT_ZERO((table_bits) > 0) +                            \
+	  STATIC_ASSERT_ZERO((max_codeword_len) > 0) +                      \
+                                                                            \
+	  /* There cannot be more symbols than possible codewords. */       \
+	  STATIC_ASSERT_ZERO((num_syms) <= 1U << (max_codeword_len)) +      \
+                                                                            \
+	  /* There is no reason for the root table to be indexed with
+	 * more bits than the maximum codeword length. */       \
+	  STATIC_ASSERT_ZERO((table_bits) <= (max_codeword_len)) +          \
+                                                                            \
+	  /* The maximum symbol value must fit in the 'symbol' field. */    \
+	  STATIC_ASSERT_ZERO((num_syms)-1 <= DECODE_TABLE_MAX_SYMBOL) +     \
+                                                                            \
+	  /* The maximum codeword length in the root table must fit in
+	 * the 'length' field. */      \
+	  STATIC_ASSERT_ZERO((table_bits) <= DECODE_TABLE_MAX_LENGTH) +     \
+                                                                            \
+	  /* The maximum codeword length in a subtable must fit in the
+	 * 'length' field. */      \
+	  STATIC_ASSERT_ZERO((max_codeword_len) - (table_bits) <=           \
+	                     DECODE_TABLE_MAX_LENGTH) +                     \
+                                                                            \
+	  /* The minimum subtable index must be greater than the maximum
 	 * symbol value.  If this were not the case, then there would
 	 * be no way to tell whether a given root table entry is a
 	 * "subtable pointer" or not.  (An alternate solution would be
-	 * to reserve a flag bit specifically for this purpose.) */	\
-	STATIC_ASSERT_ZERO((1U << table_bits) > (num_syms) - 1) +	\
-									\
-	/* The needed 'enough' value must have been defined. */		\
-	STATIC_ASSERT_ZERO(DECODE_TABLE_ENOUGH(				\
-				(num_syms), (table_bits),		\
-				(max_codeword_len)) > 0) +		\
-									\
-	/* The maximum subtable index must fit in the 'symbol' field. */\
-	STATIC_ASSERT_ZERO(DECODE_TABLE_ENOUGH(				\
-				(num_syms), (table_bits),		\
-				(max_codeword_len)) - 1 <=		\
-					DECODE_TABLE_MAX_SYMBOL) +	\
-									\
-	/* Finally, make the macro evaluate to the needed maximum
-	 * number of decode table entries. */				\
-	DECODE_TABLE_ENOUGH((num_syms), (table_bits),			\
-			    (max_codeword_len))				\
-)
+	 * to reserve a flag bit specifically for this purpose.) */    \
+	  STATIC_ASSERT_ZERO((1U << table_bits) > (num_syms)-1) +           \
+                                                                            \
+	  /* The needed 'enough' value must have been defined. */           \
+	  STATIC_ASSERT_ZERO(DECODE_TABLE_ENOUGH((num_syms),                \
+	                                         (table_bits),              \
+	                                         (max_codeword_len)) > 0) + \
+                                                                            \
+	  /* The maximum subtable index must fit in the 'symbol' field. */  \
+	  STATIC_ASSERT_ZERO(DECODE_TABLE_ENOUGH((num_syms),                \
+	                                         (table_bits),              \
+	                                         (max_codeword_len)) -      \
+	                             1 <=                                   \
+	                     DECODE_TABLE_MAX_SYMBOL) +                     \
+                                                                            \
+	  /* Finally, make the macro evaluate to the needed maximum
+	 * number of decode table entries. */         \
+	  DECODE_TABLE_ENOUGH((num_syms), (table_bits), (max_codeword_len)))
 
 /*
  * Declare the decode table for a Huffman code, given several compile-time
@@ -400,22 +421,24 @@ read_huffsym(struct input_bitstream *is, const u16 decode_table[],
  * structure, then the outer structure must be allocated on a
  * DECODE_TABLE_ALIGNMENT-byte aligned boundary as well.
  */
-#define DECODE_TABLE(name, num_syms, table_bits, max_codeword_len) \
-	u16 name[DECODE_TABLE_SIZE((num_syms), (table_bits), \
-				   (max_codeword_len))]	\
-		__attribute__((aligned(DECODE_TABLE_ALIGNMENT)))
+#define DECODE_TABLE(name, num_syms, table_bits, max_codeword_len)          \
+  u16 name[DECODE_TABLE_SIZE((num_syms), (table_bits), (max_codeword_len))] \
+	  __attribute__((aligned(DECODE_TABLE_ALIGNMENT)))
 
 /*
  * Declare the temporary "working_space" array needed for building the decode
  * table for a Huffman code.
  */
-#define DECODE_TABLE_WORKING_SPACE(name, num_syms, max_codeword_len)	\
-	u16 name[2 * ((max_codeword_len) + 1)  + (num_syms)];
+#define DECODE_TABLE_WORKING_SPACE(name, num_syms, max_codeword_len) \
+  u16 name[2 * ((max_codeword_len) + 1) + (num_syms)];
 
 int
-make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
-			  unsigned table_bits, const u8 lens[],
-			  unsigned max_codeword_len, u16 working_space[]);
+make_huffman_decode_table(u16 decode_table[],
+                          unsigned num_syms,
+                          unsigned table_bits,
+                          const u8 lens[],
+                          unsigned max_codeword_len,
+                          u16 working_space[]);
 
 /******************************************************************************/
 /*                             LZ match copying                               */
@@ -458,8 +481,12 @@ repeat_byte(u8 b)
  * This should be a compile-time constant.
  */
 static forceinline int
-lz_copy(u32 length, u32 offset, u8 *out_begin, u8 *out_next, u8 *out_end,
-	u32 min_length)
+lz_copy(u32 length,
+        u32 offset,
+        u8 *out_begin,
+        u8 *out_next,
+        u8 *out_end,
+        u32 min_length)
 {
 	const u8 *src;
 	u8 *end;
@@ -479,9 +506,12 @@ lz_copy(u32 length, u32 offset, u8 *out_begin, u8 *out_next, u8 *out_end,
 	if (UNALIGNED_ACCESS_IS_FAST && length <= 3 * WORDBYTES &&
 	    offset >= WORDBYTES && out_end - out_next >= 3 * WORDBYTES)
 	{
-		copy_word_unaligned(src + WORDBYTES*0, out_next + WORDBYTES*0);
-		copy_word_unaligned(src + WORDBYTES*1, out_next + WORDBYTES*1);
-		copy_word_unaligned(src + WORDBYTES*2, out_next + WORDBYTES*2);
+		copy_word_unaligned(src + WORDBYTES * 0,
+		                    out_next + WORDBYTES * 0);
+		copy_word_unaligned(src + WORDBYTES * 1,
+		                    out_next + WORDBYTES * 1);
+		copy_word_unaligned(src + WORDBYTES * 2,
+		                    out_next + WORDBYTES * 2);
 		return 0;
 	}
 

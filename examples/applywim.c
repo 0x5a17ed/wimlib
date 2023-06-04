@@ -35,26 +35,27 @@
  * just use their platform's convention directly.
  */
 #ifdef _WIN32
-#  define main		wmain
-   typedef wchar_t	tchar;
-#  define TS		"ls"
+#  define main wmain
+typedef wchar_t tchar;
+#  define TS "ls"
 #else
-   typedef char		tchar;
-#  define TS		"s"
+typedef char tchar;
+#  define TS "s"
 #endif
 
 #define TO_PERCENT(numerator, denominator) \
-	((float)(((denominator) == 0) ? 0 : ((numerator) * 100 / (float)(denominator))))
+  ((float)(((denominator) == 0) ? 0 : ((numerator)*100 / (float)(denominator))))
 
 static enum wimlib_progress_status
 extract_progress(enum wimlib_progress_msg msg,
-		 union wimlib_progress_info *info, void *progctx)
+                 union wimlib_progress_info *info,
+                 void *progctx)
 {
 	switch (msg) {
 	case WIMLIB_PROGRESS_MSG_EXTRACT_STREAMS:
 		printf("Extracting files: %.2f%% complete\n",
 		       TO_PERCENT(info->extract.completed_bytes,
-				  info->extract.total_bytes));
+		                  info->extract.total_bytes));
 		break;
 	default:
 		break;
@@ -62,7 +63,8 @@ extract_progress(enum wimlib_progress_msg msg,
 	return WIMLIB_PROGRESS_STATUS_CONTINUE;
 }
 
-int main(int argc, tchar **argv)
+int
+main(int argc, tchar **argv)
 {
 	int ret;
 	WIMStruct *wim = NULL;
@@ -79,9 +81,10 @@ int main(int argc, tchar **argv)
 	destdir = argv[2];
 
 	/* Open the WIM file as a WIMStruct.  */
-	ret = wimlib_open_wim(wimpath,  /* Path of WIM file to open  */
-			      0,        /* WIMLIB_OPEN_FLAG_* flags (0 means all defaults)  */
-			      &wim);    /* Return the WIMStruct pointer in this location  */
+	ret = wimlib_open_wim(
+		wimpath, /* Path of WIM file to open  */
+		0, /* WIMLIB_OPEN_FLAG_* flags (0 means all defaults)  */
+		&wim); /* Return the WIMStruct pointer in this location  */
 	if (ret != 0) /* Always should check the error codes.  */
 		goto out;
 
@@ -89,10 +92,11 @@ int main(int argc, tchar **argv)
 	wimlib_register_progress_function(wim, extract_progress, NULL);
 
 	/* Extract the first image.  */
-	ret = wimlib_extract_image(wim,     /* WIMStruct from which to extract the image  */
-				   1,       /* Image to extract  */
-				   destdir, /* Directory to extract the image to  */
-				   0);      /* WIMLIB_EXTRACT_FLAG_* flags (0 means all defaults)  */
+	ret = wimlib_extract_image(
+		wim, /* WIMStruct from which to extract the image  */
+		1, /* Image to extract  */
+		destdir, /* Directory to extract the image to  */
+		0); /* WIMLIB_EXTRACT_FLAG_* flags (0 means all defaults)  */
 
 out:
 	/* Free the WIMStruct.  Has no effect if the pointer to it is NULL.  */
@@ -100,8 +104,10 @@ out:
 
 	/* Check for error status.  */
 	if (ret != 0) {
-		fprintf(stderr, "wimlib error %d: %" TS"\n",
-			ret, wimlib_get_error_string((enum wimlib_error_code)ret));
+		fprintf(stderr,
+		        "wimlib error %d: %" TS "\n",
+		        ret,
+		        wimlib_get_error_string((enum wimlib_error_code)ret));
 	}
 
 	/* Free global memory (optional).  */

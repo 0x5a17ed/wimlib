@@ -86,26 +86,26 @@ struct wim_reshdr {
  */
 
 /* Unknown meaning; currently ignored by wimlib.  */
-#define WIM_RESHDR_FLAG_FREE            0x01
+#define WIM_RESHDR_FLAG_FREE 0x01
 
 /* The resource is a metadata resource for a WIM image, or is the blob table or
  * XML data for the WIM.  */
-#define WIM_RESHDR_FLAG_METADATA        0x02
+#define WIM_RESHDR_FLAG_METADATA 0x02
 
 /* The resource is a non-solid resource compressed using the WIM's default
  * compression type.  */
-#define WIM_RESHDR_FLAG_COMPRESSED	0x04
+#define WIM_RESHDR_FLAG_COMPRESSED 0x04
 
 /* Unknown meaning; currently ignored by wimlib.  */
-#define WIM_RESHDR_FLAG_SPANNED         0x08
+#define WIM_RESHDR_FLAG_SPANNED 0x08
 
 /* The resource is a solid compressed resource which may contain multiple blobs.
  * This flag is only allowed if the WIM version number is WIM_VERSION_SOLID.  */
-#define WIM_RESHDR_FLAG_SOLID		0x10
+#define WIM_RESHDR_FLAG_SOLID 0x10
 
 /* Magic number in the 'uncompressed_size' field of the resource header that
  * identifies the main entry for a solid resource.  */
-#define SOLID_RESOURCE_MAGIC_NUMBER	0x100000000ULL
+#define SOLID_RESOURCE_MAGIC_NUMBER 0x100000000ULL
 
 static inline void
 copy_reshdr(struct wim_reshdr *dest, const struct wim_reshdr *src)
@@ -120,21 +120,23 @@ zero_reshdr(struct wim_reshdr *reshdr)
 }
 
 void
-wim_reshdr_to_desc(const struct wim_reshdr *reshdr, WIMStruct *wim,
-		   struct wim_resource_descriptor *rdesc);
+wim_reshdr_to_desc(const struct wim_reshdr *reshdr,
+                   WIMStruct *wim,
+                   struct wim_resource_descriptor *rdesc);
 
 void
-wim_reshdr_to_desc_and_blob(const struct wim_reshdr *reshdr, WIMStruct *wim,
-			    struct wim_resource_descriptor *rdesc,
-			    struct blob_descriptor *blob);
+wim_reshdr_to_desc_and_blob(const struct wim_reshdr *reshdr,
+                            WIMStruct *wim,
+                            struct wim_resource_descriptor *rdesc,
+                            struct blob_descriptor *blob);
 
 void
 get_wim_reshdr(const struct wim_reshdr_disk *disk_reshdr,
-	       struct wim_reshdr *reshdr);
+               struct wim_reshdr *reshdr);
 
 void
 put_wim_reshdr(const struct wim_reshdr *reshdr,
-	       struct wim_reshdr_disk *disk_reshdr);
+               struct wim_reshdr_disk *disk_reshdr);
 
 /* Alternate chunk table format for resources with WIM_RESHDR_FLAG_SOLID set.
  */
@@ -173,7 +175,9 @@ get_chunk_entry_size(u64 res_size, bool is_alt)
 
 int
 read_partial_wim_blob_into_buf(const struct blob_descriptor *blob,
-			       u64 offset, size_t size, void *buf);
+                               u64 offset,
+                               size_t size,
+                               void *buf);
 
 int
 read_blob_into_buf(const struct blob_descriptor *blob, void *buf);
@@ -182,12 +186,14 @@ int
 read_blob_into_alloc_buf(const struct blob_descriptor *blob, void **buf_ret);
 
 int
-wim_reshdr_to_data(const struct wim_reshdr *reshdr, WIMStruct *wim,
-		   void **buf_ret);
+wim_reshdr_to_data(const struct wim_reshdr *reshdr,
+                   WIMStruct *wim,
+                   void **buf_ret);
 
 int
-wim_reshdr_to_hash(const struct wim_reshdr *reshdr, WIMStruct *wim,
-		   u8 hash[SHA1_HASH_SIZE]);
+wim_reshdr_to_hash(const struct wim_reshdr *reshdr,
+                   WIMStruct *wim,
+                   u8 hash[SHA1_HASH_SIZE]);
 
 int
 skip_wim_resource(const struct wim_resource_descriptor *rdesc);
@@ -206,26 +212,29 @@ struct consume_chunk_callback {
 /* Pass a chunk of data to the specified consume_chunk callback */
 static inline int
 consume_chunk(const struct consume_chunk_callback *cb,
-	      const void *chunk, size_t size)
+              const void *chunk,
+              size_t size)
 {
 	return (*cb->func)(chunk, size, cb->ctx);
 }
 
 /* Callback functions for reading blobs  */
 struct read_blob_callbacks {
-
 	/* Called when starting to read a blob.  Must return 0 on success, or a
 	 * positive wimlib error code on failure, or in the case of
 	 * read_blob_list(), the special value BEGIN_BLOB_STATUS_SKIP_BLOB which
 	 * indicates that the data for this blob should not be read.  */
 	int (*begin_blob)(struct blob_descriptor *blob, void *ctx);
-#define BEGIN_BLOB_STATUS_SKIP_BLOB	(-1)
+#define BEGIN_BLOB_STATUS_SKIP_BLOB (-1)
 
 	/* Called when the next chunk of uncompressed data is available.  'size'
 	 * is guaranteed to be nonzero.  Must return 0 on success, or a positive
 	 * wimlib error code on failure.  */
-	int (*continue_blob)(const struct blob_descriptor *blob, u64 offset,
-			     const void *chunk, size_t size, void *ctx);
+	int (*continue_blob)(const struct blob_descriptor *blob,
+	                     u64 offset,
+	                     const void *chunk,
+	                     size_t size,
+	                     void *ctx);
 
 	/* Called when a blob has been successfully read (status=0), or when
 	 * begin_blob() was successfully called but an error occurred before the
@@ -241,7 +250,7 @@ struct read_blob_callbacks {
 /* Call cbs->begin_blob() if present.  */
 static inline int
 call_begin_blob(struct blob_descriptor *blob,
-		const struct read_blob_callbacks *cbs)
+                const struct read_blob_callbacks *cbs)
 {
 	if (!cbs->begin_blob)
 		return 0;
@@ -250,9 +259,11 @@ call_begin_blob(struct blob_descriptor *blob,
 
 /* Call cbs->continue_blob() if present.  */
 static inline int
-call_continue_blob(const struct blob_descriptor *blob, u64 offset,
-		   const void *chunk, size_t size,
-		   const struct read_blob_callbacks *cbs)
+call_continue_blob(const struct blob_descriptor *blob,
+                   u64 offset,
+                   const void *chunk,
+                   size_t size,
+                   const struct read_blob_callbacks *cbs)
 {
 	if (!cbs->continue_blob)
 		return 0;
@@ -261,8 +272,9 @@ call_continue_blob(const struct blob_descriptor *blob, u64 offset,
 
 /* Call cbs->end_blob() if present.  */
 static inline int
-call_end_blob(struct blob_descriptor *blob, int status,
-	      const struct read_blob_callbacks *cbs)
+call_end_blob(struct blob_descriptor *blob,
+              int status,
+              const struct read_blob_callbacks *cbs)
 {
 	if (!cbs->end_blob)
 		return status;
@@ -270,30 +282,36 @@ call_end_blob(struct blob_descriptor *blob, int status,
 }
 
 /* Flags for read_blob_list()  */
-#define VERIFY_BLOB_HASHES		0x1
-#define COMPUTE_MISSING_BLOB_HASHES	0x2
-#define BLOB_LIST_ALREADY_SORTED	0x4
-#define RECOVER_DATA			0x8
+#define VERIFY_BLOB_HASHES          0x1
+#define COMPUTE_MISSING_BLOB_HASHES 0x2
+#define BLOB_LIST_ALREADY_SORTED    0x4
+#define RECOVER_DATA                0x8
 
 int
-read_blob_list(struct list_head *blob_list, size_t list_head_offset,
-	       const struct read_blob_callbacks *cbs, int flags);
+read_blob_list(struct list_head *blob_list,
+               size_t list_head_offset,
+               const struct read_blob_callbacks *cbs,
+               int flags);
 
 int
 read_blob_with_cbs(struct blob_descriptor *blob,
-		   const struct read_blob_callbacks *cbs, bool recover_data);
+                   const struct read_blob_callbacks *cbs,
+                   bool recover_data);
 
 int
 read_blob_with_sha1(struct blob_descriptor *blob,
-		    const struct read_blob_callbacks *cbs, bool recover_data);
+                    const struct read_blob_callbacks *cbs,
+                    bool recover_data);
 
 int
-extract_blob_prefix_to_fd(struct blob_descriptor *blob, u64 size,
-			  struct filedes *fd);
+extract_blob_prefix_to_fd(struct blob_descriptor *blob,
+                          u64 size,
+                          struct filedes *fd);
 
 int
-extract_blob_to_fd(struct blob_descriptor *blob, struct filedes *fd,
-		   bool recover_data);
+extract_blob_to_fd(struct blob_descriptor *blob,
+                   struct filedes *fd,
+                   bool recover_data);
 
 /* Miscellaneous blob functions.  */
 
@@ -316,11 +334,11 @@ write_metadata_resource(WIMStruct *wim, int image, int write_resource_flags);
 
 /* Header that precedes each blob in a pipable WIM.  */
 struct pwm_blob_hdr {
-	le64 magic;			/* +0   */
-	le64 uncompressed_size;		/* +8   */
-	u8 hash[SHA1_HASH_SIZE];	/* +16  */
-	le32 flags;			/* +36  */
-					/* +40  */
+	le64 magic; /* +0   */
+	le64 uncompressed_size; /* +8   */
+	u8 hash[SHA1_HASH_SIZE]; /* +16  */
+	le32 flags; /* +36  */
+	/* +40  */
 } __attribute__((packed));
 
 /* Header that precedes each chunk of a compressed resource in a pipable WIM.

@@ -1,7 +1,8 @@
 #include "../fuzzer.h"
 
 /* Fuzz the compression and decompression round trip. */
-int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
+int
+LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 {
 	int ctype;
 	int level;
@@ -20,7 +21,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 	in += 2;
 	insize -= 2;
 
-	cbuf = malloc(csize_avail);
+	cbuf         = malloc(csize_avail);
 	decompressed = malloc(insize);
 
 	ret = wimlib_create_compressor(ctype, insize, level, &c);
@@ -30,8 +31,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 
 		csize = wimlib_compress(in, insize, cbuf, csize_avail, c);
 		if (csize) {
-			ret = wimlib_decompress(cbuf, csize,
-						decompressed, insize, d);
+			ret = wimlib_decompress(
+				cbuf, csize, decompressed, insize, d);
 			assert(ret == 0);
 			assert(memcmp(in, decompressed, insize) == 0);
 		}

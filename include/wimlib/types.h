@@ -10,13 +10,13 @@
 
 #ifndef _NTFS_TYPES_H
 /* Unsigned integer types of exact size in bits */
-typedef uint8_t  u8;
+typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
 /* Signed integer types of exact size in bits */
-typedef int8_t  s8;
+typedef int8_t s8;
 typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
@@ -47,7 +47,7 @@ typedef struct WIMStruct WIMStruct;
  */
 typedef size_t machine_word_t;
 
-#define WORDBYTES	sizeof(machine_word_t)
-#define WORDBITS	(8 * WORDBYTES)
+#define WORDBYTES sizeof(machine_word_t)
+#define WORDBITS  (8 * WORDBYTES)
 
 #endif /* _WIMLIB_TYPES_H */

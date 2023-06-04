@@ -65,8 +65,9 @@ new_wim_security_data(void)
  *	WIMLIB_ERR_NOMEM
  */
 int
-read_wim_security_data(const u8 *buf, size_t buf_len,
-		       struct wim_security_data **sd_ret)
+read_wim_security_data(const u8 *buf,
+                       size_t buf_len,
+                       struct wim_security_data **sd_ret)
 {
 	struct wim_security_data *sd;
 	int ret;
@@ -83,9 +84,9 @@ read_wim_security_data(const u8 *buf, size_t buf_len,
 	if (!sd)
 		goto out_of_memory;
 
-	sd_disk = (const struct wim_security_data_disk *)buf;
+	sd_disk          = (const struct wim_security_data_disk *)buf;
 	sd->total_length = ALIGN(le32_to_cpu(sd_disk->total_length), 8);
-	sd->num_entries = le32_to_cpu(sd_disk->num_entries);
+	sd->num_entries  = le32_to_cpu(sd_disk->num_entries);
 
 	/* Length field of 0 is a special case that really means length
 	 * of 8. */
@@ -111,7 +112,7 @@ read_wim_security_data(const u8 *buf, size_t buf_len,
 	if (sd->total_length > buf_len)
 		goto out_invalid_sd;
 
-	sizes_size = (u64)sd->num_entries * sizeof(u64);
+	sizes_size          = (u64)sd->num_entries * sizeof(u64);
 	size_no_descriptors = 8 + sizes_size;
 	if (size_no_descriptors > sd->total_length)
 		goto out_invalid_sd;
@@ -134,7 +135,7 @@ read_wim_security_data(const u8 *buf, size_t buf_len,
 			goto out_invalid_sd;
 	}
 
-	p = (const u8*)sd_disk + size_no_descriptors;
+	p = (const u8 *)sd_disk + size_no_descriptors;
 
 	/* Allocate the array of pointers to the security descriptors, then read
 	 * them into separate buffers. */
@@ -156,11 +157,12 @@ read_wim_security_data(const u8 *buf, size_t buf_len,
 out_descriptors_ready:
 	if (ALIGN(total_len, 8) != sd->total_length) {
 		WARNING("Stored WIM security data total length was "
-			"%"PRIu32" bytes, but calculated %"PRIu32" bytes",
-			sd->total_length, (u32)total_len);
+		        "%" PRIu32 " bytes, but calculated %" PRIu32 " bytes",
+		        sd->total_length,
+		        (u32)total_len);
 	}
 	*sd_ret = sd;
-	ret = 0;
+	ret     = 0;
 	goto out;
 out_invalid_sd:
 	ERROR("WIM security data is invalid!");
@@ -179,20 +181,21 @@ out:
  * Writes the security data for a WIM image to an in-memory buffer.
  */
 u8 *
-write_wim_security_data(const struct wim_security_data * restrict sd,
-			u8 * restrict p)
+write_wim_security_data(const struct wim_security_data *restrict sd,
+                        u8 *restrict p)
 {
 	u8 *orig_p = p;
-	struct wim_security_data_disk *sd_disk = (struct wim_security_data_disk*)p;
+	struct wim_security_data_disk *sd_disk =
+		(struct wim_security_data_disk *)p;
 	u32 num_entries = sd->num_entries;
 
 	sd_disk->total_length = cpu_to_le32(sd->total_length);
-	sd_disk->num_entries = cpu_to_le32(num_entries);
+	sd_disk->num_entries  = cpu_to_le32(num_entries);
 
 	for (u32 i = 0; i < num_entries; i++)
 		sd_disk->sizes[i] = cpu_to_le64(sd->sizes[i]);
 
-	p = (u8*)&sd_disk->sizes[num_entries];
+	p = (u8 *)&sd_disk->sizes[num_entries];
 
 	for (u32 i = 0; i < num_entries; i++)
 		p = mempcpy(p, sd->descriptors[i], sd->sizes[i]);
@@ -225,8 +228,7 @@ struct sd_node {
 	struct avl_tree_node index_node;
 };
 
-#define SD_NODE(avl_node) \
-	avl_tree_entry(avl_node, struct sd_node, index_node)
+#define SD_NODE(avl_node) avl_tree_entry(avl_node, struct sd_node, index_node)
 
 static void
 free_sd_tree(struct avl_tree_node *node)
@@ -258,7 +260,7 @@ destroy_sd_set(struct wim_sd_set *sd_set)
 
 static int
 _avl_cmp_nodes_by_hash(const struct avl_tree_node *n1,
-		       const struct avl_tree_node *n2)
+                       const struct avl_tree_node *n2)
 {
 	return hashes_cmp(SD_NODE(n1)->hash, SD_NODE(n2)->hash);
 }
@@ -268,8 +270,9 @@ _avl_cmp_nodes_by_hash(const struct avl_tree_node *n1,
 static bool
 insert_sd_node(struct wim_sd_set *set, struct sd_node *new)
 {
-	return NULL == avl_tree_insert(&set->root, &new->index_node,
-				       _avl_cmp_nodes_by_hash);
+	return NULL == avl_tree_insert(&set->root,
+	                               &new->index_node,
+	                               _avl_cmp_nodes_by_hash);
 }
 
 /* Returns the index of the security descriptor having a SHA1 message digest of
@@ -281,8 +284,8 @@ lookup_sd(struct wim_sd_set *set, const u8 hash[SHA1_HASH_SIZE])
 	struct sd_node dummy;
 
 	copy_hash(dummy.hash, hash);
-	res = avl_tree_lookup_node(set->root, &dummy.index_node,
-				   _avl_cmp_nodes_by_hash);
+	res = avl_tree_lookup_node(
+		set->root, &dummy.index_node, _avl_cmp_nodes_by_hash);
 	if (!res)
 		return -1;
 	return SD_NODE(res)->security_id;
@@ -324,25 +327,26 @@ sd_set_add_sd(struct wim_sd_set *sd_set, const char *descriptor, size_t size)
 	if (!descr_copy)
 		goto out_free_node;
 
-	sd = sd_set->sd;
+	sd               = sd_set->sd;
 	new->security_id = sd->num_entries;
 	copy_hash(new->hash, hash);
 
 	/* There typically are only a few dozen security descriptors in a
 	 * directory tree, so expanding the array of security descriptors by
 	 * only 1 extra space each time should not be a problem. */
-	descriptors = REALLOC(sd->descriptors,
-			      (sd->num_entries + 1) * sizeof(sd->descriptors[0]));
+	descriptors =
+		REALLOC(sd->descriptors,
+	                (sd->num_entries + 1) * sizeof(sd->descriptors[0]));
 	if (!descriptors)
 		goto out_free_descr;
 	sd->descriptors = descriptors;
-	sizes = REALLOC(sd->sizes,
-			(sd->num_entries + 1) * sizeof(sd->sizes[0]));
+	sizes           = REALLOC(sd->sizes,
+                        (sd->num_entries + 1) * sizeof(sd->sizes[0]));
 	if (!sizes)
 		goto out_free_descr;
-	sd->sizes = sizes;
+	sd->sizes                        = sizes;
 	sd->descriptors[sd->num_entries] = descr_copy;
-	sd->sizes[sd->num_entries] = size;
+	sd->sizes[sd->num_entries]       = size;
 	sd->num_entries++;
 	bret = insert_sd_node(sd_set, new);
 	wimlib_assert(bret);
@@ -364,7 +368,7 @@ init_sd_set(struct wim_sd_set *sd_set, struct wim_security_data *sd)
 {
 	int ret;
 
-	sd_set->sd = sd;
+	sd_set->sd   = sd;
 	sd_set->root = NULL;
 
 	/* Remember the original number of security descriptors so that newly

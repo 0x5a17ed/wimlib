@@ -41,7 +41,8 @@ get_extension(const utf16lechar *name, size_t nbytes)
 	for (;;) {
 		if (p == name)
 			return NULL;
-		if (*(p - 1) == cpu_to_le16('/') || *(p - 1) == cpu_to_le16('\\'))
+		if (*(p - 1) == cpu_to_le16('/') ||
+		    *(p - 1) == cpu_to_le16('\\'))
 			return NULL;
 		if (*(p - 1) == cpu_to_le16('.'))
 			return p;
@@ -72,27 +73,29 @@ cmp_blobs_by_solid_sort_name(const void *p1, const void *p2)
 	if (blob1->solid_sort_name) {
 		if (!blob2->solid_sort_name)
 			return 1;
-		const utf16lechar *extension1 = get_extension(blob1->solid_sort_name,
-							      blob1->solid_sort_name_nbytes);
-		const utf16lechar *extension2 = get_extension(blob2->solid_sort_name,
-							      blob2->solid_sort_name_nbytes);
+		const utf16lechar *extension1 = get_extension(
+			blob1->solid_sort_name, blob1->solid_sort_name_nbytes);
+		const utf16lechar *extension2 = get_extension(
+			blob2->solid_sort_name, blob2->solid_sort_name_nbytes);
 		if (extension1) {
 			if (!extension2)
 				return 1;
-			int res = cmp_utf16le_strings_z(extension1,
-							extension2,
-							true); /* case insensitive */
+			int res = cmp_utf16le_strings_z(
+				extension1,
+				extension2,
+				true); /* case insensitive */
 			if (res)
 				return res;
 		} else {
 			if (extension2)
 				return -1;
 		}
-		int res = cmp_utf16le_strings(blob1->solid_sort_name,
-					      blob1->solid_sort_name_nbytes / sizeof(utf16lechar),
-					      blob2->solid_sort_name,
-					      blob2->solid_sort_name_nbytes / sizeof(utf16lechar),
-					      true); /* case insensitive */
+		int res = cmp_utf16le_strings(
+			blob1->solid_sort_name,
+			blob1->solid_sort_name_nbytes / sizeof(utf16lechar),
+			blob2->solid_sort_name,
+			blob2->solid_sort_name_nbytes / sizeof(utf16lechar),
+			true); /* case insensitive */
 		if (res)
 			return res;
 	} else {
@@ -104,11 +107,11 @@ cmp_blobs_by_solid_sort_name(const void *p1, const void *p2)
 
 static void
 blob_set_solid_sort_name_from_inode(struct blob_descriptor *blob,
-				    const struct wim_inode *inode)
+                                    const struct wim_inode *inode)
 {
 	const struct wim_dentry *dentry;
 	const utf16lechar *best_name = NULL;
-	size_t best_name_nbytes = SIZE_MAX;
+	size_t best_name_nbytes      = SIZE_MAX;
 
 	if (blob->solid_sort_name) /* Sort name already set?  */
 		return;
@@ -116,7 +119,7 @@ blob_set_solid_sort_name_from_inode(struct blob_descriptor *blob,
 	/* If this file has multiple names, choose the shortest one.  */
 	inode_for_each_dentry(dentry, inode) {
 		if (dentry->d_name_nbytes < best_name_nbytes) {
-			best_name = dentry->d_name;
+			best_name        = dentry->d_name;
 			best_name_nbytes = dentry->d_name_nbytes;
 		}
 	}
@@ -133,7 +136,7 @@ static int
 dentry_fill_in_solid_sort_names(struct wim_dentry *dentry, void *_blob_table)
 {
 	const struct temp_blob_table *blob_table = _blob_table;
-	const struct wim_inode *inode = dentry->d_inode;
+	const struct wim_inode *inode            = dentry->d_inode;
 	const u8 *hash;
 	struct hlist_head *head;
 	struct blob_descriptor *blob;
@@ -142,7 +145,7 @@ dentry_fill_in_solid_sort_names(struct wim_dentry *dentry, void *_blob_table)
 	if (!hash) /* unhashed? */
 		return 0;
 	head = &blob_table->table[load_size_t_unaligned(hash) %
-				  blob_table->capacity];
+	                          blob_table->capacity];
 	hlist_for_each_entry(blob, head, hash_list_2) {
 		if (hashes_equal(hash, blob->hash)) {
 			blob_set_solid_sort_name_from_inode(blob, inode);
@@ -156,8 +159,8 @@ static int
 image_fill_in_solid_sort_names(WIMStruct *wim)
 {
 	return for_dentry_in_tree(wim_get_current_root_dentry(wim),
-				  dentry_fill_in_solid_sort_names,
-				  wim->private);
+	                          dentry_fill_in_solid_sort_names,
+	                          wim->private);
 }
 
 int
@@ -176,8 +179,8 @@ sort_blob_list_for_solid_compression(struct list_head *blob_list)
 
 	/* Allocate a temporary hash table for mapping blob hash => blob  */
 	blob_table.capacity = num_blobs;
-	blob_table.table = CALLOC(blob_table.capacity,
-				  sizeof(blob_table.table[0]));
+	blob_table.table =
+		CALLOC(blob_table.capacity, sizeof(blob_table.table[0]));
 	if (!blob_table.table)
 		return WIMLIB_ERR_NOMEM;
 
@@ -188,7 +191,7 @@ sort_blob_list_for_solid_compression(struct list_head *blob_list)
 	 * - If it's in a file on disk, then set its sort name from that.
 	 */
 	list_for_each_entry(blob, blob_list, write_blobs_list) {
-		blob->solid_sort_name = NULL;
+		blob->solid_sort_name        = NULL;
 		blob->solid_sort_name_nbytes = 0;
 		switch (blob->blob_location) {
 		case BLOB_IN_WIM:
@@ -200,16 +203,18 @@ sort_blob_list_for_solid_compression(struct list_head *blob_list)
 			if (num_wims >= ARRAY_LEN(wims))
 				continue;
 			wims[num_wims++] = blob->rdesc->wim;
-		found_wim:
+found_wim:
 			hlist_add_head(&blob->hash_list_2,
-				       &blob_table.table[load_size_t_unaligned(blob->hash) %
-							 blob_table.capacity]);
+			               &blob_table.table[load_size_t_unaligned(
+								 blob->hash) %
+			                                 blob_table.capacity]);
 			break;
 		case BLOB_IN_FILE_ON_DISK:
-	#ifdef _WIN32
+#ifdef _WIN32
 		case BLOB_IN_WINDOWS_FILE:
-	#endif
-			blob_set_solid_sort_name_from_inode(blob, blob->file_inode);
+#endif
+			blob_set_solid_sort_name_from_inode(blob,
+			                                    blob->file_inode);
 			break;
 		default:
 			break;
@@ -223,16 +228,17 @@ sort_blob_list_for_solid_compression(struct list_head *blob_list)
 		if (!wim_has_metadata(wims[i]))
 			continue;
 		wims[i]->private = &blob_table;
-		ret = for_image(wims[i], WIMLIB_ALL_IMAGES,
-				image_fill_in_solid_sort_names);
+		ret              = for_image(wims[i],
+                                WIMLIB_ALL_IMAGES,
+                                image_fill_in_solid_sort_names);
 		if (ret)
 			goto out;
 		deselect_current_wim_image(wims[i]);
 	}
 
 	ret = sort_blob_list(blob_list,
-			     offsetof(struct blob_descriptor, write_blobs_list),
-			     cmp_blobs_by_solid_sort_name);
+	                     offsetof(struct blob_descriptor, write_blobs_list),
+	                     cmp_blobs_by_solid_sort_name);
 
 out:
 	list_for_each_entry(blob, blob_list, write_blobs_list)

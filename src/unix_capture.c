@@ -21,32 +21,32 @@
 
 #ifndef _WIN32
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#  ifdef HAVE_CONFIG_H
+#    include "config.h"
+#  endif
 
-#include <dirent.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#ifdef HAVE_SYS_XATTR_H
-#  include <sys/xattr.h>
-#endif
-#include <unistd.h>
+#  include <dirent.h>
+#  include <errno.h>
+#  include <fcntl.h>
+#  include <sys/stat.h>
+#  include <sys/types.h>
+#  ifdef HAVE_SYS_XATTR_H
+#    include <sys/xattr.h>
+#  endif
+#  include <unistd.h>
 
-#include "wimlib/blob_table.h"
-#include "wimlib/dentry.h"
-#include "wimlib/error.h"
-#include "wimlib/reparse.h"
-#include "wimlib/scan.h"
-#include "wimlib/timestamp.h"
-#include "wimlib/unix_data.h"
-#include "wimlib/xattr.h"
+#  include "wimlib/blob_table.h"
+#  include "wimlib/dentry.h"
+#  include "wimlib/error.h"
+#  include "wimlib/reparse.h"
+#  include "wimlib/scan.h"
+#  include "wimlib/timestamp.h"
+#  include "wimlib/unix_data.h"
+#  include "wimlib/xattr.h"
 
-#ifdef HAVE_FDOPENDIR
-#  define my_fdopendir(dirfd_p) fdopendir(*(dirfd_p))
-#else
+#  ifdef HAVE_FDOPENDIR
+#    define my_fdopendir(dirfd_p) fdopendir(*(dirfd_p))
+#  else
 static DIR *
 my_fdopendir(int *dirfd_p)
 {
@@ -67,43 +67,42 @@ my_fdopendir(int *dirfd_p)
 	}
 	return dir;
 }
-#endif
+#  endif
 
-#ifdef HAVE_OPENAT
-#  define my_openat(full_path, dirfd, relpath, flags) \
-		openat((dirfd), (relpath), (flags))
-#else
-#  define my_openat(full_path, dirfd, relpath, flags) \
-		open((full_path), (flags))
-#endif
+#  ifdef HAVE_OPENAT
+#    define my_openat(full_path, dirfd, relpath, flags) \
+      openat((dirfd), (relpath), (flags))
+#  else
+#    define my_openat(full_path, dirfd, relpath, flags) \
+      open((full_path), (flags))
+#  endif
 
-#ifdef HAVE_READLINKAT
-#  define my_readlinkat(full_path, dirfd, relpath, buf, bufsize) \
-		readlinkat((dirfd), (relpath), (buf), (bufsize))
-#else
-#  define my_readlinkat(full_path, dirfd, relpath, buf, bufsize) \
-		readlink((full_path), (buf), (bufsize))
-#endif
+#  ifdef HAVE_READLINKAT
+#    define my_readlinkat(full_path, dirfd, relpath, buf, bufsize) \
+      readlinkat((dirfd), (relpath), (buf), (bufsize))
+#  else
+#    define my_readlinkat(full_path, dirfd, relpath, buf, bufsize) \
+      readlink((full_path), (buf), (bufsize))
+#  endif
 
-#ifdef HAVE_FSTATAT
-#  define my_fstatat(full_path, dirfd, relpath, stbuf, flags)	\
-	fstatat((dirfd), (relpath), (stbuf), (flags))
-#else
-#  define my_fstatat(full_path, dirfd, relpath, stbuf, flags)	\
-	((flags) & AT_SYMLINK_NOFOLLOW) ? \
-		lstat((full_path), (stbuf)) : \
-		stat((full_path), (stbuf))
-#endif
+#  ifdef HAVE_FSTATAT
+#    define my_fstatat(full_path, dirfd, relpath, stbuf, flags) \
+      fstatat((dirfd), (relpath), (stbuf), (flags))
+#  else
+#    define my_fstatat(full_path, dirfd, relpath, stbuf, flags)     \
+      ((flags)&AT_SYMLINK_NOFOLLOW) ? lstat((full_path), (stbuf)) : \
+				      stat((full_path), (stbuf))
+#  endif
 
-#ifndef AT_FDCWD
-#  define AT_FDCWD	-100
-#endif
+#  ifndef AT_FDCWD
+#    define AT_FDCWD -100
+#  endif
 
-#ifndef AT_SYMLINK_NOFOLLOW
-#  define AT_SYMLINK_NOFOLLOW	0x100
-#endif
+#  ifndef AT_SYMLINK_NOFOLLOW
+#    define AT_SYMLINK_NOFOLLOW 0x100
+#  endif
 
-#ifdef HAVE_LINUX_XATTR_SUPPORT
+#  ifdef HAVE_LINUX_XATTR_SUPPORT
 /*
  * Retrieves the values of the xattrs named by the null-terminated @names of the
  * file at @path and serializes the xattr names and values into @entries.  If
@@ -111,12 +110,15 @@ my_fdopendir(int *dirfd_p)
  * returns -1 and sets errno (ERANGE if @entries was too small).
  */
 static ssize_t
-gather_xattr_entries(const char *path, const char *names, size_t names_size,
-		     void *entries, size_t entries_size)
+gather_xattr_entries(const char *path,
+                     const char *names,
+                     size_t names_size,
+                     void *entries,
+                     size_t entries_size)
 {
-	const char * const names_end = names + names_size;
-	void * const entries_end = entries + entries_size;
-	const char *name = names;
+	const char *const names_end   = names + names_size;
+	void *const entries_end       = entries + entries_size;
+	const char *name              = names;
 	struct wim_xattr_entry *entry = entries;
 
 	do {
@@ -133,7 +135,8 @@ gather_xattr_entries(const char *path, const char *names, size_t names_size,
 
 		if (name_len > WIM_XATTR_NAME_MAX) {
 			WARNING("\"%s\": name of extended attribute \"%s\" is too long to store",
-				path, name);
+			        path,
+			        name);
 			goto next_name;
 		}
 
@@ -142,31 +145,35 @@ gather_xattr_entries(const char *path, const char *names, size_t names_size,
 		 * since zero size means to return the value length only.
 		 */
 		if (entries_end - (void *)entry <=
-		    sizeof(*entry) + name_len + 1) {
+		    sizeof(*entry) + name_len + 1)
+		{
 			errno = ERANGE;
 			return -1;
 		}
 
 		entry->name_len = name_len;
-		entry->flags = 0;
-		value = mempcpy(entry->name, name, name_len + 1);
+		entry->flags    = 0;
+		value           = mempcpy(entry->name, name, name_len + 1);
 
 		value_len = lgetxattr(path, name, value, entries_end - value);
 		if (value_len < 0) {
 			if (errno != ERANGE) {
-				ERROR_WITH_ERRNO("\"%s\": unable to read extended attribute \"%s\"",
-						 path, name);
+				ERROR_WITH_ERRNO(
+					"\"%s\": unable to read extended attribute \"%s\"",
+					path,
+					name);
 			}
 			return -1;
 		}
 		if (value_len > WIM_XATTR_SIZE_MAX) {
 			WARNING("\"%s\": value of extended attribute \"%s\" is too large to store",
-				path, name);
+			        path,
+			        name);
 			goto next_name;
 		}
 		entry->value_len = cpu_to_le16(value_len);
-		entry = value + value_len;
-	next_name:
+		entry            = value + value_len;
+next_name:
 		name += name_len + 1;
 	} while (name < names_end);
 
@@ -174,19 +181,21 @@ gather_xattr_entries(const char *path, const char *names, size_t names_size,
 }
 
 static int
-create_xattr_item(const char *path, struct wim_inode *inode,
-		  const char *names, size_t names_size)
+create_xattr_item(const char *path,
+                  struct wim_inode *inode,
+                  const char *names,
+                  size_t names_size)
 {
 	char _entries[1024];
-	char *entries = _entries;
+	char *entries        = _entries;
 	size_t entries_avail = ARRAY_LEN(_entries);
 	ssize_t entries_size;
 	int ret;
 
 retry:
 	/* Serialize the xattrs into @entries */
-	entries_size = gather_xattr_entries(path, names, names_size,
-					    entries, entries_avail);
+	entries_size = gather_xattr_entries(
+		path, names, names_size, entries, entries_avail);
 	if (entries_size < 0) {
 		ret = WIMLIB_ERR_STAT;
 		if (errno != ERANGE)
@@ -227,9 +236,9 @@ static noinline_for_stack int
 scan_linux_xattrs(const char *path, struct wim_inode *inode)
 {
 	char _names[256];
-	char *names = _names;
+	char *names        = _names;
 	ssize_t names_size = ARRAY_LEN(_names);
-	int ret = 0;
+	int ret            = 0;
 
 retry:
 	/* Gather the names of the xattrs of the file at @path */
@@ -261,7 +270,7 @@ retry:
 		}
 		/* Some other error occurred. */
 		ERROR_WITH_ERRNO("\"%s\": unable to list extended attributes",
-				 path);
+		                 path);
 		ret = WIMLIB_ERR_STAT;
 		goto out;
 	}
@@ -276,12 +285,14 @@ out:
 		FREE(names);
 	return ret;
 }
-#endif /* HAVE_LINUX_XATTR_SUPPORT */
+#  endif /* HAVE_LINUX_XATTR_SUPPORT */
 
 static int
-unix_scan_regular_file(const char *path, u64 blocks, u64 size,
-		       struct wim_inode *inode,
-		       struct list_head *unhashed_blobs)
+unix_scan_regular_file(const char *path,
+                       u64 blocks,
+                       u64 size,
+                       struct wim_inode *inode,
+                       struct list_head *unhashed_blobs)
 {
 	struct blob_descriptor *blob = NULL;
 	struct wim_inode_stream *strm;
@@ -303,8 +314,8 @@ unix_scan_regular_file(const char *path, u64 blocks, u64 size,
 		if (unlikely(!blob->file_on_disk))
 			goto err_nomem;
 		blob->blob_location = BLOB_IN_FILE_ON_DISK;
-		blob->size = size;
-		blob->file_inode = inode;
+		blob->size          = size;
+		blob->file_inode    = inode;
 	}
 
 	strm = inode_add_stream(inode, STREAM_TYPE_DATA, NO_STREAM_NAME, blob);
@@ -321,31 +332,33 @@ err_nomem:
 
 static int
 unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
-				 int dirfd, const char *relpath,
-				 struct scan_params *params);
+                                 int dirfd,
+                                 const char *relpath,
+                                 struct scan_params *params);
 
 static int
 unix_scan_directory(struct wim_dentry *dir_dentry,
-		    int parent_dirfd, const char *dir_relpath,
-		    struct scan_params *params)
+                    int parent_dirfd,
+                    const char *dir_relpath,
+                    struct scan_params *params)
 {
-
 	int dirfd;
 	DIR *dir;
 	int ret;
 
-	dirfd = my_openat(params->cur_path, parent_dirfd, dir_relpath, O_RDONLY);
+	dirfd = my_openat(
+		params->cur_path, parent_dirfd, dir_relpath, O_RDONLY);
 	if (dirfd < 0) {
 		ERROR_WITH_ERRNO("\"%s\": Can't open directory",
-				 params->cur_path);
+		                 params->cur_path);
 		return WIMLIB_ERR_OPENDIR;
 	}
 
 	dir_dentry->d_inode->i_attributes = FILE_ATTRIBUTE_DIRECTORY;
-	dir = my_fdopendir(&dirfd);
+	dir                               = my_fdopendir(&dirfd);
 	if (!dir) {
 		ERROR_WITH_ERRNO("\"%s\": Can't open directory",
-				 params->cur_path);
+		                 params->cur_path);
 		close(dirfd);
 		return WIMLIB_ERR_OPENDIR;
 	}
@@ -362,8 +375,9 @@ unix_scan_directory(struct wim_dentry *dir_dentry,
 		if (!entry) {
 			if (errno) {
 				ret = WIMLIB_ERR_READ;
-				ERROR_WITH_ERRNO("\"%s\": Error reading directory",
-						 params->cur_path);
+				ERROR_WITH_ERRNO(
+					"\"%s\": Error reading directory",
+					params->cur_path);
 			}
 			break;
 		}
@@ -374,11 +388,11 @@ unix_scan_directory(struct wim_dentry *dir_dentry,
 			continue;
 
 		ret = WIMLIB_ERR_NOMEM;
-		if (!pathbuf_append_name(params, entry->d_name, name_len,
-					 &orig_path_len))
+		if (!pathbuf_append_name(
+			    params, entry->d_name, name_len, &orig_path_len))
 			break;
-		ret = unix_build_dentry_tree_recursive(&child, dirfd,
-						       entry->d_name, params);
+		ret = unix_build_dentry_tree_recursive(
+			&child, dirfd, entry->d_name, params);
 		pathbuf_truncate(params, orig_path_len);
 		if (ret)
 			break;
@@ -440,9 +454,9 @@ unix_relativize_link_target(char *target, u64 ino, u64 dev)
 
 		/* Get the inode and device numbers for this prefix.  */
 		save = *p;
-		*p = '\0';
-		ret = stat(target, &stbuf);
-		*p = save;
+		*p   = '\0';
+		ret  = stat(target, &stbuf);
+		*p   = save;
 
 		if (ret) {
 			/* stat() failed.  Assume the link points outside the
@@ -462,19 +476,21 @@ unix_relativize_link_target(char *target, u64 ino, u64 dev)
 }
 
 static noinline_for_stack int
-unix_scan_symlink(int dirfd, const char *relpath,
-		  struct wim_inode *inode, struct scan_params *params)
+unix_scan_symlink(int dirfd,
+                  const char *relpath,
+                  struct wim_inode *inode,
+                  struct scan_params *params)
 {
 	char orig_target[REPARSE_POINT_MAX_SIZE];
 	char *target = orig_target;
 	int ret;
 
 	/* Read the UNIX symbolic link target.  */
-	ret = my_readlinkat(params->cur_path, dirfd, relpath, target,
-			    sizeof(orig_target));
+	ret = my_readlinkat(
+		params->cur_path, dirfd, relpath, target, sizeof(orig_target));
 	if (unlikely(ret < 0)) {
 		ERROR_WITH_ERRNO("\"%s\": Can't read target of symbolic link",
-				 params->cur_path);
+		                 params->cur_path);
 		return WIMLIB_ERR_READLINK;
 	}
 	if (unlikely(ret >= sizeof(orig_target))) {
@@ -492,8 +508,8 @@ unix_scan_symlink(int dirfd, const char *relpath,
 		params->progress.scan.symlink_target = target;
 
 		target = unix_relativize_link_target(target,
-						     params->capture_root_ino,
-						     params->capture_root_dev);
+		                                     params->capture_root_ino,
+		                                     params->capture_root_dev);
 		if (target != orig_target) {
 			/* Link target was fixed.  */
 			inode->i_rp_flags &= ~WIM_RP_FLAG_NOT_FIXED;
@@ -528,8 +544,9 @@ unix_scan_symlink(int dirfd, const char *relpath,
 
 static int
 unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
-				 int dirfd, const char *relpath,
-				 struct scan_params *params)
+                                 int dirfd,
+                                 const char *relpath,
+                                 struct scan_params *params)
 {
 	struct wim_dentry *tree = NULL;
 	struct wim_inode *inode = NULL;
@@ -543,8 +560,8 @@ unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
 	if (unlikely(ret > 0)) /* Error? */
 		goto out;
 
-	if (params->add_flags & (WIMLIB_ADD_FLAG_DEREFERENCE |
-				 WIMLIB_ADD_FLAG_ROOT))
+	if (params->add_flags &
+	    (WIMLIB_ADD_FLAG_DEREFERENCE | WIMLIB_ADD_FLAG_ROOT))
 		stat_flags = 0;
 	else
 		stat_flags = AT_SYMLINK_NOFOLLOW;
@@ -553,15 +570,15 @@ unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
 
 	if (ret) {
 		ERROR_WITH_ERRNO("\"%s\": Can't read metadata",
-				 params->cur_path);
+		                 params->cur_path);
 		ret = WIMLIB_ERR_STAT;
 		goto out;
 	}
 
 	if (!(params->add_flags & WIMLIB_ADD_FLAG_UNIX_DATA)) {
 		if (unlikely(!S_ISREG(stbuf.st_mode) &&
-			     !S_ISDIR(stbuf.st_mode) &&
-			     !S_ISLNK(stbuf.st_mode)))
+		             !S_ISDIR(stbuf.st_mode) &&
+		             !S_ISLNK(stbuf.st_mode)))
 		{
 			if (params->add_flags &
 			    WIMLIB_ADD_FLAG_NO_UNSUPPORTED_EXCLUDE)
@@ -571,19 +588,23 @@ unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
 				ret = WIMLIB_ERR_UNSUPPORTED_FILE;
 				goto out;
 			}
-			ret = do_scan_progress(params,
-					       WIMLIB_SCAN_DENTRY_UNSUPPORTED,
-					       NULL);
+			ret = do_scan_progress(
+				params, WIMLIB_SCAN_DENTRY_UNSUPPORTED, NULL);
 			goto out;
 		}
 	}
 
-	ret = inode_table_new_dentry(params->inode_table, relpath,
-				     stbuf.st_ino, stbuf.st_dev, false, &tree);
+	ret = inode_table_new_dentry(params->inode_table,
+	                             relpath,
+	                             stbuf.st_ino,
+	                             stbuf.st_dev,
+	                             false,
+	                             &tree);
 	if (unlikely(ret)) {
 		if (ret == WIMLIB_ERR_INVALID_UTF8_STRING) {
 			ERROR("\"%s\": filename is not valid UTF-8.  "
-			      "This is not supported.", params->cur_path);
+			      "This is not supported.",
+			      params->cur_path);
 		}
 		goto out;
 	}
@@ -594,31 +615,31 @@ unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
 	if (inode->i_nlink > 1)
 		goto out_progress;
 
-#ifdef HAVE_STAT_NANOSECOND_PRECISION
-	inode->i_creation_time = timespec_to_wim_timestamp(&stbuf.st_mtim);
-	inode->i_last_write_time = timespec_to_wim_timestamp(&stbuf.st_mtim);
+#  ifdef HAVE_STAT_NANOSECOND_PRECISION
+	inode->i_creation_time    = timespec_to_wim_timestamp(&stbuf.st_mtim);
+	inode->i_last_write_time  = timespec_to_wim_timestamp(&stbuf.st_mtim);
 	inode->i_last_access_time = timespec_to_wim_timestamp(&stbuf.st_atim);
-#else
-	inode->i_creation_time = time_t_to_wim_timestamp(stbuf.st_mtime);
-	inode->i_last_write_time = time_t_to_wim_timestamp(stbuf.st_mtime);
+#  else
+	inode->i_creation_time    = time_t_to_wim_timestamp(stbuf.st_mtime);
+	inode->i_last_write_time  = time_t_to_wim_timestamp(stbuf.st_mtime);
 	inode->i_last_access_time = time_t_to_wim_timestamp(stbuf.st_atime);
-#endif
+#  endif
 	if (params->add_flags & WIMLIB_ADD_FLAG_UNIX_DATA) {
 		struct wimlib_unix_data unix_data;
 
-		unix_data.uid = stbuf.st_uid;
-		unix_data.gid = stbuf.st_gid;
+		unix_data.uid  = stbuf.st_uid;
+		unix_data.gid  = stbuf.st_gid;
 		unix_data.mode = stbuf.st_mode;
 		unix_data.rdev = stbuf.st_rdev;
 		if (!inode_set_unix_data(inode, &unix_data, UNIX_DATA_ALL)) {
 			ret = WIMLIB_ERR_NOMEM;
 			goto out;
 		}
-#ifdef HAVE_LINUX_XATTR_SUPPORT
+#  ifdef HAVE_LINUX_XATTR_SUPPORT
 		ret = scan_linux_xattrs(params->cur_path, inode);
 		if (ret)
 			goto out;
-#endif
+#  endif
 	}
 
 	if (params->add_flags & WIMLIB_ADD_FLAG_ROOT) {
@@ -628,9 +649,11 @@ unix_build_dentry_tree_recursive(struct wim_dentry **tree_ret,
 	}
 
 	if (S_ISREG(stbuf.st_mode)) {
-		ret = unix_scan_regular_file(params->cur_path, stbuf.st_blocks,
-					     stbuf.st_size, inode,
-					     params->unhashed_blobs);
+		ret = unix_scan_regular_file(params->cur_path,
+		                             stbuf.st_blocks,
+		                             stbuf.st_size,
+		                             inode,
+		                             params->unhashed_blobs);
 	} else if (S_ISDIR(stbuf.st_mode)) {
 		ret = unix_scan_directory(tree, dirfd, relpath, params);
 	} else if (S_ISLNK(stbuf.st_mode)) {
@@ -644,12 +667,13 @@ out_progress:
 	if (likely(tree))
 		ret = do_scan_progress(params, WIMLIB_SCAN_DENTRY_OK, inode);
 	else
-		ret = do_scan_progress(params, WIMLIB_SCAN_DENTRY_EXCLUDED, NULL);
+		ret = do_scan_progress(
+			params, WIMLIB_SCAN_DENTRY_EXCLUDED, NULL);
 out:
 	if (unlikely(ret)) {
 		free_dentry_tree(tree, params->blob_table);
 		tree = NULL;
-		ret = report_scan_error(params, ret);
+		ret  = report_scan_error(params, ret);
 	}
 	*tree_ret = tree;
 	return ret;
@@ -676,7 +700,8 @@ out:
  */
 int
 unix_build_dentry_tree(struct wim_dentry **root_ret,
-		       const char *root_disk_path, struct scan_params *params)
+                       const char *root_disk_path,
+                       struct scan_params *params)
 {
 	int ret;
 
@@ -684,8 +709,8 @@ unix_build_dentry_tree(struct wim_dentry **root_ret,
 	if (ret)
 		return ret;
 
-	return unix_build_dentry_tree_recursive(root_ret, AT_FDCWD,
-						root_disk_path, params);
+	return unix_build_dentry_tree_recursive(
+		root_ret, AT_FDCWD, root_disk_path, params);
 }
 
 #endif /* !_WIN32 */

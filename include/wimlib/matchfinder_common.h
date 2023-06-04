@@ -82,33 +82,33 @@ lz_hash(u32 seq, unsigned num_bits)
  * to a maximum of @max_len.  Initially, @start_len bytes are matched.
  */
 static forceinline unsigned
-lz_extend(const u8 * const strptr, const u8 * const matchptr,
-	  const unsigned start_len, const unsigned max_len)
+lz_extend(const u8 *const strptr,
+          const u8 *const matchptr,
+          const unsigned start_len,
+          const unsigned max_len)
 {
 	unsigned len = start_len;
 	machine_word_t v_word;
 
 	if (UNALIGNED_ACCESS_IS_FAST) {
-
 		if (likely(max_len - len >= 4 * WORDBYTES)) {
+#define COMPARE_WORD_STEP                        \
+  v_word = load_word_unaligned(&matchptr[len]) ^ \
+	   load_word_unaligned(&strptr[len]);    \
+  if (v_word != 0)                               \
+    goto word_differs;                           \
+  len += WORDBYTES;
 
-		#define COMPARE_WORD_STEP				\
-			v_word = load_word_unaligned(&matchptr[len]) ^	\
-				 load_word_unaligned(&strptr[len]);	\
-			if (v_word != 0)				\
-				goto word_differs;			\
-			len += WORDBYTES;				\
-
 			COMPARE_WORD_STEP
 			COMPARE_WORD_STEP
 			COMPARE_WORD_STEP
 			COMPARE_WORD_STEP
-		#undef COMPARE_WORD_STEP
+#undef COMPARE_WORD_STEP
 		}
 
 		while (len + WORDBYTES <= max_len) {
 			v_word = load_word_unaligned(&matchptr[len]) ^
-				 load_word_unaligned(&strptr[len]);
+			         load_word_unaligned(&strptr[len]);
 			if (v_word != 0)
 				goto word_differs;
 			len += WORDBYTES;

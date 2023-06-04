@@ -1,7 +1,8 @@
 #include "../fuzzer.h"
 
 /* Fuzz WIM file reading. */
-int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
+int
+LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 {
 	uint16_t fault_nth;
 	char tmp_wim[128];
@@ -16,7 +17,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 	sprintf(tmp_wim, "/tmp/wim-fuzz-%d.wim", getpid());
 	sprintf(tmp_dir, "/tmp/wim-fuzz-%d", getpid());
 
-	fd = open(tmp_wim, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+	fd = open(tmp_wim, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	assert(fd >= 0);
 	ret = write(fd, in, insize);
 	assert(ret == insize);

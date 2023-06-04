@@ -58,8 +58,10 @@ struct swm_info {
 };
 
 static int
-write_split_wim(WIMStruct *orig_wim, const tchar *swm_name,
-		struct swm_info *swm_info, int write_flags)
+write_split_wim(WIMStruct *orig_wim,
+                const tchar *swm_name,
+                struct swm_info *swm_info,
+                int write_flags)
 {
 	size_t swm_name_len;
 	tchar *swm_name_buf;
@@ -78,37 +80,41 @@ write_split_wim(WIMStruct *orig_wim, const tchar *swm_name,
 	dot = tstrrchr(path_basename(swm_name_buf), T('.'));
 	if (dot) {
 		swm_base_name_len = dot - swm_name_buf;
-		swm_suffix = alloca((tstrlen(dot) + 1) * sizeof(tchar));
+		swm_suffix        = alloca((tstrlen(dot) + 1) * sizeof(tchar));
 		tstrcpy(swm_suffix, dot);
 	} else {
 		swm_base_name_len = swm_name_len;
-		swm_suffix = alloca(1 * sizeof(tchar));
-		swm_suffix[0] = T('\0');
+		swm_suffix        = alloca(1 * sizeof(tchar));
+		swm_suffix[0]     = T('\0');
 	}
 
 	progress.split.completed_bytes = 0;
-	progress.split.total_bytes = 0;
+	progress.split.total_bytes     = 0;
 	for (part_number = 1; part_number <= swm_info->num_parts; part_number++)
-		progress.split.total_bytes += swm_info->parts[part_number - 1].size;
+		progress.split.total_bytes +=
+			swm_info->parts[part_number - 1].size;
 	progress.split.total_parts = swm_info->num_parts;
 
 	generate_guid(guid);
 
-	for (part_number = 1; part_number <= swm_info->num_parts; part_number++) {
+	for (part_number = 1; part_number <= swm_info->num_parts; part_number++)
+	{
 		int part_write_flags;
 
 		if (part_number != 1) {
 			tsprintf(swm_name_buf + swm_base_name_len,
-				 T("%u%"TS), part_number, swm_suffix);
+			         T("%u%" TS),
+			         part_number,
+			         swm_suffix);
 		}
 
 		progress.split.cur_part_number = part_number;
-		progress.split.part_name = swm_name_buf;
+		progress.split.part_name       = swm_name_buf;
 
 		ret = call_progress(orig_wim->progfunc,
-				    WIMLIB_PROGRESS_MSG_SPLIT_BEGIN_PART,
-				    &progress,
-				    orig_wim->progctx);
+		                    WIMLIB_PROGRESS_MSG_SPLIT_BEGIN_PART,
+		                    &progress,
+		                    orig_wim->progctx);
 		if (ret)
 			return ret;
 
@@ -117,24 +123,26 @@ write_split_wim(WIMStruct *orig_wim, const tchar *swm_name,
 		if (part_number != 1)
 			part_write_flags |= WIMLIB_WRITE_FLAG_NO_METADATA;
 
-		ret = write_wim_part(orig_wim,
-				     progress.split.part_name,
-				     WIMLIB_ALL_IMAGES,
-				     part_write_flags,
-				     1,
-				     part_number,
-				     swm_info->num_parts,
-				     &swm_info->parts[part_number - 1].blob_list,
-				     guid);
+		ret = write_wim_part(
+			orig_wim,
+			progress.split.part_name,
+			WIMLIB_ALL_IMAGES,
+			part_write_flags,
+			1,
+			part_number,
+			swm_info->num_parts,
+			&swm_info->parts[part_number - 1].blob_list,
+			guid);
 		if (ret)
 			return ret;
 
-		progress.split.completed_bytes += swm_info->parts[part_number - 1].size;
+		progress.split.completed_bytes +=
+			swm_info->parts[part_number - 1].size;
 
 		ret = call_progress(orig_wim->progfunc,
-				    WIMLIB_PROGRESS_MSG_SPLIT_END_PART,
-				    &progress,
-				    orig_wim->progctx);
+		                    WIMLIB_PROGRESS_MSG_SPLIT_END_PART,
+		                    &progress,
+		                    orig_wim->progctx);
 		if (ret)
 			return ret;
 	}
@@ -157,7 +165,7 @@ start_new_swm_part(struct swm_info *swm_info)
 			copy_part_info(&parts[i], &swm_info->parts[i]);
 
 		FREE(swm_info->parts);
-		swm_info->parts = parts;
+		swm_info->parts           = parts;
 		swm_info->num_alloc_parts = num_alloc_parts;
 	}
 	swm_info->num_parts++;
@@ -181,10 +189,10 @@ add_blob_to_swm(struct blob_descriptor *blob, void *_swm_info)
 	/* Start the next part if adding this blob exceeds the maximum part
 	 * size, UNLESS the blob is metadata or if no blobs at all have been
 	 * added to the current part.  */
-	if ((swm_info->parts[swm_info->num_parts - 1].size +
-	     blob_stored_size >= swm_info->max_part_size)
-	    && !(blob->is_metadata ||
-		 swm_info->parts[swm_info->num_parts - 1].size == 0))
+	if ((swm_info->parts[swm_info->num_parts - 1].size + blob_stored_size >=
+	     swm_info->max_part_size) &&
+	    !(blob->is_metadata ||
+	      swm_info->parts[swm_info->num_parts - 1].size == 0))
 	{
 		ret = start_new_swm_part(swm_info);
 		if (ret)
@@ -192,8 +200,9 @@ add_blob_to_swm(struct blob_descriptor *blob, void *_swm_info)
 	}
 	swm_info->parts[swm_info->num_parts - 1].size += blob_stored_size;
 	if (!blob->is_metadata) {
-		list_add_tail(&blob->write_blobs_list,
-			      &swm_info->parts[swm_info->num_parts - 1].blob_list);
+		list_add_tail(
+			&blob->write_blobs_list,
+			&swm_info->parts[swm_info->num_parts - 1].blob_list);
 	}
 	swm_info->total_bytes += blob_stored_size;
 	return 0;
@@ -201,8 +210,10 @@ add_blob_to_swm(struct blob_descriptor *blob, void *_swm_info)
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
-wimlib_split(WIMStruct *wim, const tchar *swm_name,
-	     u64 part_size, int write_flags)
+wimlib_split(WIMStruct *wim,
+             const tchar *swm_name,
+             u64 part_size,
+             int write_flags)
 {
 	struct swm_info swm_info;
 	unsigned i;
@@ -239,14 +250,13 @@ wimlib_split(WIMStruct *wim, const tchar *swm_name,
 
 	for (i = 0; i < wim->hdr.image_count; i++) {
 		ret = add_blob_to_swm(wim->image_metadata[i]->metadata_blob,
-				      &swm_info);
+		                      &swm_info);
 		if (ret)
 			goto out_free_swm_info;
 	}
 
-	ret = for_blob_in_table_sorted_by_sequential_order(wim->blob_table,
-							   add_blob_to_swm,
-							   &swm_info);
+	ret = for_blob_in_table_sorted_by_sequential_order(
+		wim->blob_table, add_blob_to_swm, &swm_info);
 	if (ret)
 		goto out_free_swm_info;
 

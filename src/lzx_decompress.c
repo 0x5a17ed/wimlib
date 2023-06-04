@@ -63,49 +63,57 @@
 #include "wimlib/util.h"
 
 /* These values are chosen for fast decompression.  */
-#define LZX_MAINCODE_TABLEBITS		11
-#define LZX_LENCODE_TABLEBITS		9
-#define LZX_PRECODE_TABLEBITS		6
-#define LZX_ALIGNEDCODE_TABLEBITS	7
+#define LZX_MAINCODE_TABLEBITS    11
+#define LZX_LENCODE_TABLEBITS     9
+#define LZX_PRECODE_TABLEBITS     6
+#define LZX_ALIGNEDCODE_TABLEBITS 7
 
 #define LZX_READ_LENS_MAX_OVERRUN 50
 
 struct lzx_decompressor {
+	DECODE_TABLE(maincode_decode_table,
+	             LZX_MAINCODE_MAX_NUM_SYMBOLS,
+	             LZX_MAINCODE_TABLEBITS,
+	             LZX_MAX_MAIN_CODEWORD_LEN);
+	u8 maincode_lens[LZX_MAINCODE_MAX_NUM_SYMBOLS +
+	                 LZX_READ_LENS_MAX_OVERRUN];
 
-	DECODE_TABLE(maincode_decode_table, LZX_MAINCODE_MAX_NUM_SYMBOLS,
-		     LZX_MAINCODE_TABLEBITS, LZX_MAX_MAIN_CODEWORD_LEN);
-	u8 maincode_lens[LZX_MAINCODE_MAX_NUM_SYMBOLS + LZX_READ_LENS_MAX_OVERRUN];
-
-	DECODE_TABLE(lencode_decode_table, LZX_LENCODE_NUM_SYMBOLS,
-		     LZX_LENCODE_TABLEBITS, LZX_MAX_LEN_CODEWORD_LEN);
+	DECODE_TABLE(lencode_decode_table,
+	             LZX_LENCODE_NUM_SYMBOLS,
+	             LZX_LENCODE_TABLEBITS,
+	             LZX_MAX_LEN_CODEWORD_LEN);
 	u8 lencode_lens[LZX_LENCODE_NUM_SYMBOLS + LZX_READ_LENS_MAX_OVERRUN];
 
 	union {
-		DECODE_TABLE(alignedcode_decode_table, LZX_ALIGNEDCODE_NUM_SYMBOLS,
-			     LZX_ALIGNEDCODE_TABLEBITS, LZX_MAX_ALIGNED_CODEWORD_LEN);
+		DECODE_TABLE(alignedcode_decode_table,
+		             LZX_ALIGNEDCODE_NUM_SYMBOLS,
+		             LZX_ALIGNEDCODE_TABLEBITS,
+		             LZX_MAX_ALIGNED_CODEWORD_LEN);
 		u8 alignedcode_lens[LZX_ALIGNEDCODE_NUM_SYMBOLS];
 	};
 
 	union {
-		DECODE_TABLE(precode_decode_table, LZX_PRECODE_NUM_SYMBOLS,
-			     LZX_PRECODE_TABLEBITS, LZX_MAX_PRE_CODEWORD_LEN);
+		DECODE_TABLE(precode_decode_table,
+		             LZX_PRECODE_NUM_SYMBOLS,
+		             LZX_PRECODE_TABLEBITS,
+		             LZX_MAX_PRE_CODEWORD_LEN);
 		u8 precode_lens[LZX_PRECODE_NUM_SYMBOLS];
 		u8 extra_offset_bits[LZX_MAX_OFFSET_SLOTS];
 	};
 
 	union {
 		DECODE_TABLE_WORKING_SPACE(maincode_working_space,
-					   LZX_MAINCODE_MAX_NUM_SYMBOLS,
-					   LZX_MAX_MAIN_CODEWORD_LEN);
+		                           LZX_MAINCODE_MAX_NUM_SYMBOLS,
+		                           LZX_MAX_MAIN_CODEWORD_LEN);
 		DECODE_TABLE_WORKING_SPACE(lencode_working_space,
-					   LZX_LENCODE_NUM_SYMBOLS,
-					   LZX_MAX_LEN_CODEWORD_LEN);
+		                           LZX_LENCODE_NUM_SYMBOLS,
+		                           LZX_MAX_LEN_CODEWORD_LEN);
 		DECODE_TABLE_WORKING_SPACE(alignedcode_working_space,
-					   LZX_ALIGNEDCODE_NUM_SYMBOLS,
-					   LZX_MAX_ALIGNED_CODEWORD_LEN);
+		                           LZX_ALIGNEDCODE_NUM_SYMBOLS,
+		                           LZX_MAX_ALIGNED_CODEWORD_LEN);
 		DECODE_TABLE_WORKING_SPACE(precode_working_space,
-					   LZX_PRECODE_NUM_SYMBOLS,
-					   LZX_MAX_PRE_CODEWORD_LEN);
+		                           LZX_PRECODE_NUM_SYMBOLS,
+		                           LZX_MAX_PRE_CODEWORD_LEN);
 	};
 
 	unsigned window_order;
@@ -121,32 +129,40 @@ struct lzx_decompressor {
 static forceinline unsigned
 read_presym(const struct lzx_decompressor *d, struct input_bitstream *is)
 {
-	return read_huffsym(is, d->precode_decode_table,
-			    LZX_PRECODE_TABLEBITS, LZX_MAX_PRE_CODEWORD_LEN);
+	return read_huffsym(is,
+	                    d->precode_decode_table,
+	                    LZX_PRECODE_TABLEBITS,
+	                    LZX_MAX_PRE_CODEWORD_LEN);
 }
 
 /* Read a Huffman-encoded symbol using the main code. */
 static forceinline unsigned
 read_mainsym(const struct lzx_decompressor *d, struct input_bitstream *is)
 {
-	return read_huffsym(is, d->maincode_decode_table,
-			    LZX_MAINCODE_TABLEBITS, LZX_MAX_MAIN_CODEWORD_LEN);
+	return read_huffsym(is,
+	                    d->maincode_decode_table,
+	                    LZX_MAINCODE_TABLEBITS,
+	                    LZX_MAX_MAIN_CODEWORD_LEN);
 }
 
 /* Read a Huffman-encoded symbol using the length code. */
 static forceinline unsigned
 read_lensym(const struct lzx_decompressor *d, struct input_bitstream *is)
 {
-	return read_huffsym(is, d->lencode_decode_table,
-			    LZX_LENCODE_TABLEBITS, LZX_MAX_LEN_CODEWORD_LEN);
+	return read_huffsym(is,
+	                    d->lencode_decode_table,
+	                    LZX_LENCODE_TABLEBITS,
+	                    LZX_MAX_LEN_CODEWORD_LEN);
 }
 
 /* Read a Huffman-encoded symbol using the aligned offset code. */
 static forceinline unsigned
 read_alignedsym(const struct lzx_decompressor *d, struct input_bitstream *is)
 {
-	return read_huffsym(is, d->alignedcode_decode_table,
-			    LZX_ALIGNEDCODE_TABLEBITS, LZX_MAX_ALIGNED_CODEWORD_LEN);
+	return read_huffsym(is,
+	                    d->alignedcode_decode_table,
+	                    LZX_ALIGNEDCODE_TABLEBITS,
+	                    LZX_MAX_ALIGNED_CODEWORD_LEN);
 }
 
 /*
@@ -154,10 +170,12 @@ read_alignedsym(const struct lzx_decompressor *d, struct input_bitstream *is)
  * @num_lens codeword length values and write them to @lens.
  */
 static int
-lzx_read_codeword_lens(struct lzx_decompressor *d, struct input_bitstream *is,
-		       u8 *lens, unsigned num_lens)
+lzx_read_codeword_lens(struct lzx_decompressor *d,
+                       struct input_bitstream *is,
+                       u8 *lens,
+                       unsigned num_lens)
 {
-	u8 *len_ptr = lens;
+	u8 *len_ptr  = lens;
 	u8 *lens_end = lens + num_lens;
 
 	/* Read the lengths of the precode codewords.  These are stored
@@ -169,11 +187,11 @@ lzx_read_codeword_lens(struct lzx_decompressor *d, struct input_bitstream *is,
 
 	/* Build the decoding table for the precode. */
 	if (make_huffman_decode_table(d->precode_decode_table,
-				      LZX_PRECODE_NUM_SYMBOLS,
-				      LZX_PRECODE_TABLEBITS,
-				      d->precode_lens,
-				      LZX_MAX_PRE_CODEWORD_LEN,
-				      d->precode_working_space))
+	                              LZX_PRECODE_NUM_SYMBOLS,
+	                              LZX_PRECODE_TABLEBITS,
+	                              d->precode_lens,
+	                              LZX_MAX_PRE_CODEWORD_LEN,
+	                              d->precode_working_space))
 		return -1;
 
 	/* Decode the codeword lengths.  */
@@ -197,15 +215,15 @@ lzx_read_codeword_lens(struct lzx_decompressor *d, struct input_bitstream *is,
 			if (presym == 17) {
 				/* Run of 0's  */
 				run_len = 4 + bitstream_read_bits(is, 4);
-				len = 0;
+				len     = 0;
 			} else if (presym == 18) {
 				/* Longer run of 0's  */
 				run_len = 20 + bitstream_read_bits(is, 5);
-				len = 0;
+				len     = 0;
 			} else {
 				/* Run of identical lengths  */
 				run_len = 4 + bitstream_read_bits(is, 1);
-				presym = read_presym(d, is);
+				presym  = read_presym(d, is);
 				if (unlikely(presym > 17))
 					return -1;
 				len = *len_ptr - presym;
@@ -240,9 +258,11 @@ lzx_read_codeword_lens(struct lzx_decompressor *d, struct input_bitstream *is,
  * blocks, the recent offsets queue is also updated.
  */
 static int
-lzx_read_block_header(struct lzx_decompressor *d, struct input_bitstream *is,
-		      u32 recent_offsets[], int *block_type_ret,
-		      u32 *block_size_ret)
+lzx_read_block_header(struct lzx_decompressor *d,
+                      struct input_bitstream *is,
+                      u32 recent_offsets[],
+                      int *block_type_ret,
+                      u32 *block_size_ret)
 {
 	int block_type;
 	u32 block_size;
@@ -264,15 +284,13 @@ lzx_read_block_header(struct lzx_decompressor *d, struct input_bitstream *is,
 	}
 
 	switch (block_type) {
-
 	case LZX_BLOCKTYPE_ALIGNED:
 
 		/* Read the aligned offset codeword lengths. */
 
 		for (int i = 0; i < LZX_ALIGNEDCODE_NUM_SYMBOLS; i++) {
-			d->alignedcode_lens[i] =
-				bitstream_read_bits(is,
-						    LZX_ALIGNEDCODE_ELEMENT_SIZE);
+			d->alignedcode_lens[i] = bitstream_read_bits(
+				is, LZX_ALIGNEDCODE_ELEMENT_SIZE);
 		}
 
 		/* Fall though, since the rest of the header for aligned offset
@@ -283,19 +301,20 @@ lzx_read_block_header(struct lzx_decompressor *d, struct input_bitstream *is,
 		/* Read the main codeword lengths, which are divided into two
 		 * parts: literal symbols and match headers. */
 
-		if (lzx_read_codeword_lens(d, is, d->maincode_lens,
-					   LZX_NUM_CHARS))
+		if (lzx_read_codeword_lens(
+			    d, is, d->maincode_lens, LZX_NUM_CHARS))
 			return -1;
 
-		if (lzx_read_codeword_lens(d, is, d->maincode_lens + LZX_NUM_CHARS,
-					   d->num_main_syms - LZX_NUM_CHARS))
+		if (lzx_read_codeword_lens(d,
+		                           is,
+		                           d->maincode_lens + LZX_NUM_CHARS,
+		                           d->num_main_syms - LZX_NUM_CHARS))
 			return -1;
-
 
 		/* Read the length codeword lengths. */
 
-		if (lzx_read_codeword_lens(d, is, d->lencode_lens,
-					   LZX_LENCODE_NUM_SYMBOLS))
+		if (lzx_read_codeword_lens(
+			    d, is, d->lencode_lens, LZX_LENCODE_NUM_SYMBOLS))
 			return -1;
 
 		break;
@@ -332,9 +351,13 @@ lzx_read_block_header(struct lzx_decompressor *d, struct input_bitstream *is,
 
 /* Decompress a block of LZX-compressed data. */
 static int
-lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
-		     int block_type, u32 block_size,
-		     u8 * const out_begin, u8 *out_next, u32 recent_offsets[])
+lzx_decompress_block(struct lzx_decompressor *d,
+                     struct input_bitstream *_is,
+                     int block_type,
+                     u32 block_size,
+                     u8 *const out_begin,
+                     u8 *out_next,
+                     u32 recent_offsets[])
 {
 	/*
 	 * Redeclare the input bitstream on the stack.  This shouldn't be
@@ -344,8 +367,8 @@ lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
 	 * 'is->bitbuf' et al. and/or thinks 'is->next' may point into 'is'.
 	 */
 	struct input_bitstream is_onstack = *_is;
-	struct input_bitstream *is = &is_onstack;
-	u8 * const block_end = out_next + block_size;
+	struct input_bitstream *is        = &is_onstack;
+	u8 *const block_end               = out_next + block_size;
 	unsigned min_aligned_offset_slot;
 
 	/*
@@ -355,35 +378,37 @@ lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
 	 */
 
 	if (make_huffman_decode_table(d->maincode_decode_table,
-				      d->num_main_syms,
-				      LZX_MAINCODE_TABLEBITS,
-				      d->maincode_lens,
-				      LZX_MAX_MAIN_CODEWORD_LEN,
-				      d->maincode_working_space))
+	                              d->num_main_syms,
+	                              LZX_MAINCODE_TABLEBITS,
+	                              d->maincode_lens,
+	                              LZX_MAX_MAIN_CODEWORD_LEN,
+	                              d->maincode_working_space))
 		return -1;
 
 	if (make_huffman_decode_table(d->lencode_decode_table,
-				      LZX_LENCODE_NUM_SYMBOLS,
-				      LZX_LENCODE_TABLEBITS,
-				      d->lencode_lens,
-				      LZX_MAX_LEN_CODEWORD_LEN,
-				      d->lencode_working_space))
+	                              LZX_LENCODE_NUM_SYMBOLS,
+	                              LZX_LENCODE_TABLEBITS,
+	                              d->lencode_lens,
+	                              LZX_MAX_LEN_CODEWORD_LEN,
+	                              d->lencode_working_space))
 		return -1;
 
 	if (block_type == LZX_BLOCKTYPE_ALIGNED) {
 		if (make_huffman_decode_table(d->alignedcode_decode_table,
-					      LZX_ALIGNEDCODE_NUM_SYMBOLS,
-					      LZX_ALIGNEDCODE_TABLEBITS,
-					      d->alignedcode_lens,
-					      LZX_MAX_ALIGNED_CODEWORD_LEN,
-					      d->alignedcode_working_space))
+		                              LZX_ALIGNEDCODE_NUM_SYMBOLS,
+		                              LZX_ALIGNEDCODE_TABLEBITS,
+		                              d->alignedcode_lens,
+		                              LZX_MAX_ALIGNED_CODEWORD_LEN,
+		                              d->alignedcode_working_space))
 			return -1;
 		min_aligned_offset_slot = LZX_MIN_ALIGNED_OFFSET_SLOT;
-		memcpy(d->extra_offset_bits, d->extra_offset_bits_minus_aligned,
+		memcpy(d->extra_offset_bits,
+		       d->extra_offset_bits_minus_aligned,
 		       sizeof(lzx_extra_offset_bits));
 	} else {
 		min_aligned_offset_slot = LZX_MAX_OFFSET_SLOTS;
-		memcpy(d->extra_offset_bits, lzx_extra_offset_bits,
+		memcpy(d->extra_offset_bits,
+		       lzx_extra_offset_bits,
 		       sizeof(lzx_extra_offset_bits));
 	}
 
@@ -406,7 +431,7 @@ lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
 
 		/* Decode the length header and offset slot.  */
 		STATIC_ASSERT(LZX_NUM_CHARS % LZX_NUM_LEN_HEADERS == 0);
-		length = mainsym % LZX_NUM_LEN_HEADERS;
+		length      = mainsym % LZX_NUM_LEN_HEADERS;
 		offset_slot = (mainsym - LZX_NUM_CHARS) / LZX_NUM_LEN_HEADERS;
 
 		/* If needed, read a length symbol to decode the full length. */
@@ -423,10 +448,12 @@ lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
 			recent_offsets[offset_slot] = recent_offsets[0];
 		} else {
 			/* Explicit offset  */
-			offset = bitstream_read_bits(is, d->extra_offset_bits[offset_slot]);
+			offset = bitstream_read_bits(
+				is, d->extra_offset_bits[offset_slot]);
 			if (offset_slot >= min_aligned_offset_slot) {
-				offset = (offset << LZX_NUM_ALIGNED_OFFSET_BITS) |
-					 read_alignedsym(d, is);
+				offset = (offset
+				          << LZX_NUM_ALIGNED_OFFSET_BITS) |
+				         read_alignedsym(d, is);
 			}
 			offset += lzx_offset_slot_base[offset_slot];
 
@@ -438,8 +465,12 @@ lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
 		recent_offsets[0] = offset;
 
 		/* Validate the match and copy it to the current position.  */
-		if (unlikely(lz_copy(length, offset, out_begin,
-				     out_next, block_end, LZX_MIN_MATCH_LEN)))
+		if (unlikely(lz_copy(length,
+		                     offset,
+		                     out_begin,
+		                     out_next,
+		                     block_end,
+		                     LZX_MIN_MATCH_LEN)))
 			return -1;
 		out_next += length;
 	} while (out_next != block_end);
@@ -449,18 +480,20 @@ lzx_decompress_block(struct lzx_decompressor *d, struct input_bitstream *_is,
 }
 
 static int
-lzx_decompress(const void *restrict compressed_data, size_t compressed_size,
-	       void *restrict uncompressed_data, size_t uncompressed_size,
-	       void *restrict _d)
+lzx_decompress(const void *restrict compressed_data,
+               size_t compressed_size,
+               void *restrict uncompressed_data,
+               size_t uncompressed_size,
+               void *restrict _d)
 {
 	struct lzx_decompressor *d = _d;
-	u8 * const out_begin = uncompressed_data;
-	u8 *out_next = out_begin;
-	u8 * const out_end = out_begin + uncompressed_size;
+	u8 *const out_begin        = uncompressed_data;
+	u8 *out_next               = out_begin;
+	u8 *const out_end          = out_begin + uncompressed_size;
 	struct input_bitstream is;
 	STATIC_ASSERT(LZX_NUM_RECENT_OFFSETS == 3);
-	u32 recent_offsets[LZX_NUM_RECENT_OFFSETS] = {1, 1, 1};
-	unsigned may_have_e8_byte = 0;
+	u32 recent_offsets[LZX_NUM_RECENT_OFFSETS] = { 1, 1, 1 };
+	unsigned may_have_e8_byte                  = 0;
 
 	init_input_bitstream(&is, compressed_data, compressed_size);
 
@@ -474,26 +507,28 @@ lzx_decompress(const void *restrict compressed_data, size_t compressed_size,
 		int block_type;
 		u32 block_size;
 
-		if (lzx_read_block_header(d, &is, recent_offsets,
-					  &block_type, &block_size))
+		if (lzx_read_block_header(
+			    d, &is, recent_offsets, &block_type, &block_size))
 			return -1;
 
 		if (block_size < 1 || block_size > out_end - out_next)
 			return -1;
 
 		if (likely(block_type != LZX_BLOCKTYPE_UNCOMPRESSED)) {
-
 			/* Compressed block */
-			if (lzx_decompress_block(d, &is, block_type, block_size,
-						 out_begin, out_next,
-						 recent_offsets))
+			if (lzx_decompress_block(d,
+			                         &is,
+			                         block_type,
+			                         block_size,
+			                         out_begin,
+			                         out_next,
+			                         recent_offsets))
 				return -1;
 
 			/* If the first E8 byte was in this block, then it must
 			 * have been encoded as a literal using mainsym E8. */
 			may_have_e8_byte |= d->maincode_lens[0xE8];
 		} else {
-
 			/* Uncompressed block */
 			if (bitstream_read_bytes(&is, out_next, block_size))
 				return -1;
@@ -529,21 +564,23 @@ lzx_create_decompressor(size_t max_block_size, void **d_ret)
 	if (!d)
 		return WIMLIB_ERR_NOMEM;
 
-	d->window_order = window_order;
+	d->window_order  = window_order;
 	d->num_main_syms = lzx_get_num_main_syms(window_order);
 
 	/* Initialize 'd->extra_offset_bits_minus_aligned'. */
 	STATIC_ASSERT(sizeof(d->extra_offset_bits_minus_aligned) ==
-		      sizeof(lzx_extra_offset_bits));
+	              sizeof(lzx_extra_offset_bits));
 	STATIC_ASSERT(sizeof(d->extra_offset_bits) ==
-		      sizeof(lzx_extra_offset_bits));
-	memcpy(d->extra_offset_bits_minus_aligned, lzx_extra_offset_bits,
+	              sizeof(lzx_extra_offset_bits));
+	memcpy(d->extra_offset_bits_minus_aligned,
+	       lzx_extra_offset_bits,
 	       sizeof(lzx_extra_offset_bits));
 	for (unsigned offset_slot = LZX_MIN_ALIGNED_OFFSET_SLOT;
-	     offset_slot < LZX_MAX_OFFSET_SLOTS; offset_slot++)
+	     offset_slot < LZX_MAX_OFFSET_SLOTS;
+	     offset_slot++)
 	{
 		d->extra_offset_bits_minus_aligned[offset_slot] -=
-				LZX_NUM_ALIGNED_OFFSET_BITS;
+			LZX_NUM_ALIGNED_OFFSET_BITS;
 	}
 
 	*d_ret = d;
@@ -558,6 +595,6 @@ lzx_free_decompressor(void *_d)
 
 const struct decompressor_ops lzx_decompressor_ops = {
 	.create_decompressor = lzx_create_decompressor,
-	.decompress	     = lzx_decompress,
+	.decompress          = lzx_decompress,
 	.free_decompressor   = lzx_free_decompressor,
 };

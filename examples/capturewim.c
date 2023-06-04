@@ -35,26 +35,27 @@
  * just use their platform's convention directly.
  */
 #ifdef _WIN32
-#  define main		wmain
-   typedef wchar_t	tchar;
-#  define TS		"ls"
+#  define main wmain
+typedef wchar_t tchar;
+#  define TS "ls"
 #else
-   typedef char		tchar;
-#  define TS		"s"
+typedef char tchar;
+#  define TS "s"
 #endif
 
 #define TO_PERCENT(numerator, denominator) \
-	((float)(((denominator) == 0) ? 0 : ((numerator) * 100 / (float)(denominator))))
+  ((float)(((denominator) == 0) ? 0 : ((numerator)*100 / (float)(denominator))))
 
 static enum wimlib_progress_status
 write_progress(enum wimlib_progress_msg msg,
-	       union wimlib_progress_info *info, void *progctx)
+               union wimlib_progress_info *info,
+               void *progctx)
 {
 	switch (msg) {
 	case WIMLIB_PROGRESS_MSG_WRITE_STREAMS:
 		printf("Writing WIM: %.2f%% complete\n",
 		       TO_PERCENT(info->write_streams.completed_bytes,
-				  info->write_streams.total_bytes));
+		                  info->write_streams.total_bytes));
 		break;
 	default:
 		break;
@@ -62,7 +63,8 @@ write_progress(enum wimlib_progress_msg msg,
 	return WIMLIB_PROGRESS_STATUS_CONTINUE;
 }
 
-int main(int argc, tchar **argv)
+int
+main(int argc, tchar **argv)
 {
 	int ret;
 	WIMStruct *wim = NULL;
@@ -75,12 +77,12 @@ int main(int argc, tchar **argv)
 		return 2;
 	}
 
-	srcdir = argv[1];
+	srcdir  = argv[1];
 	wimpath = argv[2];
 
 	/* Create a WIMStruct for a WIM.  */
 	ret = wimlib_create_new_wim(WIMLIB_COMPRESSION_TYPE_LZX, &wim);
-	if (ret != 0)  /* Always should check the error codes.  */
+	if (ret != 0) /* Always should check the error codes.  */
 		goto out;
 
 	/* Register our progress function.  */
@@ -88,21 +90,23 @@ int main(int argc, tchar **argv)
 
 	/* Add the directory tree to the WIMStruct as an image.  */
 
-	ret = wimlib_add_image(wim,     /* WIMStruct to which to add the image    */
-			       srcdir,  /* Directory from which to add the image  */
-			       NULL,    /* Name to give the image (NULL means none)  */
-			       NULL,    /* Capture configuration structure (NULL means none)  */
-			       0);      /* WIMLIB_ADD_FLAG_* flags (0 means all defaults)  */
+	ret = wimlib_add_image(
+		wim, /* WIMStruct to which to add the image    */
+		srcdir, /* Directory from which to add the image  */
+		NULL, /* Name to give the image (NULL means none)  */
+		NULL, /* Capture configuration structure (NULL means none)  */
+		0); /* WIMLIB_ADD_FLAG_* flags (0 means all defaults)  */
 	if (ret != 0)
 		goto out;
 
 	/* Write the WIM file.  */
 
-	ret = wimlib_write(wim,      /* WIMStruct from which to write a WIM  */
-			   wimpath,  /* Path to write the WIM to             */
-			   WIMLIB_ALL_IMAGES, /*  Image(s) in the WIM to write */
-			   0,        /* WIMLIB_WRITE_FLAG_* flags (0 means all defaults)   */
-			   0);       /* Number of compressor threads (0 means default)  */
+	ret = wimlib_write(
+		wim, /* WIMStruct from which to write a WIM  */
+		wimpath, /* Path to write the WIM to             */
+		WIMLIB_ALL_IMAGES, /*  Image(s) in the WIM to write */
+		0, /* WIMLIB_WRITE_FLAG_* flags (0 means all defaults)   */
+		0); /* Number of compressor threads (0 means default)  */
 
 out:
 	/* Free the WIMStruct.  Has no effect if the pointer to it is NULL.  */
@@ -110,8 +114,10 @@ out:
 
 	/* Check for error status.  */
 	if (ret != 0) {
-		fprintf(stderr, "wimlib error %d: %" TS"\n",
-			ret, wimlib_get_error_string((enum wimlib_error_code)ret));
+		fprintf(stderr,
+		        "wimlib error %d: %" TS "\n",
+		        ret,
+		        wimlib_get_error_string((enum wimlib_error_code)ret));
 	}
 
 	/* Free global memory (optional).  */

@@ -50,7 +50,7 @@ heapify_subtree(u32 A[], unsigned length, unsigned subtree_idx)
 	unsigned child_idx;
 	u32 v;
 
-	v = A[subtree_idx];
+	v          = A[subtree_idx];
 	parent_idx = subtree_idx;
 	while ((child_idx = parent_idx * 2) <= length) {
 		if (child_idx < length && A[child_idx + 1] > A[child_idx])
@@ -58,7 +58,7 @@ heapify_subtree(u32 A[], unsigned length, unsigned subtree_idx)
 		if (v >= A[child_idx])
 			break;
 		A[parent_idx] = A[child_idx];
-		parent_idx = child_idx;
+		parent_idx    = child_idx;
 	}
 	A[parent_idx] = v;
 }
@@ -94,18 +94,18 @@ heap_sort(u32 A[], unsigned length)
 		u32 tmp = A[length];
 
 		A[length] = A[1];
-		A[1] = tmp;
+		A[1]      = tmp;
 		length--;
 		heapify_subtree(A, length, 1);
 	}
 }
 
 #define NUM_SYMBOL_BITS 10
-#define NUM_FREQ_BITS	(32 - NUM_SYMBOL_BITS)
-#define SYMBOL_MASK	((1 << NUM_SYMBOL_BITS) - 1)
-#define FREQ_MASK	(~SYMBOL_MASK)
+#define NUM_FREQ_BITS   (32 - NUM_SYMBOL_BITS)
+#define SYMBOL_MASK     ((1 << NUM_SYMBOL_BITS) - 1)
+#define FREQ_MASK       (~SYMBOL_MASK)
 
-#define GET_NUM_COUNTERS(num_syms)	(num_syms)
+#define GET_NUM_COUNTERS(num_syms) (num_syms)
 
 /*
  * Sort the symbols primarily by frequency and secondarily by symbol value.
@@ -188,7 +188,7 @@ sort_symbols(unsigned num_syms, const u32 freqs[], u8 lens[], u32 symout[])
 
 	/* Sort the symbols counted in the last counter. */
 	heap_sort(symout + counters[num_counters - 2],
-		  counters[num_counters - 1] - counters[num_counters - 2]);
+	          counters[num_counters - 1] - counters[num_counters - 2]);
 
 	return num_used_syms;
 }
@@ -254,18 +254,20 @@ build_tree(u32 A[], unsigned sym_count)
 		 * type (leaf or non-leaf), so check those cases first.
 		 */
 		if (i + 1 <= last_idx &&
-		    (b == e || (A[i + 1] & FREQ_MASK) <= (A[b] & FREQ_MASK))) {
+		    (b == e || (A[i + 1] & FREQ_MASK) <= (A[b] & FREQ_MASK)))
+		{
 			/* Two leaves */
 			new_freq = (A[i] & FREQ_MASK) + (A[i + 1] & FREQ_MASK);
 			i += 2;
 		} else if (b + 2 <= e &&
-			   (i > last_idx ||
-			    (A[b + 1] & FREQ_MASK) < (A[i] & FREQ_MASK))) {
+		           (i > last_idx ||
+		            (A[b + 1] & FREQ_MASK) < (A[i] & FREQ_MASK)))
+		{
 			/* Two non-leaves */
 			new_freq = (A[b] & FREQ_MASK) + (A[b + 1] & FREQ_MASK);
 			A[b] = (e << NUM_SYMBOL_BITS) | (A[b] & SYMBOL_MASK);
 			A[b + 1] = (e << NUM_SYMBOL_BITS) |
-				   (A[b + 1] & SYMBOL_MASK);
+			           (A[b + 1] & SYMBOL_MASK);
 			b += 2;
 		} else {
 			/* One leaf and one non-leaf */
@@ -308,8 +310,10 @@ build_tree(u32 A[], unsigned sym_count)
  *	The maximum permissible codeword length.
  */
 static void
-compute_length_counts(u32 A[], unsigned root_idx, unsigned len_counts[],
-		      unsigned max_codeword_len)
+compute_length_counts(u32 A[],
+                      unsigned root_idx,
+                      unsigned len_counts[],
+                      unsigned max_codeword_len)
 {
 	unsigned len;
 	int node;
@@ -344,13 +348,12 @@ compute_length_counts(u32 A[], unsigned root_idx, unsigned len_counts[],
 	A[root_idx] &= SYMBOL_MASK;
 
 	for (node = root_idx - 1; node >= 0; node--) {
-
 		/* Calculate the depth of this node. */
 
-		unsigned parent = A[node] >> NUM_SYMBOL_BITS;
+		unsigned parent       = A[node] >> NUM_SYMBOL_BITS;
 		unsigned parent_depth = A[parent] >> NUM_SYMBOL_BITS;
-		unsigned depth = parent_depth + 1;
-		unsigned len = depth;
+		unsigned depth        = parent_depth + 1;
+		unsigned len          = depth;
 
 		/*
 		 * Set the depth of this node so that it is available when its
@@ -403,8 +406,11 @@ compute_length_counts(u32 A[], unsigned root_idx, unsigned len_counts[],
  *	frequency.  This is the length of the 'A' and 'len' arrays.
  */
 static void
-gen_codewords(u32 A[], u8 lens[], const unsigned len_counts[],
-	      unsigned max_codeword_len, unsigned num_syms)
+gen_codewords(u32 A[],
+              u8 lens[],
+              const unsigned len_counts[],
+              unsigned max_codeword_len,
+              unsigned num_syms)
 {
 	u32 next_codewords[MAX_CODEWORD_LEN + 1];
 	unsigned i;
@@ -593,8 +599,11 @@ gen_codewords(u32 A[], u8 lens[], const unsigned len_counts[],
  * easier for longer codewords to be generated.
  */
 void
-make_canonical_huffman_code(unsigned num_syms, unsigned max_codeword_len,
-			    const u32 freqs[], u8 lens[], u32 codewords[])
+make_canonical_huffman_code(unsigned num_syms,
+                            unsigned max_codeword_len,
+                            const u32 freqs[],
+                            u8 lens[],
+                            u32 codewords[])
 {
 	u32 *A = codewords;
 	unsigned num_used_syms;
@@ -642,13 +651,13 @@ make_canonical_huffman_code(unsigned num_syms, unsigned max_codeword_len,
 		 * assigned codeword 0 so that the resulting code is canonical.
 		 */
 
-		unsigned sym = A[0] & SYMBOL_MASK;
+		unsigned sym         = A[0] & SYMBOL_MASK;
 		unsigned nonzero_idx = sym ? sym : 1;
 
-		codewords[0] = 0;
-		lens[0] = 1;
+		codewords[0]           = 0;
+		lens[0]                = 1;
 		codewords[nonzero_idx] = 1;
-		lens[nonzero_idx] = 1;
+		lens[nonzero_idx]      = 1;
 		return;
 	}
 
@@ -663,8 +672,8 @@ make_canonical_huffman_code(unsigned num_syms, unsigned max_codeword_len,
 	{
 		unsigned len_counts[MAX_CODEWORD_LEN + 1];
 
-		compute_length_counts(A, num_used_syms - 2,
-				      len_counts, max_codeword_len);
+		compute_length_counts(
+			A, num_used_syms - 2, len_counts, max_codeword_len);
 
 		gen_codewords(A, lens, len_counts, max_codeword_len, num_syms);
 	}

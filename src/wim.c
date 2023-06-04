@@ -128,13 +128,14 @@ static int
 is_blob_in_solid_resource(struct blob_descriptor *blob, void *_ignore)
 {
 	return blob->blob_location == BLOB_IN_WIM &&
-		(blob->rdesc->flags & WIM_RESHDR_FLAG_SOLID);
+	       (blob->rdesc->flags & WIM_RESHDR_FLAG_SOLID);
 }
 
 bool
 wim_has_solid_resources(const WIMStruct *wim)
 {
-	return for_blob_in_table(wim->blob_table, is_blob_in_solid_resource, NULL);
+	return for_blob_in_table(
+		wim->blob_table, is_blob_in_solid_resource, NULL);
 }
 
 static WIMStruct *
@@ -148,8 +149,8 @@ new_wim_struct(void)
 	filedes_invalidate(&wim->in_fd);
 	filedes_invalidate(&wim->out_fd);
 	wim->out_solid_compression_type = wim_default_solid_compression_type();
-	wim->out_solid_chunk_size = wim_default_solid_chunk_size(
-					wim->out_solid_compression_type);
+	wim->out_solid_chunk_size =
+		wim_default_solid_chunk_size(wim->out_solid_compression_type);
 	return wim;
 }
 
@@ -175,18 +176,18 @@ wimlib_create_new_wim(enum wimlib_compression_type ctype, WIMStruct **wim_ret)
 		return WIMLIB_ERR_NOMEM;
 
 	/* Fill in wim->hdr with default values */
-	wim->hdr.magic = WIM_MAGIC;
-	wim->hdr.wim_version = WIM_VERSION_DEFAULT;
-	wim->hdr.part_number = 1;
-	wim->hdr.total_parts = 1;
+	wim->hdr.magic        = WIM_MAGIC;
+	wim->hdr.wim_version  = WIM_VERSION_DEFAULT;
+	wim->hdr.part_number  = 1;
+	wim->hdr.total_parts  = 1;
 	wim->compression_type = WIMLIB_COMPRESSION_TYPE_NONE;
 
 	/* Set the output compression type */
 	wim->out_compression_type = ctype;
-	wim->out_chunk_size = wim_default_nonsolid_chunk_size(ctype);
+	wim->out_chunk_size       = wim_default_nonsolid_chunk_size(ctype);
 
 	/* Allocate an empty XML info and blob table */
-	wim->xml_info = xml_new_info_struct();
+	wim->xml_info   = xml_new_info_struct();
 	wim->blob_table = new_blob_table(64);
 	if (!wim->xml_info || !wim->blob_table) {
 		wimlib_free(wim);
@@ -241,18 +242,19 @@ append_image_metadata(WIMStruct *wim, struct wim_image_metadata *imd)
 		return WIMLIB_ERR_IMAGE_COUNT;
 
 	imd_array = REALLOC(wim->image_metadata,
-			    sizeof(wim->image_metadata[0]) * (wim->hdr.image_count + 1));
+	                    sizeof(wim->image_metadata[0]) *
+	                            (wim->hdr.image_count + 1));
 
 	if (!imd_array)
 		return WIMLIB_ERR_NOMEM;
-	wim->image_metadata = imd_array;
+	wim->image_metadata               = imd_array;
 	imd_array[wim->hdr.image_count++] = imd;
 	return 0;
 }
 
 static struct wim_image_metadata *
 new_image_metadata(struct blob_descriptor *metadata_blob,
-		   struct wim_security_data *security_data)
+                   struct wim_security_data *security_data)
 {
 	struct wim_image_metadata *imd;
 
@@ -261,11 +263,11 @@ new_image_metadata(struct blob_descriptor *metadata_blob,
 		return NULL;
 
 	metadata_blob->is_metadata = 1;
-	imd->refcnt = 1;
-	imd->selected_refcnt = 0;
-	imd->root_dentry = NULL;
-	imd->security_data = security_data;
-	imd->metadata_blob = metadata_blob;
+	imd->refcnt                = 1;
+	imd->selected_refcnt       = 0;
+	imd->root_dentry           = NULL;
+	imd->security_data         = security_data;
+	imd->metadata_blob         = metadata_blob;
 	INIT_HLIST_HEAD(&imd->inode_list);
 	INIT_LIST_HEAD(&imd->unhashed_blobs);
 	imd->stats_outdated = false;
@@ -387,10 +389,10 @@ for_image(WIMStruct *wim, int image, int (*visitor)(WIMStruct *))
 
 	if (image == WIMLIB_ALL_IMAGES) {
 		start = 1;
-		end = wim->hdr.image_count;
+		end   = wim->hdr.image_count;
 	} else if (image >= 1 && image <= wim->hdr.image_count) {
 		start = image;
-		end = image;
+		end   = image;
 	} else {
 		return WIMLIB_ERR_INVALID_IMAGE;
 	}
@@ -416,8 +418,8 @@ wimlib_resolve_image(WIMStruct *wim, const tchar *image_name_or_num)
 	if (!image_name_or_num || !*image_name_or_num)
 		return WIMLIB_NO_IMAGE;
 
-	if (!tstrcasecmp(image_name_or_num, T("all"))
-	    || !tstrcasecmp(image_name_or_num, T("*")))
+	if (!tstrcasecmp(image_name_or_num, T("all")) ||
+	    !tstrcasecmp(image_name_or_num, T("*")))
 		return WIMLIB_ALL_IMAGES;
 	image = tstrtol(image_name_or_num, &p, 10);
 	if (p != image_name_or_num && *p == T('\0') && image > 0) {
@@ -427,7 +429,7 @@ wimlib_resolve_image(WIMStruct *wim, const tchar *image_name_or_num)
 	} else {
 		for (i = 1; i <= wim->hdr.image_count; i++) {
 			if (!tstrcmp(image_name_or_num,
-				     wimlib_get_image_name(wim, i)))
+			             wimlib_get_image_name(wim, i)))
 				return i;
 		}
 		return WIMLIB_NO_IMAGE;
@@ -443,16 +445,16 @@ wimlib_print_available_images(const WIMStruct *wim, int image)
 	int i;
 	int n;
 	if (image == WIMLIB_ALL_IMAGES) {
-		n = tprintf(T("Available Images:\n"));
+		n     = tprintf(T("Available Images:\n"));
 		first = 1;
-		last = wim->hdr.image_count;
+		last  = wim->hdr.image_count;
 	} else if (image >= 1 && image <= wim->hdr.image_count) {
-		n = tprintf(T("Information for Image %d\n"), image);
+		n     = tprintf(T("Information for Image %d\n"), image);
 		first = image;
-		last = image;
+		last  = image;
 	} else {
 		tprintf(T("wimlib_print_available_images(): Invalid image %d"),
-			image);
+		        image);
 		return;
 	}
 	for (i = 0; i < n - 1; i++)
@@ -468,24 +470,28 @@ wimlib_get_wim_info(WIMStruct *wim, struct wimlib_wim_info *info)
 {
 	memset(info, 0, sizeof(struct wimlib_wim_info));
 	copy_guid(info->guid, wim->hdr.guid);
-	info->image_count = wim->hdr.image_count;
-	info->boot_index = wim->hdr.boot_idx;
-	info->wim_version = wim->hdr.wim_version;
-	info->chunk_size = wim->chunk_size;
-	info->part_number = wim->hdr.part_number;
-	info->total_parts = wim->hdr.total_parts;
-	info->compression_type = wim->compression_type;
-	info->total_bytes = xml_get_total_bytes(wim->xml_info);
+	info->image_count         = wim->hdr.image_count;
+	info->boot_index          = wim->hdr.boot_idx;
+	info->wim_version         = wim->hdr.wim_version;
+	info->chunk_size          = wim->chunk_size;
+	info->part_number         = wim->hdr.part_number;
+	info->total_parts         = wim->hdr.total_parts;
+	info->compression_type    = wim->compression_type;
+	info->total_bytes         = xml_get_total_bytes(wim->xml_info);
 	info->has_integrity_table = wim_has_integrity_table(wim);
-	info->opened_from_file = (wim->filename != NULL);
-	info->is_readonly = (wim->hdr.flags & WIM_HDR_FLAG_READONLY) ||
-			     (wim->hdr.total_parts != 1) ||
-			     (wim->filename && taccess(wim->filename, W_OK));
-	info->has_rpfix = (wim->hdr.flags & WIM_HDR_FLAG_RP_FIX) != 0;
-	info->is_marked_readonly = (wim->hdr.flags & WIM_HDR_FLAG_READONLY) != 0;
-	info->write_in_progress = (wim->hdr.flags & WIM_HDR_FLAG_WRITE_IN_PROGRESS) != 0;
-	info->metadata_only = (wim->hdr.flags & WIM_HDR_FLAG_METADATA_ONLY) != 0;
-	info->resource_only = (wim->hdr.flags & WIM_HDR_FLAG_RESOURCE_ONLY) != 0;
+	info->opened_from_file    = (wim->filename != NULL);
+	info->is_readonly         = (wim->hdr.flags & WIM_HDR_FLAG_READONLY) ||
+	                    (wim->hdr.total_parts != 1) ||
+	                    (wim->filename && taccess(wim->filename, W_OK));
+	info->has_rpfix          = (wim->hdr.flags & WIM_HDR_FLAG_RP_FIX) != 0;
+	info->is_marked_readonly = (wim->hdr.flags & WIM_HDR_FLAG_READONLY) !=
+	                           0;
+	info->write_in_progress =
+		(wim->hdr.flags & WIM_HDR_FLAG_WRITE_IN_PROGRESS) != 0;
+	info->metadata_only = (wim->hdr.flags & WIM_HDR_FLAG_METADATA_ONLY) !=
+	                      0;
+	info->resource_only = (wim->hdr.flags & WIM_HDR_FLAG_RESOURCE_ONLY) !=
+	                      0;
 	info->spanned = (wim->hdr.flags & WIM_HDR_FLAG_SPANNED) != 0;
 	info->pipable = wim_is_pipable(wim);
 	return 0;
@@ -493,12 +499,12 @@ wimlib_get_wim_info(WIMStruct *wim, struct wimlib_wim_info *info)
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
-wimlib_set_wim_info(WIMStruct *wim, const struct wimlib_wim_info *info, int which)
+wimlib_set_wim_info(WIMStruct *wim,
+                    const struct wimlib_wim_info *info,
+                    int which)
 {
-	if (which & ~(WIMLIB_CHANGE_READONLY_FLAG |
-		      WIMLIB_CHANGE_GUID |
-		      WIMLIB_CHANGE_BOOT_INDEX |
-		      WIMLIB_CHANGE_RPFIX_FLAG))
+	if (which & ~(WIMLIB_CHANGE_READONLY_FLAG | WIMLIB_CHANGE_GUID |
+	              WIMLIB_CHANGE_BOOT_INDEX | WIMLIB_CHANGE_RPFIX_FLAG))
 		return WIMLIB_ERR_INVALID_PARAM;
 
 	if ((which & WIMLIB_CHANGE_BOOT_INDEX) &&
@@ -530,7 +536,7 @@ wimlib_set_wim_info(WIMStruct *wim, const struct wimlib_wim_info *info, int whic
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_set_output_compression_type(WIMStruct *wim,
-				   enum wimlib_compression_type ctype)
+                                   enum wimlib_compression_type ctype)
 {
 	if (!wim_compression_type_valid(ctype))
 		return WIMLIB_ERR_INVALID_COMPRESSION_TYPE;
@@ -546,7 +552,7 @@ wimlib_set_output_compression_type(WIMStruct *wim,
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_set_output_pack_compression_type(WIMStruct *wim,
-					enum wimlib_compression_type ctype)
+                                        enum wimlib_compression_type ctype)
 {
 	if (!wim_compression_type_valid(ctype))
 		return WIMLIB_ERR_INVALID_COMPRESSION_TYPE;
@@ -568,8 +574,8 @@ WIMLIBAPI int
 wimlib_set_output_chunk_size(WIMStruct *wim, u32 chunk_size)
 {
 	if (chunk_size == 0) {
-		wim->out_chunk_size =
-			wim_default_nonsolid_chunk_size(wim->out_compression_type);
+		wim->out_chunk_size = wim_default_nonsolid_chunk_size(
+			wim->out_compression_type);
 		return 0;
 	}
 
@@ -585,8 +591,8 @@ WIMLIBAPI int
 wimlib_set_output_pack_chunk_size(WIMStruct *wim, u32 chunk_size)
 {
 	if (chunk_size == 0) {
-		wim->out_solid_chunk_size =
-			wim_default_solid_chunk_size(wim->out_solid_compression_type);
+		wim->out_solid_chunk_size = wim_default_solid_chunk_size(
+			wim->out_solid_compression_type);
 		return 0;
 	}
 
@@ -609,11 +615,11 @@ wimlib_get_compression_type_string(enum wimlib_compression_type ctype)
 
 WIMLIBAPI void
 wimlib_register_progress_function(WIMStruct *wim,
-				  wimlib_progress_func_t progfunc,
-				  void *progctx)
+                                  wimlib_progress_func_t progfunc,
+                                  void *progctx)
 {
 	wim->progfunc = progfunc;
-	wim->progctx = progctx;
+	wim->progctx  = progctx;
 }
 
 static int
@@ -623,7 +629,7 @@ open_wim_file(const tchar *filename, struct filedes *fd_ret)
 
 	raw_fd = topen(filename, O_RDONLY | O_BINARY);
 	if (raw_fd < 0) {
-		ERROR_WITH_ERRNO("Can't open \"%"TS"\" read-only", filename);
+		ERROR_WITH_ERRNO("Can't open \"%" TS "\" read-only", filename);
 		return WIMLIB_ERR_OPEN;
 	}
 	filedes_init(fd_ret, raw_fd);
@@ -642,13 +648,13 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 
 	if (open_flags & WIMLIB_OPEN_FLAG_FROM_PIPE) {
 		wimfile = NULL;
-		filedes_init(&wim->in_fd, *(const int*)wim_filename_or_fd);
+		filedes_init(&wim->in_fd, *(const int *)wim_filename_or_fd);
 		wim->in_fd.is_pipe = 1;
 	} else {
 		struct stat stbuf;
 
 		wimfile = wim_filename_or_fd;
-		ret = open_wim_file(wimfile, &wim->in_fd);
+		ret     = open_wim_file(wimfile, &wim->in_fd);
 		if (ret)
 			return ret;
 
@@ -671,7 +677,8 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 		wim->filename = realpath(wimfile, NULL);
 		if (!wim->filename) {
 			ERROR_WITH_ERRNO("Failed to get full path to file "
-					 "\"%"TS"\"", wimfile);
+			                 "\"%" TS "\"",
+			                 wimfile);
 			if (errno == ENOMEM)
 				return WIMLIB_ERR_NOMEM;
 			else
@@ -685,9 +692,10 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 
 	if (wim->hdr.flags & WIM_HDR_FLAG_WRITE_IN_PROGRESS) {
 		WARNING("The WIM_HDR_FLAG_WRITE_IN_PROGRESS flag is set in the header of\n"
-			"          \"%"TS"\".  It may be being changed by another process,\n"
-			"          or a process may have crashed while writing the WIM.",
-			wimfile);
+		        "          \"%" TS
+		        "\".  It may be being changed by another process,\n"
+		        "          or a process may have crashed while writing the WIM.",
+		        wimfile);
 	}
 
 	if (open_flags & WIMLIB_OPEN_FLAG_WRITE_ACCESS) {
@@ -711,7 +719,8 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 		if (wim->hdr.flags & WIM_HDR_FLAG_COMPRESS_LZX) {
 			wim->compression_type = WIMLIB_COMPRESSION_TYPE_LZX;
 		} else if (wim->hdr.flags & (WIM_HDR_FLAG_COMPRESS_XPRESS |
-					     WIM_HDR_FLAG_COMPRESS_XPRESS_2)) {
+		                             WIM_HDR_FLAG_COMPRESS_XPRESS_2))
+		{
 			wim->compression_type = WIMLIB_COMPRESSION_TYPE_XPRESS;
 		} else if (wim->hdr.flags & WIM_HDR_FLAG_COMPRESS_LZMS) {
 			wim->compression_type = WIMLIB_COMPRESSION_TYPE_LZMS;
@@ -724,21 +733,23 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 	wim->out_compression_type = wim->compression_type;
 
 	/* Check and cache the chunk size.  */
-	wim->chunk_size = wim->hdr.chunk_size;
+	wim->chunk_size     = wim->hdr.chunk_size;
 	wim->out_chunk_size = wim->chunk_size;
 	if (!wim_chunk_size_valid(wim->chunk_size, wim->compression_type)) {
-		ERROR("Invalid chunk size (%"PRIu32" bytes) "
-		      "for compression type %"TS"!", wim->chunk_size,
-		      wimlib_get_compression_type_string(wim->compression_type));
+		ERROR("Invalid chunk size (%" PRIu32 " bytes) "
+		      "for compression type %" TS "!",
+		      wim->chunk_size,
+		      wimlib_get_compression_type_string(
+			      wim->compression_type));
 		return WIMLIB_ERR_INVALID_CHUNK_SIZE;
 	}
 
 	if (open_flags & WIMLIB_OPEN_FLAG_CHECK_INTEGRITY) {
 		ret = check_wim_integrity(wim);
 		if (ret == WIM_INTEGRITY_NONEXISTENT) {
-			WARNING("\"%"TS"\" does not contain integrity "
-				"information.  Skipping integrity check.",
-				wimfile);
+			WARNING("\"%" TS "\" does not contain integrity "
+			        "information.  Skipping integrity check.",
+			        wimfile);
 		} else if (ret == WIM_INTEGRITY_NOT_OK) {
 			return WIMLIB_ERR_INTEGRITY;
 		} else if (ret != WIM_INTEGRITY_OK) {
@@ -748,7 +759,7 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 
 	if (wim->hdr.image_count != 0 && wim->hdr.part_number == 1) {
 		wim->image_metadata = CALLOC(wim->hdr.image_count,
-					     sizeof(wim->image_metadata[0]));
+		                             sizeof(wim->image_metadata[0]));
 		if (!wim->image_metadata)
 			return WIMLIB_ERR_NOMEM;
 	}
@@ -766,7 +777,8 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 		if (ret)
 			return ret;
 
-		if (xml_get_image_count(wim->xml_info) != wim->hdr.image_count) {
+		if (xml_get_image_count(wim->xml_info) != wim->hdr.image_count)
+		{
 			ERROR("The WIM's header is inconsistent with its XML data.\n"
 			      "        Please submit a bug report if you believe this "
 			      "WIM file should be considered valid.");
@@ -781,9 +793,11 @@ begin_read(WIMStruct *wim, const void *wim_filename_or_fd, int open_flags)
 }
 
 int
-open_wim_as_WIMStruct(const void *wim_filename_or_fd, int open_flags,
-		      WIMStruct **wim_ret,
-		      wimlib_progress_func_t progfunc, void *progctx)
+open_wim_as_WIMStruct(const void *wim_filename_or_fd,
+                      int open_flags,
+                      WIMStruct **wim_ret,
+                      wimlib_progress_func_t progfunc,
+                      void *progctx)
 {
 	WIMStruct *wim;
 	int ret;
@@ -797,7 +811,7 @@ open_wim_as_WIMStruct(const void *wim_filename_or_fd, int open_flags,
 		return WIMLIB_ERR_NOMEM;
 
 	wim->progfunc = progfunc;
-	wim->progctx = progctx;
+	wim->progctx  = progctx;
 
 	ret = begin_read(wim, wim_filename_or_fd, open_flags);
 	if (ret) {
@@ -811,28 +825,30 @@ open_wim_as_WIMStruct(const void *wim_filename_or_fd, int open_flags,
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
-wimlib_open_wim_with_progress(const tchar *wimfile, int open_flags,
-			      WIMStruct **wim_ret,
-			      wimlib_progress_func_t progfunc, void *progctx)
+wimlib_open_wim_with_progress(const tchar *wimfile,
+                              int open_flags,
+                              WIMStruct **wim_ret,
+                              wimlib_progress_func_t progfunc,
+                              void *progctx)
 {
-	if (open_flags & ~(WIMLIB_OPEN_FLAG_CHECK_INTEGRITY |
-			   WIMLIB_OPEN_FLAG_ERROR_IF_SPLIT |
-			   WIMLIB_OPEN_FLAG_WRITE_ACCESS))
+	if (open_flags &
+	    ~(WIMLIB_OPEN_FLAG_CHECK_INTEGRITY |
+	      WIMLIB_OPEN_FLAG_ERROR_IF_SPLIT | WIMLIB_OPEN_FLAG_WRITE_ACCESS))
 		return WIMLIB_ERR_INVALID_PARAM;
 
 	if (!wimfile || !*wimfile || !wim_ret)
 		return WIMLIB_ERR_INVALID_PARAM;
 
-	return open_wim_as_WIMStruct(wimfile, open_flags, wim_ret,
-				     progfunc, progctx);
+	return open_wim_as_WIMStruct(
+		wimfile, open_flags, wim_ret, progfunc, progctx);
 }
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
 wimlib_open_wim(const tchar *wimfile, int open_flags, WIMStruct **wim_ret)
 {
-	return wimlib_open_wim_with_progress(wimfile, open_flags, wim_ret,
-					     NULL, NULL);
+	return wimlib_open_wim_with_progress(
+		wimfile, open_flags, wim_ret, NULL, NULL);
 }
 
 /* Checksum all blobs that are unhashed (other than the metadata blobs), merging
@@ -850,7 +866,8 @@ wim_checksum_unhashed_blobs(WIMStruct *wim)
 		struct wim_image_metadata *imd = wim->image_metadata[i];
 		image_for_each_unhashed_blob_safe(blob, tmp, imd) {
 			struct blob_descriptor *new_blob;
-			ret = hash_unhashed_blob(blob, wim->blob_table, &new_blob);
+			ret = hash_unhashed_blob(
+				blob, wim->blob_table, &new_blob);
 			if (ret)
 				return ret;
 			if (new_blob != blob)
@@ -875,17 +892,18 @@ can_modify_wim(WIMStruct *wim)
 {
 	if (wim->filename) {
 		if (taccess(wim->filename, W_OK)) {
-			ERROR_WITH_ERRNO("Can't modify \"%"TS"\"", wim->filename);
+			ERROR_WITH_ERRNO("Can't modify \"%" TS "\"",
+			                 wim->filename);
 			return WIMLIB_ERR_WIM_IS_READONLY;
 		}
 	}
 	if (wim->hdr.total_parts != 1) {
-		ERROR("Cannot modify \"%"TS"\": is part of a split WIM",
+		ERROR("Cannot modify \"%" TS "\": is part of a split WIM",
 		      wim->filename);
 		return WIMLIB_ERR_WIM_IS_READONLY;
 	}
 	if (wim->hdr.flags & WIM_HDR_FLAG_READONLY) {
-		ERROR("Cannot modify \"%"TS"\": is marked read-only",
+		ERROR("Cannot modify \"%" TS "\": is marked read-only",
 		      wim->filename);
 		return WIMLIB_ERR_WIM_IS_READONLY;
 	}
@@ -938,9 +956,8 @@ wimlib_free(WIMStruct *wim)
 WIMLIBAPI u32
 wimlib_get_version(void)
 {
-	return (WIMLIB_MAJOR_VERSION << 20) |
-	       (WIMLIB_MINOR_VERSION << 10) |
-		WIMLIB_PATCH_VERSION;
+	return (WIMLIB_MAJOR_VERSION << 20) | (WIMLIB_MINOR_VERSION << 10) |
+	       WIMLIB_PATCH_VERSION;
 }
 
 WIMLIBAPI const tchar *
@@ -949,7 +966,7 @@ wimlib_get_version_string(void)
 	return T(PACKAGE_VERSION);
 }
 
-static bool lib_initialized = false;
+static bool lib_initialized                  = false;
 static struct mutex lib_initialization_mutex = MUTEX_INITIALIZER;
 
 /* API function documented in wimlib.h  */
@@ -971,18 +988,18 @@ wimlib_global_init(int init_flags)
 
 	ret = WIMLIB_ERR_INVALID_PARAM;
 	if (init_flags & ~(WIMLIB_INIT_FLAG_ASSUME_UTF8 |
-			   WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES |
-			   WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES |
-			   WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES |
-			   WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE |
-			   WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE))
+	                   WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES |
+	                   WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES |
+	                   WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES |
+	                   WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE |
+	                   WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE))
 		goto out_unlock;
 
 	ret = WIMLIB_ERR_INVALID_PARAM;
 	if ((init_flags & (WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE |
-			   WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE))
-			== (WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE |
-			    WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE))
+	                   WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE)) ==
+	    (WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE |
+	     WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE))
 		goto out_unlock;
 
 	init_cpu_features();
@@ -997,7 +1014,7 @@ wimlib_global_init(int init_flags)
 	else if (init_flags & WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE)
 		default_ignore_case = true;
 	lib_initialized = true;
-	ret = 0;
+	ret             = 0;
 out_unlock:
 	mutex_unlock(&lib_initialization_mutex);
 out:

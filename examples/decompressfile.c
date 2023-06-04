@@ -81,15 +81,15 @@
  * just use their platform's convention directly.
  */
 #ifdef _WIN32
-#  define main		wmain
-   typedef wchar_t	tchar;
-#  define TS		"ls"
-#  define topen		_wopen
+#  define main wmain
+typedef wchar_t tchar;
+#  define TS    "ls"
+#  define topen _wopen
 #else
-   typedef char		tchar;
-#  define TS		"s"
-#  define topen		open
-#  define O_BINARY	0
+typedef char tchar;
+#  define TS       "s"
+#  define topen    open
+#  define O_BINARY 0
 #endif
 
 static void
@@ -108,16 +108,19 @@ fatal_error(int err, const char *format, ...)
 }
 
 static void
-do_decompress(int in_fd, const tchar *in_filename,
-	      int out_fd, const tchar *out_filename,
-	      uint32_t chunk_size, struct wimlib_decompressor *decompressor)
+do_decompress(int in_fd,
+              const tchar *in_filename,
+              int out_fd,
+              const tchar *out_filename,
+              uint32_t chunk_size,
+              struct wimlib_decompressor *decompressor)
 {
 	uint64_t chunk_num;
 
 	char *ubuf = (char *)malloc(chunk_size);
 	char *cbuf = (char *)malloc(chunk_size - 1);
 
-	for (chunk_num = 1; ; chunk_num++) {
+	for (chunk_num = 1;; chunk_num++) {
 		int32_t bytes_read;
 		uint32_t usize;
 		uint32_t csize;
@@ -130,8 +133,9 @@ do_decompress(int in_fd, const tchar *in_filename,
 		if (bytes_read != sizeof(uint32_t) ||
 		    read(in_fd, &csize, sizeof(uint32_t)) != sizeof(uint32_t))
 		{
-			fatal_error(errno, "Error reading \"%" TS"\"",
-				    in_filename);
+			fatal_error(errno,
+			            "Error reading \"%" TS "\"",
+			            in_filename);
 		}
 
 		if (csize > usize || usize > chunk_size)
@@ -139,39 +143,45 @@ do_decompress(int in_fd, const tchar *in_filename,
 
 		if (usize == csize) {
 			if (read(in_fd, ubuf, usize) != (int32_t)usize) {
-				fatal_error(errno, "Error reading \"%" TS"\"",
-					    in_filename);
+				fatal_error(errno,
+				            "Error reading \"%" TS "\"",
+				            in_filename);
 			}
 		} else {
 			if (read(in_fd, cbuf, csize) != (int32_t)csize) {
-				fatal_error(errno, "Error reading \"%" TS"\"",
-					    in_filename);
+				fatal_error(errno,
+				            "Error reading \"%" TS "\"",
+				            in_filename);
 			}
 
-			if (wimlib_decompress(cbuf, csize, ubuf, usize,
-					      decompressor))
+			if (wimlib_decompress(
+				    cbuf, csize, ubuf, usize, decompressor))
 			{
 				fatal_error(0,
-					    "The compressed data is invalid!");
+				            "The compressed data is invalid!");
 			}
 		}
 
-		printf("Chunk %" PRIu64": %" PRIu32" => %" PRIu32" bytes\n",
-		       chunk_num, csize, usize);
+		printf("Chunk %" PRIu64 ": %" PRIu32 " => %" PRIu32 " bytes\n",
+		       chunk_num,
+		       csize,
+		       usize);
 
 		/* Output the uncompressed chunk size, the compressed chunk
 		 * size, then the chunk data.  Note: a real program would need
 		 * to output the chunk sizes in consistent endianness.  */
 		if (write(out_fd, ubuf, usize) != (int32_t)usize) {
-			fatal_error(errno, "Error writing to \"%" TS"\"",
-				    out_filename);
+			fatal_error(errno,
+			            "Error writing to \"%" TS "\"",
+			            out_filename);
 		}
 	}
 	free(ubuf);
 	free(cbuf);
 }
 
-int main(int argc, tchar **argv)
+int
+main(int argc, tchar **argv)
 {
 	const tchar *in_filename;
 	const tchar *out_filename;
@@ -184,43 +194,49 @@ int main(int argc, tchar **argv)
 	struct wimlib_decompressor *decompressor;
 
 	if (argc != 3) {
-		fprintf(stderr, "Usage: %" TS" INFILE OUTFILE\n", argv[0]);
+		fprintf(stderr, "Usage: %" TS " INFILE OUTFILE\n", argv[0]);
 		return 2;
 	}
 
-	in_filename = argv[1];
+	in_filename  = argv[1];
 	out_filename = argv[2];
 
 	/* Open input file and output file.  */
 	in_fd = topen(in_filename, O_RDONLY | O_BINARY);
 	if (in_fd < 0)
-		fatal_error(errno, "Failed to open \"%" TS"\"", in_filename);
-	out_fd = topen(out_filename, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY,
-		       0644);
+		fatal_error(errno, "Failed to open \"%" TS "\"", in_filename);
+	out_fd = topen(
+		out_filename, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY, 0644);
 	if (out_fd < 0)
-		fatal_error(errno, "Failed to open \"%" TS"\"", out_filename);
+		fatal_error(errno, "Failed to open \"%" TS "\"", out_filename);
 
 	/* Get compression type and chunk size.  */
 	if (read(in_fd, &ctype32, sizeof(uint32_t)) != sizeof(uint32_t) ||
 	    read(in_fd, &chunk_size, sizeof(uint32_t)) != sizeof(uint32_t))
-		fatal_error(errno, "Error reading from \"%" TS"\"", in_filename);
+		fatal_error(
+			errno, "Error reading from \"%" TS "\"", in_filename);
 	ctype = (enum wimlib_compression_type)ctype32;
 
 	/* Create a decompressor for the compression type and chunk size with
 	 * the default parameters.  */
 	ret = wimlib_create_decompressor(ctype, chunk_size, &decompressor);
 	if (ret != 0)
-		fatal_error(0, "Failed to create decompressor: %" TS,
-			    wimlib_get_error_string((enum wimlib_error_code)ret));
+		fatal_error(
+			0,
+			"Failed to create decompressor: %" TS,
+			wimlib_get_error_string((enum wimlib_error_code)ret));
 
 	/* Decompress and write the data.  */
-	do_decompress(in_fd, in_filename,
-		      out_fd, out_filename,
-		      chunk_size, decompressor);
+	do_decompress(in_fd,
+	              in_filename,
+	              out_fd,
+	              out_filename,
+	              chunk_size,
+	              decompressor);
 
 	/* Cleanup and return.  */
 	if (close(out_fd))
-		fatal_error(errno, "Error closing \"%" TS"\"", out_filename);
+		fatal_error(errno, "Error closing \"%" TS "\"", out_filename);
 	wimlib_free_decompressor(decompressor);
 	return 0;
 }

@@ -392,7 +392,7 @@
 #include <stddef.h>
 #ifndef __cplusplus
 #  if defined(_MSC_VER) && _MSC_VER < 1800 /* VS pre-2013? */
-     typedef unsigned char bool;
+typedef unsigned char bool;
 #  else
 #    include <stdbool.h>
 #  endif
@@ -440,16 +440,16 @@ extern "C" {
 #ifdef _WIN32
 struct wimlib_timespec {
 	/* Seconds since start of UNIX epoch (January 1, 1970) */
-#ifdef _WIN64
+#  ifdef _WIN64
 	int64_t tv_sec;
-#else
+#  else
 	int32_t tv_sec;
-#endif
+#  endif
 	/* Nanoseconds (0-999999999) */
 	int32_t tv_nsec;
 };
 #else
-#  define wimlib_timespec  timespec  /* standard definition */
+#  define wimlib_timespec timespec /* standard definition */
 #endif
 
 /**
@@ -458,7 +458,7 @@ struct wimlib_timespec {
  */
 #ifndef WIMLIB_WIMSTRUCT_DECLARED
 typedef struct WIMStruct WIMStruct;
-#define WIMLIB_WIMSTRUCT_DECLARED
+#  define WIMLIB_WIMSTRUCT_DECLARED
 #endif
 
 #ifdef _WIN32
@@ -471,12 +471,12 @@ typedef char wimlib_tchar;
 #ifdef _WIN32
 /** Path separator for WIM paths passed back to progress callbacks.
  * This is forward slash on UNIX and backslash on Windows.  */
-#  define WIMLIB_WIM_PATH_SEPARATOR '\\'
+#  define WIMLIB_WIM_PATH_SEPARATOR        '\\'
 #  define WIMLIB_WIM_PATH_SEPARATOR_STRING L"\\"
 #else
 /** Path separator for WIM paths passed back to progress callbacks.
  * This is forward slash on UNIX and backslash on Windows.  */
-#  define WIMLIB_WIM_PATH_SEPARATOR '/'
+#  define WIMLIB_WIM_PATH_SEPARATOR        '/'
 #  define WIMLIB_WIM_PATH_SEPARATOR_STRING "/"
 #endif
 
@@ -487,8 +487,7 @@ typedef char wimlib_tchar;
 /** Use this to test if the specified path refers to the root directory of the
  * WIM image.  */
 #define WIMLIB_IS_WIM_ROOT_PATH(path) \
-		((path)[0] == WIMLIB_WIM_PATH_SEPARATOR &&	\
-		 (path)[1] == 0)
+  ((path)[0] == WIMLIB_WIM_PATH_SEPARATOR && (path)[1] == 0)
 
 /** Length of a Globally Unique Identifier (GUID), in bytes.  */
 #define WIMLIB_GUID_LEN 16
@@ -797,11 +796,11 @@ enum wimlib_progress_status {
 
 	/** The operation should be continued.  This is the normal return value.
 	 */
-	WIMLIB_PROGRESS_STATUS_CONTINUE	= 0,
+	WIMLIB_PROGRESS_STATUS_CONTINUE = 0,
 
 	/** The operation should be aborted.  This will cause the current
 	 * operation to fail with ::WIMLIB_ERR_ABORTED_BY_PROGRESS.  */
-	WIMLIB_PROGRESS_STATUS_ABORT	= 1,
+	WIMLIB_PROGRESS_STATUS_ABORT = 1,
 };
 
 /**
@@ -811,12 +810,10 @@ enum wimlib_progress_status {
  * (::wimlib_progress_msg) indicated in the first argument to the progress
  * function. */
 union wimlib_progress_info {
-
 	/** Valid on the message ::WIMLIB_PROGRESS_MSG_WRITE_STREAMS.  This is
 	 * the primary message for tracking the progress of writing a WIM file.
 	 */
 	struct wimlib_progress_info_write_streams {
-
 		/** An upper bound on the number of bytes of file data that will
 		 * be written.  This number is the uncompressed size; the actual
 		 * size may be lower due to compression.  In addition, this
@@ -850,7 +847,7 @@ union wimlib_progress_info {
 
 		/** The compression type being used, as one of the
 		 * ::wimlib_compression_type constants.  */
-		int32_t	 compression_type;
+		int32_t compression_type;
 
 		/** The number of on-disk WIM files from which file data is
 		 * being exported into the output WIM file.  This can be 0, 1,
@@ -869,7 +866,6 @@ union wimlib_progress_info {
 	 * ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY, and
 	 * ::WIMLIB_PROGRESS_MSG_SCAN_END.  */
 	struct wimlib_progress_info_scan {
-
 		/** Top-level directory being scanned; or, when capturing an NTFS
 		 * volume with ::WIMLIB_ADD_FLAG_NTFS, this is instead the path
 		 * to the file or block device that contains the NTFS volume
@@ -957,7 +953,6 @@ union wimlib_progress_info {
 	 * necessarily file-by-file.
 	 */
 	struct wimlib_progress_info_extract {
-
 		/** The 1-based index of the image from which files are being
 		 * extracted.  */
 		uint32_t image;
@@ -1065,7 +1060,6 @@ union wimlib_progress_info {
 	/** Valid on messages ::WIMLIB_PROGRESS_MSG_VERIFY_INTEGRITY and
 	 * ::WIMLIB_PROGRESS_MSG_CALC_INTEGRITY. */
 	struct wimlib_progress_info_integrity {
-
 		/** The number of bytes in the WIM file that are covered by
 		 * integrity checks.  */
 		uint64_t total_bytes;
@@ -1197,7 +1191,6 @@ union wimlib_progress_info {
 
 	/** Valid on messages ::WIMLIB_PROGRESS_MSG_TEST_FILE_EXCLUSION.  */
 	struct wimlib_progress_info_test_file_exclusion {
-
 		/**
 		 * Path to the file for which exclusion is being tested.
 		 *
@@ -1223,7 +1216,6 @@ union wimlib_progress_info {
 
 	/** Valid on messages ::WIMLIB_PROGRESS_MSG_HANDLE_ERROR.  */
 	struct wimlib_progress_info_handle_error {
-
 		/** Path to the file for which the error occurred, or NULL if
 		 * not relevant.  */
 		const wimlib_tchar *path;
@@ -1258,10 +1250,10 @@ union wimlib_progress_info {
  * This function must return one of the ::wimlib_progress_status values.  By
  * default, you should return ::WIMLIB_PROGRESS_STATUS_CONTINUE (0).
  */
-typedef enum wimlib_progress_status
-	(*wimlib_progress_func_t)(enum wimlib_progress_msg msg_type,
-				  union wimlib_progress_info *info,
-				  void *progctx);
+typedef enum wimlib_progress_status (*wimlib_progress_func_t)(
+	enum wimlib_progress_msg msg_type,
+	union wimlib_progress_info *info,
+	void *progctx);
 
 /** @} */
 /** @addtogroup G_modifying_wims
@@ -1292,15 +1284,15 @@ struct wimlib_capture_source {
  * will override this --- and in fact, this is necessary to set the readonly
  * flag persistently on an existing WIM file.
  */
-#define WIMLIB_CHANGE_READONLY_FLAG		0x00000001
+#define WIMLIB_CHANGE_READONLY_FLAG 0x00000001
 
 /** Set the GUID (globally unique identifier) of the WIM file to the value
  * specified in ::wimlib_wim_info.guid of the @p info parameter. */
-#define WIMLIB_CHANGE_GUID			0x00000002
+#define WIMLIB_CHANGE_GUID 0x00000002
 
 /** Change the bootable image of the WIM to the value specified in
  * ::wimlib_wim_info.boot_index of the @p info parameter.  */
-#define WIMLIB_CHANGE_BOOT_INDEX		0x00000004
+#define WIMLIB_CHANGE_BOOT_INDEX 0x00000004
 
 /** Change the <c>WIM_HDR_FLAG_RP_FIX</c> flag of the WIM file to the value
  * specified in ::wimlib_wim_info.has_rpfix of the @p info parameter.  This flag
@@ -1308,7 +1300,7 @@ struct wimlib_capture_source {
  * reparse-point fixups enabled.  wimlib also treats this flag as specifying
  * whether to do reparse-point fixups by default when capturing or applying WIM
  * images.  */
-#define WIMLIB_CHANGE_RPFIX_FLAG		0x00000008
+#define WIMLIB_CHANGE_RPFIX_FLAG 0x00000008
 
 /** @} */
 
@@ -1324,7 +1316,6 @@ struct wimlib_capture_source {
  * are set to default values.
  */
 struct wimlib_wim_info {
-
 	/** The globally unique identifier for this WIM.  (Note: all parts of a
 	 * split WIM normally have identical GUIDs.)  */
 	uint8_t guid[WIMLIB_GUID_LEN];
@@ -1429,7 +1420,6 @@ struct wimlib_wim_info {
  * Unknown or irrelevant fields are left zeroed.
  */
 struct wimlib_resource_entry {
-
 	/** If this blob is not missing, then this is the uncompressed size of
 	 * this blob in bytes.  */
 	uint64_t uncompressed_size;
@@ -1504,7 +1494,6 @@ struct wimlib_resource_entry {
  * stream).  However, this isn't yet exposed by wimlib_iterate_dir_tree().
  */
 struct wimlib_stream_entry {
-
 	/** Name of the stream, or NULL if the stream is unnamed.  */
 	const wimlib_tchar *stream_name;
 
@@ -1576,18 +1565,18 @@ struct wimlib_dir_entry {
 	 * on other platforms.  */
 	uint32_t attributes;
 
-#define WIMLIB_REPARSE_TAG_RESERVED_ZERO	0x00000000
-#define WIMLIB_REPARSE_TAG_RESERVED_ONE		0x00000001
-#define WIMLIB_REPARSE_TAG_MOUNT_POINT		0xA0000003
-#define WIMLIB_REPARSE_TAG_HSM			0xC0000004
-#define WIMLIB_REPARSE_TAG_HSM2			0x80000006
-#define WIMLIB_REPARSE_TAG_DRIVER_EXTENDER	0x80000005
-#define WIMLIB_REPARSE_TAG_SIS			0x80000007
-#define WIMLIB_REPARSE_TAG_DFS			0x8000000A
-#define WIMLIB_REPARSE_TAG_DFSR			0x80000012
-#define WIMLIB_REPARSE_TAG_FILTER_MANAGER	0x8000000B
-#define WIMLIB_REPARSE_TAG_WOF			0x80000017
-#define WIMLIB_REPARSE_TAG_SYMLINK		0xA000000C
+#define WIMLIB_REPARSE_TAG_RESERVED_ZERO   0x00000000
+#define WIMLIB_REPARSE_TAG_RESERVED_ONE    0x00000001
+#define WIMLIB_REPARSE_TAG_MOUNT_POINT     0xA0000003
+#define WIMLIB_REPARSE_TAG_HSM             0xC0000004
+#define WIMLIB_REPARSE_TAG_HSM2            0x80000006
+#define WIMLIB_REPARSE_TAG_DRIVER_EXTENDER 0x80000005
+#define WIMLIB_REPARSE_TAG_SIS             0x80000007
+#define WIMLIB_REPARSE_TAG_DFS             0x8000000A
+#define WIMLIB_REPARSE_TAG_DFSR            0x80000012
+#define WIMLIB_REPARSE_TAG_FILTER_MANAGER  0x8000000B
+#define WIMLIB_REPARSE_TAG_WOF             0x80000017
+#define WIMLIB_REPARSE_TAG_SYMLINK         0xA000000C
 	/** If the file is a reparse point (FILE_ATTRIBUTE_REPARSE_POINT set in
 	 * the attributes), this will give the reparse tag.  This tells you
 	 * whether the reparse point is a symbolic link, junction point, or some
@@ -1685,15 +1674,17 @@ struct wimlib_dir_entry {
  * Type of a callback function to wimlib_iterate_dir_tree().  Must return 0 on
  * success.
  */
-typedef int (*wimlib_iterate_dir_tree_callback_t)(const struct wimlib_dir_entry *dentry,
-						  void *user_ctx);
+typedef int (*wimlib_iterate_dir_tree_callback_t)(
+	const struct wimlib_dir_entry *dentry,
+	void *user_ctx);
 
 /**
  * Type of a callback function to wimlib_iterate_lookup_table().  Must return 0
  * on success.
  */
-typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resource_entry *resource,
-						      void *user_ctx);
+typedef int (*wimlib_iterate_lookup_table_callback_t)(
+	const struct wimlib_resource_entry *resource,
+	void *user_ctx);
 
 /** For wimlib_iterate_dir_tree(): Iterate recursively on children rather than
  * just on the specified path. */
@@ -1701,15 +1692,14 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
 
 /** For wimlib_iterate_dir_tree(): Don't iterate on the file or directory
  * itself; only its children (in the case of a non-empty directory) */
-#define WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN  0x00000002
+#define WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN 0x00000002
 
 /** Return ::WIMLIB_ERR_RESOURCE_NOT_FOUND if any file data blobs needed to fill
  * in the ::wimlib_resource_entry's for the iteration cannot be found in the
  * blob lookup table of the ::WIMStruct.  The default behavior without this flag
  * is to fill in the @ref wimlib_resource_entry::sha1_hash "sha1_hash" and set
  * the @ref wimlib_resource_entry::is_missing "is_missing" flag.  */
-#define WIMLIB_ITERATE_DIR_TREE_FLAG_RESOURCES_NEEDED  0x00000004
-
+#define WIMLIB_ITERATE_DIR_TREE_FLAG_RESOURCES_NEEDED 0x00000004
 
 /** @} */
 /** @addtogroup G_modifying_wims
@@ -1724,16 +1714,16 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  *
  * Do not use this flag on Windows, where wimlib already supports all
  * Windows-native filesystems, including NTFS, through the Windows APIs.  */
-#define WIMLIB_ADD_FLAG_NTFS			0x00000001
+#define WIMLIB_ADD_FLAG_NTFS 0x00000001
 
 /** Follow symbolic links when scanning the directory tree.  Currently only
  * supported on UNIX-like systems.  */
-#define WIMLIB_ADD_FLAG_DEREFERENCE		0x00000002
+#define WIMLIB_ADD_FLAG_DEREFERENCE 0x00000002
 
 /** Call the progress function with the message
  * ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY when each directory or file has been
  * scanned.  */
-#define WIMLIB_ADD_FLAG_VERBOSE			0x00000004
+#define WIMLIB_ADD_FLAG_VERBOSE 0x00000004
 
 /** Mark the image being added as the bootable image of the WIM.  This flag is
  * valid only for wimlib_add_image() and wimlib_add_image_multisource().
@@ -1743,31 +1733,31 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  *
  * Note: ::WIMLIB_ADD_FLAG_BOOT does something different from, and independent
  * from, ::WIMLIB_ADD_FLAG_WIMBOOT.  */
-#define WIMLIB_ADD_FLAG_BOOT			0x00000008
+#define WIMLIB_ADD_FLAG_BOOT 0x00000008
 
 /** UNIX-like systems only: Store the UNIX owner, group, mode, and device ID
  * (major and minor number) of each file.  In addition, capture special files
  * such as device nodes and FIFOs.  Since wimlib v1.11.0, on Linux also capture
  * extended attributes.  See the documentation for the <b>--unix-data</b> option
  * to <b>wimcapture</b> for more information.  */
-#define WIMLIB_ADD_FLAG_UNIX_DATA		0x00000010
+#define WIMLIB_ADD_FLAG_UNIX_DATA 0x00000010
 
 /** Do not capture security descriptors.  Only has an effect in NTFS-3G capture
  * mode, or in Windows native builds.  */
-#define WIMLIB_ADD_FLAG_NO_ACLS			0x00000020
+#define WIMLIB_ADD_FLAG_NO_ACLS 0x00000020
 
 /** Fail immediately if the full security descriptor of any file or directory
  * cannot be accessed.  Only has an effect in Windows native builds.  The
  * default behavior without this flag is to first try omitting the SACL from the
  * security descriptor, then to try omitting the security descriptor entirely.
  */
-#define WIMLIB_ADD_FLAG_STRICT_ACLS		0x00000040
+#define WIMLIB_ADD_FLAG_STRICT_ACLS 0x00000040
 
 /** Call the progress function with the message
  * ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY when a directory or file is excluded from
  * capture.  This is a subset of the messages provided by
  * ::WIMLIB_ADD_FLAG_VERBOSE.  */
-#define WIMLIB_ADD_FLAG_EXCLUDE_VERBOSE		0x00000080
+#define WIMLIB_ADD_FLAG_EXCLUDE_VERBOSE 0x00000080
 
 /** Reparse-point fixups:  Modify absolute symbolic links (and junctions, in the
  * case of Windows) that point inside the directory being captured to instead be
@@ -1776,16 +1766,16 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * Without this flag, the default is to do reparse-point fixups if
  * <c>WIM_HDR_FLAG_RP_FIX</c> is set in the WIM header or if this is the first
  * image being added.  */
-#define WIMLIB_ADD_FLAG_RPFIX			0x00000100
+#define WIMLIB_ADD_FLAG_RPFIX 0x00000100
 
 /** Don't do reparse point fixups.  See ::WIMLIB_ADD_FLAG_RPFIX.  */
-#define WIMLIB_ADD_FLAG_NORPFIX			0x00000200
+#define WIMLIB_ADD_FLAG_NORPFIX 0x00000200
 
 /** Do not automatically exclude unsupported files or directories from capture,
  * such as encrypted files in NTFS-3G capture mode, or device files and FIFOs on
  * UNIX-like systems when not also using ::WIMLIB_ADD_FLAG_UNIX_DATA.  Instead,
  * fail with ::WIMLIB_ERR_UNSUPPORTED_FILE when such a file is encountered.  */
-#define WIMLIB_ADD_FLAG_NO_UNSUPPORTED_EXCLUDE	0x00000400
+#define WIMLIB_ADD_FLAG_NO_UNSUPPORTED_EXCLUDE 0x00000400
 
 /**
  * Automatically select a capture configuration appropriate for capturing
@@ -1802,7 +1792,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * config is @c NULL--- is to use no capture configuration, meaning that no
  * files are excluded from capture.
  */
-#define WIMLIB_ADD_FLAG_WINCONFIG		0x00000800
+#define WIMLIB_ADD_FLAG_WINCONFIG 0x00000800
 
 /**
  * Capture image as "WIMBoot compatible".  In addition, if no capture
@@ -1832,7 +1822,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * provided that their data is already present in the WIM.  This feature can be
  * useful when updating a backing WIM file in an "offline" state.
  */
-#define WIMLIB_ADD_FLAG_WIMBOOT			0x00001000
+#define WIMLIB_ADD_FLAG_WIMBOOT 0x00001000
 
 /**
  * If the add command involves adding a non-directory file to a location at
@@ -1840,7 +1830,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * ::WIMLIB_ERR_INVALID_OVERLAY instead of replacing the file.  This was the
  * default behavior before wimlib v1.7.0.
  */
-#define WIMLIB_ADD_FLAG_NO_REPLACE		0x00002000
+#define WIMLIB_ADD_FLAG_NO_REPLACE 0x00002000
 
 /**
  * Send ::WIMLIB_PROGRESS_MSG_TEST_FILE_EXCLUSION messages to the progress
@@ -1849,7 +1839,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * Note: This method for file exclusions is independent from the capture
  * configuration file mechanism.
  */
-#define WIMLIB_ADD_FLAG_TEST_FILE_EXCLUSION	0x00004000
+#define WIMLIB_ADD_FLAG_TEST_FILE_EXCLUSION 0x00004000
 
 /**
  * Since wimlib v1.9.0: create a temporary filesystem snapshot of the source
@@ -1861,7 +1851,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * as an Administrator, and it cannot be run in WoW64 mode (i.e. if Windows is
  * 64-bit, then your application must be 64-bit as well).
  */
-#define WIMLIB_ADD_FLAG_SNAPSHOT		0x00008000
+#define WIMLIB_ADD_FLAG_SNAPSHOT 0x00008000
 
 /**
  * Since wimlib v1.9.0: permit the library to discard file paths after the
@@ -1871,18 +1861,18 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * such as opening files by inode number rather than by path.  Currently this
  * only makes a difference on Windows.
  */
-#define WIMLIB_ADD_FLAG_FILE_PATHS_UNNEEDED	0x00010000
+#define WIMLIB_ADD_FLAG_FILE_PATHS_UNNEEDED 0x00010000
 
 /** @} */
 /** @addtogroup G_modifying_wims
  * @{ */
 
 /** Do not issue an error if the path to delete does not exist. */
-#define WIMLIB_DELETE_FLAG_FORCE			0x00000001
+#define WIMLIB_DELETE_FLAG_FORCE 0x00000001
 
 /** Delete the file or directory tree recursively; if not specified, an error is
  * issued if the path to delete is a directory. */
-#define WIMLIB_DELETE_FLAG_RECURSIVE			0x00000002
+#define WIMLIB_DELETE_FLAG_RECURSIVE 0x00000002
 
 /** @} */
 /** @addtogroup G_modifying_wims
@@ -1894,20 +1884,20 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * the image in the source WIM (if any) that is marked as bootable is also
  * marked as bootable in the destination WIM.
  */
-#define WIMLIB_EXPORT_FLAG_BOOT				0x00000001
+#define WIMLIB_EXPORT_FLAG_BOOT 0x00000001
 
 /** Give the exported image(s) no names.  Avoids problems with image name
  * collisions.
  */
-#define WIMLIB_EXPORT_FLAG_NO_NAMES			0x00000002
+#define WIMLIB_EXPORT_FLAG_NO_NAMES 0x00000002
 
 /** Give the exported image(s) no descriptions.  */
-#define WIMLIB_EXPORT_FLAG_NO_DESCRIPTIONS		0x00000004
+#define WIMLIB_EXPORT_FLAG_NO_DESCRIPTIONS 0x00000004
 
 /** This advises the library that the program is finished with the source
  * WIMStruct and will not attempt to access it after the call to
  * wimlib_export_image(), with the exception of the call to wimlib_free().  */
-#define WIMLIB_EXPORT_FLAG_GIFT				0x00000008
+#define WIMLIB_EXPORT_FLAG_GIFT 0x00000008
 
 /**
  * Mark each exported image as WIMBoot-compatible.
@@ -1924,7 +1914,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  *			L"\\Windows\\System32\\WimBootCompress.ini", 0);
  * \endcode
  */
-#define WIMLIB_EXPORT_FLAG_WIMBOOT			0x00000010
+#define WIMLIB_EXPORT_FLAG_WIMBOOT 0x00000010
 
 /** @} */
 /** @addtogroup G_extracting_wims
@@ -1939,19 +1929,19 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * root directory.  Note: this flag cannot be used when wimlib_extract_image()
  * is called with ::WIMLIB_ALL_IMAGES as the @p image, nor can it be used with
  * wimlib_extract_paths() when passed multiple paths.  */
-#define WIMLIB_EXTRACT_FLAG_NTFS			0x00000001
+#define WIMLIB_EXTRACT_FLAG_NTFS 0x00000001
 
 /** Since wimlib v1.13.4: Don't consider corrupted files to be an error.  Just
  * extract them in whatever form we can.  */
-#define WIMLIB_EXTRACT_FLAG_RECOVER_DATA		0x00000002
+#define WIMLIB_EXTRACT_FLAG_RECOVER_DATA 0x00000002
 
 /** UNIX-like systems only:  Extract UNIX-specific metadata captured with
  * ::WIMLIB_ADD_FLAG_UNIX_DATA.  */
-#define WIMLIB_EXTRACT_FLAG_UNIX_DATA			0x00000020
+#define WIMLIB_EXTRACT_FLAG_UNIX_DATA 0x00000020
 
 /** Do not extract security descriptors.  This flag cannot be combined with
  * ::WIMLIB_EXTRACT_FLAG_STRICT_ACLS.  */
-#define WIMLIB_EXTRACT_FLAG_NO_ACLS			0x00000040
+#define WIMLIB_EXTRACT_FLAG_NO_ACLS 0x00000040
 
 /**
  * Fail immediately if the full security descriptor of any file or directory
@@ -1962,7 +1952,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * owner omitted, then not at all.  This flag cannot be combined with
  * ::WIMLIB_EXTRACT_FLAG_NO_ACLS.
  */
-#define WIMLIB_EXTRACT_FLAG_STRICT_ACLS			0x00000080
+#define WIMLIB_EXTRACT_FLAG_STRICT_ACLS 0x00000080
 
 /**
  * This is the extraction equivalent to ::WIMLIB_ADD_FLAG_RPFIX.  This forces
@@ -1972,16 +1962,16 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * wimlib_extract_image_from_pipe() if <c>WIM_HDR_FLAG_RP_FIX</c> is set in the
  * WIM header.  This flag cannot be combined with ::WIMLIB_EXTRACT_FLAG_NORPFIX.
  */
-#define WIMLIB_EXTRACT_FLAG_RPFIX			0x00000100
+#define WIMLIB_EXTRACT_FLAG_RPFIX 0x00000100
 
 /** Force reparse-point fixups on extraction off, regardless of the state of the
  * WIM_HDR_FLAG_RP_FIX flag in the WIM header.  This flag cannot be combined
  * with ::WIMLIB_EXTRACT_FLAG_RPFIX.  */
-#define WIMLIB_EXTRACT_FLAG_NORPFIX			0x00000200
+#define WIMLIB_EXTRACT_FLAG_NORPFIX 0x00000200
 
 /** For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Extract the
  * paths, each of which must name a regular file, to standard output.  */
-#define WIMLIB_EXTRACT_FLAG_TO_STDOUT			0x00000400
+#define WIMLIB_EXTRACT_FLAG_TO_STDOUT 0x00000400
 
 /**
  * Instead of ignoring files and directories with names that cannot be
@@ -1992,7 +1982,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * Note: this flag is unlikely to have any effect when extracting a WIM image
  * that was captured on Windows.
  */
-#define WIMLIB_EXTRACT_FLAG_REPLACE_INVALID_FILENAMES	0x00000800
+#define WIMLIB_EXTRACT_FLAG_REPLACE_INVALID_FILENAMES 0x00000800
 
 /**
  * On Windows, when there exist two or more files with the same case insensitive
@@ -2002,22 +1992,22 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * Note: this flag is unlikely to have any effect when extracting a WIM image
  * that was captured on Windows.
  */
-#define WIMLIB_EXTRACT_FLAG_ALL_CASE_CONFLICTS		0x00001000
+#define WIMLIB_EXTRACT_FLAG_ALL_CASE_CONFLICTS 0x00001000
 
 /** Do not ignore failure to set timestamps on extracted files.  This flag
  * currently only has an effect when extracting to a directory on UNIX-like
  * systems.  */
-#define WIMLIB_EXTRACT_FLAG_STRICT_TIMESTAMPS		0x00002000
+#define WIMLIB_EXTRACT_FLAG_STRICT_TIMESTAMPS 0x00002000
 
 /** Do not ignore failure to set short names on extracted files.  This flag
  * currently only has an effect on Windows.  */
-#define WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES          0x00004000
+#define WIMLIB_EXTRACT_FLAG_STRICT_SHORT_NAMES 0x00004000
 
 /** Do not ignore failure to extract symbolic links and junctions due to
  * permissions problems.  This flag currently only has an effect on Windows.  By
  * default, such failures are ignored since the default configuration of Windows
  * only allows the Administrator to create symbolic links.  */
-#define WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS             0x00008000
+#define WIMLIB_EXTRACT_FLAG_STRICT_SYMLINKS 0x00008000
 
 /**
  * For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Treat the
@@ -2032,19 +2022,19 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * wildcard characters.  Use ::WIMLIB_EXTRACT_FLAG_STRICT_GLOB to get an error
  * instead.
  */
-#define WIMLIB_EXTRACT_FLAG_GLOB_PATHS			0x00040000
+#define WIMLIB_EXTRACT_FLAG_GLOB_PATHS 0x00040000
 
 /** In combination with ::WIMLIB_EXTRACT_FLAG_GLOB_PATHS, causes an error
  * (::WIMLIB_ERR_PATH_DOES_NOT_EXIST) rather than a warning to be issued when
  * one of the provided globs did not match a file.  */
-#define WIMLIB_EXTRACT_FLAG_STRICT_GLOB			0x00080000
+#define WIMLIB_EXTRACT_FLAG_STRICT_GLOB 0x00080000
 
 /**
  * Do not extract Windows file attributes such as readonly, hidden, etc.
  *
  * This flag has an effect on Windows as well as in the NTFS-3G extraction mode.
  */
-#define WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES		0x00100000
+#define WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES 0x00100000
 
 /**
  * For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Do not
@@ -2052,7 +2042,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * place each extracted file or directory tree directly in the target directory.
  * The target directory will still be created if it does not already exist.
  */
-#define WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE	0x00200000
+#define WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE 0x00200000
 
 /**
  * Windows only: Extract files as "pointers" back to the WIM archive.
@@ -2060,7 +2050,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * The effects of this option are fairly complex.  See the documentation for the
  * <b>--wimboot</b> option of <b>wimapply</b> for more information.
  */
-#define WIMLIB_EXTRACT_FLAG_WIMBOOT			0x00400000
+#define WIMLIB_EXTRACT_FLAG_WIMBOOT 0x00400000
 
 /**
  * Since wimlib v1.8.2 and Windows-only: compress the extracted files using
@@ -2070,48 +2060,48 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * Compression; this particular flag selects the XPRESS compression format with
  * 4096 byte chunks.
  */
-#define WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K		0x01000000
+#define WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K 0x01000000
 
 /** Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use XPRESS compression with
  * 8192 byte chunks.  */
-#define WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K		0x02000000
+#define WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS8K 0x02000000
 
 /** Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use XPRESS compression with
  * 16384 byte chunks.  */
-#define WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K		0x04000000
+#define WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS16K 0x04000000
 
 /** Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use LZX compression with
  * 32768 byte chunks.  */
-#define WIMLIB_EXTRACT_FLAG_COMPACT_LZX			0x08000000
+#define WIMLIB_EXTRACT_FLAG_COMPACT_LZX 0x08000000
 
 /** @} */
 /** @addtogroup G_mounting_wim_images
  * @{ */
 
 /** Mount the WIM image read-write rather than the default of read-only. */
-#define WIMLIB_MOUNT_FLAG_READWRITE			0x00000001
+#define WIMLIB_MOUNT_FLAG_READWRITE 0x00000001
 
 /** Enable FUSE debugging by passing the @c -d option to @c fuse_main().  */
-#define WIMLIB_MOUNT_FLAG_DEBUG				0x00000002
+#define WIMLIB_MOUNT_FLAG_DEBUG 0x00000002
 
 /** Do not allow accessing named data streams in the mounted WIM image.  */
-#define WIMLIB_MOUNT_FLAG_STREAM_INTERFACE_NONE		0x00000004
+#define WIMLIB_MOUNT_FLAG_STREAM_INTERFACE_NONE 0x00000004
 
 /** Access named data streams in the mounted WIM image through extended file
  * attributes named "user.X", where X is the name of a data stream.  This is the
  * default mode.  */
-#define WIMLIB_MOUNT_FLAG_STREAM_INTERFACE_XATTR	0x00000008
+#define WIMLIB_MOUNT_FLAG_STREAM_INTERFACE_XATTR 0x00000008
 
 /** Access named data streams in the mounted WIM image by specifying the file
  * name, a colon, then the name of the data stream.  */
-#define WIMLIB_MOUNT_FLAG_STREAM_INTERFACE_WINDOWS	0x00000010
+#define WIMLIB_MOUNT_FLAG_STREAM_INTERFACE_WINDOWS 0x00000010
 
 /** Support UNIX owners, groups, modes, and special files.  */
-#define WIMLIB_MOUNT_FLAG_UNIX_DATA			0x00000020
+#define WIMLIB_MOUNT_FLAG_UNIX_DATA 0x00000020
 
 /** Allow other users to see the mounted filesystem.  This passes the @c
  * allow_other option to fuse_main().  */
-#define WIMLIB_MOUNT_FLAG_ALLOW_OTHER			0x00000040
+#define WIMLIB_MOUNT_FLAG_ALLOW_OTHER 0x00000040
 
 /** @} */
 /** @addtogroup G_creating_and_opening_wims
@@ -2123,12 +2113,12 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * with the stored values.  If there are any mismatches, then
  * ::WIMLIB_ERR_INTEGRITY will be issued.  If the WIM file does not contain an
  * integrity table, then this flag has no effect.  */
-#define WIMLIB_OPEN_FLAG_CHECK_INTEGRITY		0x00000001
+#define WIMLIB_OPEN_FLAG_CHECK_INTEGRITY 0x00000001
 
 /** Issue an error (::WIMLIB_ERR_IS_SPLIT_WIM) if the WIM is part of a split
  * WIM.  Software can provide this flag for convenience if it explicitly does
  * not want to support split WIMs.  */
-#define WIMLIB_OPEN_FLAG_ERROR_IF_SPLIT			0x00000002
+#define WIMLIB_OPEN_FLAG_ERROR_IF_SPLIT 0x00000002
 
 /** Check if the WIM is writable and issue an error
  * (::WIMLIB_ERR_WIM_IS_READONLY) if it is not.  A WIM is considered writable
@@ -2138,7 +2128,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * make changes to the WIM, but with this flag you get an error immediately
  * rather than potentially much later, when wimlib_overwrite() is finally
  * called.  */
-#define WIMLIB_OPEN_FLAG_WRITE_ACCESS			0x00000004
+#define WIMLIB_OPEN_FLAG_WRITE_ACCESS 0x00000004
 
 /** @} */
 /** @addtogroup G_mounting_wim_images
@@ -2146,19 +2136,19 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
 
 /** Provide ::WIMLIB_WRITE_FLAG_CHECK_INTEGRITY when committing the WIM image.
  * Ignored if ::WIMLIB_UNMOUNT_FLAG_COMMIT not also specified.  */
-#define WIMLIB_UNMOUNT_FLAG_CHECK_INTEGRITY		0x00000001
+#define WIMLIB_UNMOUNT_FLAG_CHECK_INTEGRITY 0x00000001
 
 /** Commit changes to the read-write mounted WIM image.
  * If this flag is not specified, changes will be discarded.  */
-#define WIMLIB_UNMOUNT_FLAG_COMMIT			0x00000002
+#define WIMLIB_UNMOUNT_FLAG_COMMIT 0x00000002
 
 /** Provide ::WIMLIB_WRITE_FLAG_REBUILD when committing the WIM image.
  * Ignored if ::WIMLIB_UNMOUNT_FLAG_COMMIT not also specified.  */
-#define WIMLIB_UNMOUNT_FLAG_REBUILD			0x00000004
+#define WIMLIB_UNMOUNT_FLAG_REBUILD 0x00000004
 
 /** Provide ::WIMLIB_WRITE_FLAG_RECOMPRESS when committing the WIM image.
  * Ignored if ::WIMLIB_UNMOUNT_FLAG_COMMIT not also specified.  */
-#define WIMLIB_UNMOUNT_FLAG_RECOMPRESS			0x00000008
+#define WIMLIB_UNMOUNT_FLAG_RECOMPRESS 0x00000008
 
 /**
  * In combination with ::WIMLIB_UNMOUNT_FLAG_COMMIT for a read-write mounted WIM
@@ -2168,13 +2158,13 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * Without ::WIMLIB_UNMOUNT_FLAG_COMMIT or with a read-only mounted WIM image,
  * this flag has no effect.
  */
-#define WIMLIB_UNMOUNT_FLAG_FORCE			0x00000010
+#define WIMLIB_UNMOUNT_FLAG_FORCE 0x00000010
 
 /** In combination with ::WIMLIB_UNMOUNT_FLAG_COMMIT for a read-write mounted
  * WIM image, causes the modified image to be committed to the WIM file as a
  * new, unnamed image appended to the archive.  The original image in the WIM
  * file will be unmodified.  */
-#define WIMLIB_UNMOUNT_FLAG_NEW_IMAGE			0x00000020
+#define WIMLIB_UNMOUNT_FLAG_NEW_IMAGE 0x00000020
 
 /** @} */
 /** @addtogroup G_modifying_wims
@@ -2182,7 +2172,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
 
 /** Send ::WIMLIB_PROGRESS_MSG_UPDATE_BEGIN_COMMAND and
  * ::WIMLIB_PROGRESS_MSG_UPDATE_END_COMMAND messages.  */
-#define WIMLIB_UPDATE_FLAG_SEND_PROGRESS		0x00000001
+#define WIMLIB_UPDATE_FLAG_SEND_PROGRESS 0x00000001
 
 /** @} */
 /** @addtogroup G_writing_and_overwriting_wims
@@ -2196,14 +2186,14 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * ::WIMStruct's created with wimlib_create_new_wim(), the default behavior is
  * to not include an integrity table.
  */
-#define WIMLIB_WRITE_FLAG_CHECK_INTEGRITY		0x00000001
+#define WIMLIB_WRITE_FLAG_CHECK_INTEGRITY 0x00000001
 
 /**
  * Do not include an integrity table in the resulting WIM file.  This is the
  * default behavior, unless the ::WIMStruct was created by opening a WIM with an
  * integrity table.
  */
-#define WIMLIB_WRITE_FLAG_NO_CHECK_INTEGRITY		0x00000002
+#define WIMLIB_WRITE_FLAG_NO_CHECK_INTEGRITY 0x00000002
 
 /**
  * Write the WIM as "pipable".  After writing a WIM with this flag specified,
@@ -2217,13 +2207,13 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * ::WIMStruct's created with wimlib_create_new_wim(), the default behavior is
  * to write the WIM as non-pipable.
  */
-#define WIMLIB_WRITE_FLAG_PIPABLE			0x00000004
+#define WIMLIB_WRITE_FLAG_PIPABLE 0x00000004
 
 /**
  * Do not write the WIM as "pipable".  This is the default behavior, unless the
  * ::WIMStruct was created by opening a pipable WIM.
  */
-#define WIMLIB_WRITE_FLAG_NOT_PIPABLE			0x00000008
+#define WIMLIB_WRITE_FLAG_NOT_PIPABLE 0x00000008
 
 /**
  * When writing data to the WIM file, recompress it, even if the data is already
@@ -2250,7 +2240,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * WIM file to be fully rebuilt and recompressed, combine
  * ::WIMLIB_WRITE_FLAG_RECOMPRESS with ::WIMLIB_WRITE_FLAG_REBUILD.
  */
-#define WIMLIB_WRITE_FLAG_RECOMPRESS			0x00000010
+#define WIMLIB_WRITE_FLAG_RECOMPRESS 0x00000010
 
 /**
  * Immediately before closing the WIM file, sync its data to disk.
@@ -2265,7 +2255,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * necessary on POSIX systems; it will, for example, avoid problems with delayed
  * allocation on ext4.
  */
-#define WIMLIB_WRITE_FLAG_FSYNC				0x00000020
+#define WIMLIB_WRITE_FLAG_FSYNC 0x00000020
 
 /**
  * For wimlib_overwrite(): rebuild the entire WIM file, even if it otherwise
@@ -2279,7 +2269,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  *
  * wimlib_write() ignores this flag.
  */
-#define WIMLIB_WRITE_FLAG_REBUILD			0x00000040
+#define WIMLIB_WRITE_FLAG_REBUILD 0x00000040
 
 /**
  * For wimlib_overwrite(): override the default behavior after one or more calls
@@ -2290,7 +2280,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  *
  * wimlib_write() ignores this flag.
  */
-#define WIMLIB_WRITE_FLAG_SOFT_DELETE			0x00000080
+#define WIMLIB_WRITE_FLAG_SOFT_DELETE 0x00000080
 
 /**
  * For wimlib_overwrite(), allow overwriting the WIM file even if the readonly
@@ -2301,7 +2291,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  *
  * wimlib_write() ignores this flag.
  */
-#define WIMLIB_WRITE_FLAG_IGNORE_READONLY_FLAG		0x00000100
+#define WIMLIB_WRITE_FLAG_IGNORE_READONLY_FLAG 0x00000100
 
 /**
  * Do not include file data already present in other WIMs.  This flag can be
@@ -2309,10 +2299,10 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * based were referenced with wimlib_reference_resource_files() or
  * wimlib_reference_resources().
  */
-#define WIMLIB_WRITE_FLAG_SKIP_EXTERNAL_WIMS		0x00000200
+#define WIMLIB_WRITE_FLAG_SKIP_EXTERNAL_WIMS 0x00000200
 
 /** Deprecated; this flag should not be used outside of the library itself.  */
-#define WIMLIB_WRITE_FLAG_STREAMS_OK			0x00000400
+#define WIMLIB_WRITE_FLAG_STREAMS_OK 0x00000400
 
 /**
  * For wimlib_write(), retain the WIM's GUID instead of generating a new one.
@@ -2320,7 +2310,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * wimlib_overwrite() sets this by default, since the WIM remains, logically,
  * the same file.
  */
-#define WIMLIB_WRITE_FLAG_RETAIN_GUID			0x00000800
+#define WIMLIB_WRITE_FLAG_RETAIN_GUID 0x00000800
 
 /**
  * Concatenate files and compress them together, rather than compress each file
@@ -2357,21 +2347,21 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * either already contains solid resources, or has had solid resources exported
  * into it and the WIM's main compression type is LZMS.
  */
-#define WIMLIB_WRITE_FLAG_SOLID				0x00001000
+#define WIMLIB_WRITE_FLAG_SOLID 0x00001000
 
 /**
  * Send ::WIMLIB_PROGRESS_MSG_DONE_WITH_FILE messages while writing the WIM
  * file.  This is only needed in the unusual case that the library user needs to
  * know exactly when wimlib has read each file for the last time.
  */
-#define WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES	0x00002000
+#define WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES 0x00002000
 
 /**
  * Do not consider content similarity when arranging file data for solid
  * compression.  Providing this flag will typically worsen the compression
  * ratio, so only provide this flag if you know what you are doing.
  */
-#define WIMLIB_WRITE_FLAG_NO_SOLID_SORT			0x00004000
+#define WIMLIB_WRITE_FLAG_NO_SOLID_SORT 0x00004000
 
 /**
  * Since wimlib v1.8.3 and for wimlib_overwrite() only: <b>unsafely</b> compact
@@ -2389,14 +2379,14 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * with ::WIMLIB_ERR_COMPACTION_NOT_POSSIBLE, and the caller may wish to retry
  * the operation without this flag.
  */
-#define WIMLIB_WRITE_FLAG_UNSAFE_COMPACT		0x00008000
+#define WIMLIB_WRITE_FLAG_UNSAFE_COMPACT 0x00008000
 
 /** @} */
 /** @addtogroup G_general
  * @{ */
 
 /** Deprecated; no longer has any effect.  */
-#define WIMLIB_INIT_FLAG_ASSUME_UTF8			0x00000001
+#define WIMLIB_INIT_FLAG_ASSUME_UTF8 0x00000001
 
 /** Windows-only: do not attempt to acquire additional privileges (currently
  * SeBackupPrivilege, SeRestorePrivilege, SeSecurityPrivilege,
@@ -2406,29 +2396,29 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * privileges cannot be acquired, although related errors may be reported later,
  * depending on if the operations performed actually require additional
  * privileges or not.  */
-#define WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES	0x00000002
+#define WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES 0x00000002
 
 /** Windows only:  If ::WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES not specified,
  * return ::WIMLIB_ERR_INSUFFICIENT_PRIVILEGES if privileges that may be needed
  * to read all possible data and metadata for a capture operation could not be
  * acquired.  Can be combined with ::WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES.
  */
-#define WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES	0x00000004
+#define WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES 0x00000004
 
 /** Windows only:  If ::WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES not specified,
  * return ::WIMLIB_ERR_INSUFFICIENT_PRIVILEGES if privileges that may be needed
  * to restore all possible data and metadata for an apply operation could not be
  * acquired.  Can be combined with ::WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES.
  */
-#define WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES	0x00000008
+#define WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES 0x00000008
 
 /** Default to interpreting WIM paths case sensitively (default on UNIX-like
  * systems).  */
-#define WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE		0x00000010
+#define WIMLIB_INIT_FLAG_DEFAULT_CASE_SENSITIVE 0x00000010
 
 /** Default to interpreting WIM paths case insensitively (default on Windows).
  * This does not apply to mounted images.  */
-#define WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE	0x00000020
+#define WIMLIB_INIT_FLAG_DEFAULT_CASE_INSENSITIVE 0x00000020
 
 /** @} */
 /** @addtogroup G_nonstandalone_wims
@@ -2436,7 +2426,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
 
 /** For wimlib_reference_resource_files(), enable shell-style filename globbing.
  * Ignored by wimlib_reference_resources().  */
-#define WIMLIB_REF_FLAG_GLOB_ENABLE		0x00000001
+#define WIMLIB_REF_FLAG_GLOB_ENABLE 0x00000001
 
 /** For wimlib_reference_resource_files(), issue an error
  * (::WIMLIB_ERR_GLOB_HAD_NO_MATCHES) if a glob did not match any files.  The
@@ -2445,7 +2435,7 @@ typedef int (*wimlib_iterate_lookup_table_callback_t)(const struct wimlib_resour
  * anyway if no file exists at that path.  No effect if
  * ::WIMLIB_REF_FLAG_GLOB_ENABLE is not also specified.  Ignored by
  * wimlib_reference_resources().  */
-#define WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH	0x00000002
+#define WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH 0x00000002
 
 /** @} */
 /** @addtogroup G_modifying_wims
@@ -2482,7 +2472,6 @@ struct wimlib_add_command {
 
 /** Data for a ::WIMLIB_UPDATE_OP_DELETE operation. */
 struct wimlib_delete_command {
-
 	/** The path to the file or directory within the image to delete.  */
 	wimlib_tchar *wim_path;
 
@@ -2492,7 +2481,6 @@ struct wimlib_delete_command {
 
 /** Data for a ::WIMLIB_UPDATE_OP_RENAME operation. */
 struct wimlib_rename_command {
-
 	/** The path to the source file or directory within the image.  */
 	wimlib_tchar *wim_source_path;
 
@@ -2505,7 +2493,6 @@ struct wimlib_rename_command {
 
 /** Specification of an update to perform on a WIM image. */
 struct wimlib_update_command {
-
 	enum wimlib_update_op op;
 
 	union {
@@ -2527,95 +2514,94 @@ struct wimlib_update_command {
  * codes can be returned by a given function, and what they mean.
  */
 enum wimlib_error_code {
-	WIMLIB_ERR_SUCCESS                            = 0,
-	WIMLIB_ERR_ALREADY_LOCKED                     = 1,
-	WIMLIB_ERR_DECOMPRESSION                      = 2,
-	WIMLIB_ERR_FUSE                               = 6,
-	WIMLIB_ERR_GLOB_HAD_NO_MATCHES                = 8,
-	WIMLIB_ERR_IMAGE_COUNT                        = 10,
-	WIMLIB_ERR_IMAGE_NAME_COLLISION               = 11,
-	WIMLIB_ERR_INSUFFICIENT_PRIVILEGES            = 12,
-	WIMLIB_ERR_INTEGRITY                          = 13,
-	WIMLIB_ERR_INVALID_CAPTURE_CONFIG             = 14,
-	WIMLIB_ERR_INVALID_CHUNK_SIZE                 = 15,
-	WIMLIB_ERR_INVALID_COMPRESSION_TYPE           = 16,
-	WIMLIB_ERR_INVALID_HEADER                     = 17,
-	WIMLIB_ERR_INVALID_IMAGE                      = 18,
-	WIMLIB_ERR_INVALID_INTEGRITY_TABLE            = 19,
-	WIMLIB_ERR_INVALID_LOOKUP_TABLE_ENTRY         = 20,
-	WIMLIB_ERR_INVALID_METADATA_RESOURCE          = 21,
-	WIMLIB_ERR_INVALID_OVERLAY                    = 23,
-	WIMLIB_ERR_INVALID_PARAM                      = 24,
-	WIMLIB_ERR_INVALID_PART_NUMBER                = 25,
-	WIMLIB_ERR_INVALID_PIPABLE_WIM                = 26,
-	WIMLIB_ERR_INVALID_REPARSE_DATA               = 27,
-	WIMLIB_ERR_INVALID_RESOURCE_HASH              = 28,
-	WIMLIB_ERR_INVALID_UTF16_STRING               = 30,
-	WIMLIB_ERR_INVALID_UTF8_STRING                = 31,
-	WIMLIB_ERR_IS_DIRECTORY                       = 32,
-	WIMLIB_ERR_IS_SPLIT_WIM                       = 33,
-	WIMLIB_ERR_LINK                               = 35,
-	WIMLIB_ERR_METADATA_NOT_FOUND                 = 36,
-	WIMLIB_ERR_MKDIR                              = 37,
-	WIMLIB_ERR_MQUEUE                             = 38,
-	WIMLIB_ERR_NOMEM                              = 39,
-	WIMLIB_ERR_NOTDIR                             = 40,
-	WIMLIB_ERR_NOTEMPTY                           = 41,
-	WIMLIB_ERR_NOT_A_REGULAR_FILE                 = 42,
-	WIMLIB_ERR_NOT_A_WIM_FILE                     = 43,
-	WIMLIB_ERR_NOT_PIPABLE                        = 44,
-	WIMLIB_ERR_NO_FILENAME                        = 45,
-	WIMLIB_ERR_NTFS_3G                            = 46,
-	WIMLIB_ERR_OPEN                               = 47,
-	WIMLIB_ERR_OPENDIR                            = 48,
-	WIMLIB_ERR_PATH_DOES_NOT_EXIST                = 49,
-	WIMLIB_ERR_READ                               = 50,
-	WIMLIB_ERR_READLINK                           = 51,
-	WIMLIB_ERR_RENAME                             = 52,
-	WIMLIB_ERR_REPARSE_POINT_FIXUP_FAILED         = 54,
-	WIMLIB_ERR_RESOURCE_NOT_FOUND                 = 55,
-	WIMLIB_ERR_RESOURCE_ORDER                     = 56,
-	WIMLIB_ERR_SET_ATTRIBUTES                     = 57,
-	WIMLIB_ERR_SET_REPARSE_DATA                   = 58,
-	WIMLIB_ERR_SET_SECURITY                       = 59,
-	WIMLIB_ERR_SET_SHORT_NAME                     = 60,
-	WIMLIB_ERR_SET_TIMESTAMPS                     = 61,
-	WIMLIB_ERR_SPLIT_INVALID                      = 62,
-	WIMLIB_ERR_STAT                               = 63,
-	WIMLIB_ERR_UNEXPECTED_END_OF_FILE             = 65,
-	WIMLIB_ERR_UNICODE_STRING_NOT_REPRESENTABLE   = 66,
-	WIMLIB_ERR_UNKNOWN_VERSION                    = 67,
-	WIMLIB_ERR_UNSUPPORTED                        = 68,
-	WIMLIB_ERR_UNSUPPORTED_FILE                   = 69,
-	WIMLIB_ERR_WIM_IS_READONLY                    = 71,
-	WIMLIB_ERR_WRITE                              = 72,
-	WIMLIB_ERR_XML                                = 73,
-	WIMLIB_ERR_WIM_IS_ENCRYPTED                   = 74,
-	WIMLIB_ERR_WIMBOOT                            = 75,
-	WIMLIB_ERR_ABORTED_BY_PROGRESS                = 76,
-	WIMLIB_ERR_UNKNOWN_PROGRESS_STATUS            = 77,
-	WIMLIB_ERR_MKNOD                              = 78,
-	WIMLIB_ERR_MOUNTED_IMAGE_IS_BUSY              = 79,
-	WIMLIB_ERR_NOT_A_MOUNTPOINT                   = 80,
-	WIMLIB_ERR_NOT_PERMITTED_TO_UNMOUNT           = 81,
-	WIMLIB_ERR_FVE_LOCKED_VOLUME                  = 82,
-	WIMLIB_ERR_UNABLE_TO_READ_CAPTURE_CONFIG      = 83,
-	WIMLIB_ERR_WIM_IS_INCOMPLETE                  = 84,
-	WIMLIB_ERR_COMPACTION_NOT_POSSIBLE            = 85,
-	WIMLIB_ERR_IMAGE_HAS_MULTIPLE_REFERENCES      = 86,
-	WIMLIB_ERR_DUPLICATE_EXPORTED_IMAGE           = 87,
-	WIMLIB_ERR_CONCURRENT_MODIFICATION_DETECTED   = 88,
-	WIMLIB_ERR_SNAPSHOT_FAILURE                   = 89,
-	WIMLIB_ERR_INVALID_XATTR                      = 90,
-	WIMLIB_ERR_SET_XATTR                          = 91,
+	WIMLIB_ERR_SUCCESS                          = 0,
+	WIMLIB_ERR_ALREADY_LOCKED                   = 1,
+	WIMLIB_ERR_DECOMPRESSION                    = 2,
+	WIMLIB_ERR_FUSE                             = 6,
+	WIMLIB_ERR_GLOB_HAD_NO_MATCHES              = 8,
+	WIMLIB_ERR_IMAGE_COUNT                      = 10,
+	WIMLIB_ERR_IMAGE_NAME_COLLISION             = 11,
+	WIMLIB_ERR_INSUFFICIENT_PRIVILEGES          = 12,
+	WIMLIB_ERR_INTEGRITY                        = 13,
+	WIMLIB_ERR_INVALID_CAPTURE_CONFIG           = 14,
+	WIMLIB_ERR_INVALID_CHUNK_SIZE               = 15,
+	WIMLIB_ERR_INVALID_COMPRESSION_TYPE         = 16,
+	WIMLIB_ERR_INVALID_HEADER                   = 17,
+	WIMLIB_ERR_INVALID_IMAGE                    = 18,
+	WIMLIB_ERR_INVALID_INTEGRITY_TABLE          = 19,
+	WIMLIB_ERR_INVALID_LOOKUP_TABLE_ENTRY       = 20,
+	WIMLIB_ERR_INVALID_METADATA_RESOURCE        = 21,
+	WIMLIB_ERR_INVALID_OVERLAY                  = 23,
+	WIMLIB_ERR_INVALID_PARAM                    = 24,
+	WIMLIB_ERR_INVALID_PART_NUMBER              = 25,
+	WIMLIB_ERR_INVALID_PIPABLE_WIM              = 26,
+	WIMLIB_ERR_INVALID_REPARSE_DATA             = 27,
+	WIMLIB_ERR_INVALID_RESOURCE_HASH            = 28,
+	WIMLIB_ERR_INVALID_UTF16_STRING             = 30,
+	WIMLIB_ERR_INVALID_UTF8_STRING              = 31,
+	WIMLIB_ERR_IS_DIRECTORY                     = 32,
+	WIMLIB_ERR_IS_SPLIT_WIM                     = 33,
+	WIMLIB_ERR_LINK                             = 35,
+	WIMLIB_ERR_METADATA_NOT_FOUND               = 36,
+	WIMLIB_ERR_MKDIR                            = 37,
+	WIMLIB_ERR_MQUEUE                           = 38,
+	WIMLIB_ERR_NOMEM                            = 39,
+	WIMLIB_ERR_NOTDIR                           = 40,
+	WIMLIB_ERR_NOTEMPTY                         = 41,
+	WIMLIB_ERR_NOT_A_REGULAR_FILE               = 42,
+	WIMLIB_ERR_NOT_A_WIM_FILE                   = 43,
+	WIMLIB_ERR_NOT_PIPABLE                      = 44,
+	WIMLIB_ERR_NO_FILENAME                      = 45,
+	WIMLIB_ERR_NTFS_3G                          = 46,
+	WIMLIB_ERR_OPEN                             = 47,
+	WIMLIB_ERR_OPENDIR                          = 48,
+	WIMLIB_ERR_PATH_DOES_NOT_EXIST              = 49,
+	WIMLIB_ERR_READ                             = 50,
+	WIMLIB_ERR_READLINK                         = 51,
+	WIMLIB_ERR_RENAME                           = 52,
+	WIMLIB_ERR_REPARSE_POINT_FIXUP_FAILED       = 54,
+	WIMLIB_ERR_RESOURCE_NOT_FOUND               = 55,
+	WIMLIB_ERR_RESOURCE_ORDER                   = 56,
+	WIMLIB_ERR_SET_ATTRIBUTES                   = 57,
+	WIMLIB_ERR_SET_REPARSE_DATA                 = 58,
+	WIMLIB_ERR_SET_SECURITY                     = 59,
+	WIMLIB_ERR_SET_SHORT_NAME                   = 60,
+	WIMLIB_ERR_SET_TIMESTAMPS                   = 61,
+	WIMLIB_ERR_SPLIT_INVALID                    = 62,
+	WIMLIB_ERR_STAT                             = 63,
+	WIMLIB_ERR_UNEXPECTED_END_OF_FILE           = 65,
+	WIMLIB_ERR_UNICODE_STRING_NOT_REPRESENTABLE = 66,
+	WIMLIB_ERR_UNKNOWN_VERSION                  = 67,
+	WIMLIB_ERR_UNSUPPORTED                      = 68,
+	WIMLIB_ERR_UNSUPPORTED_FILE                 = 69,
+	WIMLIB_ERR_WIM_IS_READONLY                  = 71,
+	WIMLIB_ERR_WRITE                            = 72,
+	WIMLIB_ERR_XML                              = 73,
+	WIMLIB_ERR_WIM_IS_ENCRYPTED                 = 74,
+	WIMLIB_ERR_WIMBOOT                          = 75,
+	WIMLIB_ERR_ABORTED_BY_PROGRESS              = 76,
+	WIMLIB_ERR_UNKNOWN_PROGRESS_STATUS          = 77,
+	WIMLIB_ERR_MKNOD                            = 78,
+	WIMLIB_ERR_MOUNTED_IMAGE_IS_BUSY            = 79,
+	WIMLIB_ERR_NOT_A_MOUNTPOINT                 = 80,
+	WIMLIB_ERR_NOT_PERMITTED_TO_UNMOUNT         = 81,
+	WIMLIB_ERR_FVE_LOCKED_VOLUME                = 82,
+	WIMLIB_ERR_UNABLE_TO_READ_CAPTURE_CONFIG    = 83,
+	WIMLIB_ERR_WIM_IS_INCOMPLETE                = 84,
+	WIMLIB_ERR_COMPACTION_NOT_POSSIBLE          = 85,
+	WIMLIB_ERR_IMAGE_HAS_MULTIPLE_REFERENCES    = 86,
+	WIMLIB_ERR_DUPLICATE_EXPORTED_IMAGE         = 87,
+	WIMLIB_ERR_CONCURRENT_MODIFICATION_DETECTED = 88,
+	WIMLIB_ERR_SNAPSHOT_FAILURE                 = 89,
+	WIMLIB_ERR_INVALID_XATTR                    = 90,
+	WIMLIB_ERR_SET_XATTR                        = 91,
 };
 
-
 /** Used to indicate no image or an invalid image. */
-#define WIMLIB_NO_IMAGE		0
+#define WIMLIB_NO_IMAGE 0
 
 /** Used to specify all images in the WIM. */
-#define WIMLIB_ALL_IMAGES	(-1)
+#define WIMLIB_ALL_IMAGES (-1)
 
 /** @}  */
 
@@ -2649,8 +2635,8 @@ enum wimlib_error_code {
  */
 WIMLIBAPI int
 wimlib_add_empty_image(WIMStruct *wim,
-		       const wimlib_tchar *name,
-		       int *new_idx_ret);
+                       const wimlib_tchar *name,
+                       int *new_idx_ret);
 
 /**
  * @ingroup G_modifying_wims
@@ -2705,10 +2691,10 @@ wimlib_add_empty_image(WIMStruct *wim,
  */
 WIMLIBAPI int
 wimlib_add_image(WIMStruct *wim,
-		 const wimlib_tchar *source,
-		 const wimlib_tchar *name,
-		 const wimlib_tchar *config_file,
-		 int add_flags);
+                 const wimlib_tchar *source,
+                 const wimlib_tchar *name,
+                 const wimlib_tchar *config_file,
+                 int add_flags);
 
 /**
  * @ingroup G_modifying_wims
@@ -2722,11 +2708,11 @@ wimlib_add_image(WIMStruct *wim,
  */
 WIMLIBAPI int
 wimlib_add_image_multisource(WIMStruct *wim,
-			     const struct wimlib_capture_source *sources,
-			     size_t num_sources,
-			     const wimlib_tchar *name,
-			     const wimlib_tchar *config_file,
-			     int add_flags);
+                             const struct wimlib_capture_source *sources,
+                             size_t num_sources,
+                             const wimlib_tchar *name,
+                             const wimlib_tchar *config_file,
+                             int add_flags);
 
 /**
  * @ingroup G_modifying_wims
@@ -2738,9 +2724,11 @@ wimlib_add_image_multisource(WIMStruct *wim,
  * wimlib_update_image().
  */
 WIMLIBAPI int
-wimlib_add_tree(WIMStruct *wim, int image,
-		const wimlib_tchar *fs_source_path,
-		const wimlib_tchar *wim_target_path, int add_flags);
+wimlib_add_tree(WIMStruct *wim,
+                int image,
+                const wimlib_tchar *fs_source_path,
+                const wimlib_tchar *wim_target_path,
+                int add_flags);
 
 /**
  * @ingroup G_creating_and_opening_wims
@@ -2813,8 +2801,10 @@ wimlib_delete_image(WIMStruct *wim, int image);
  * wimlib_update_image().
  */
 WIMLIBAPI int
-wimlib_delete_path(WIMStruct *wim, int image,
-		   const wimlib_tchar *path, int delete_flags);
+wimlib_delete_path(WIMStruct *wim,
+                   int image,
+                   const wimlib_tchar *path,
+                   int delete_flags);
 
 /**
  * @ingroup G_modifying_wims
@@ -2885,11 +2875,12 @@ wimlib_delete_path(WIMStruct *wim, int image,
  * image in @p src_wim that needed to be exported.
  */
 WIMLIBAPI int
-wimlib_export_image(WIMStruct *src_wim, int src_image,
-		    WIMStruct *dest_wim,
-		    const wimlib_tchar *dest_name,
-		    const wimlib_tchar *dest_description,
-		    int export_flags);
+wimlib_export_image(WIMStruct *src_wim,
+                    int src_image,
+                    WIMStruct *dest_wim,
+                    const wimlib_tchar *dest_name,
+                    const wimlib_tchar *dest_description,
+                    int export_flags);
 
 /**
  * @ingroup G_extracting_wims
@@ -3004,8 +2995,10 @@ wimlib_export_image(WIMStruct *src_wim, int src_image,
  * ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_END.
  */
 WIMLIBAPI int
-wimlib_extract_image(WIMStruct *wim, int image,
-		     const wimlib_tchar *target, int extract_flags);
+wimlib_extract_image(WIMStruct *wim,
+                     int image,
+                     const wimlib_tchar *target,
+                     int extract_flags);
 
 /**
  * @ingroup G_extracting_wims
@@ -3047,8 +3040,9 @@ wimlib_extract_image(WIMStruct *wim, int image,
  */
 WIMLIBAPI int
 wimlib_extract_image_from_pipe(int pipe_fd,
-			       const wimlib_tchar *image_num_or_name,
-			       const wimlib_tchar *target, int extract_flags);
+                               const wimlib_tchar *image_num_or_name,
+                               const wimlib_tchar *target,
+                               int extract_flags);
 
 /**
  * @ingroup G_extracting_wims
@@ -3060,12 +3054,13 @@ wimlib_extract_image_from_pipe(int pipe_fd,
  * ::WIMLIB_PROGRESS_MSG_EXTRACT_SPWM_PART_BEGIN.
  */
 WIMLIBAPI int
-wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
-					     const wimlib_tchar *image_num_or_name,
-					     const wimlib_tchar *target,
-					     int extract_flags,
-					     wimlib_progress_func_t progfunc,
-					     void *progctx);
+wimlib_extract_image_from_pipe_with_progress(
+	int pipe_fd,
+	const wimlib_tchar *image_num_or_name,
+	const wimlib_tchar *target,
+	int extract_flags,
+	wimlib_progress_func_t progfunc,
+	void *progctx);
 
 /**
  * @ingroup G_extracting_wims
@@ -3087,10 +3082,11 @@ wimlib_extract_image_from_pipe_with_progress(int pipe_fd,
  * ::WIMLIB_ERR_READ).
  */
 WIMLIBAPI int
-wimlib_extract_pathlist(WIMStruct *wim, int image,
-			const wimlib_tchar *target,
-			const wimlib_tchar *path_list_file,
-			int extract_flags);
+wimlib_extract_pathlist(WIMStruct *wim,
+                        int image,
+                        const wimlib_tchar *target,
+                        const wimlib_tchar *path_list_file,
+                        int extract_flags);
 
 /**
  * @ingroup G_extracting_wims
@@ -3163,11 +3159,11 @@ wimlib_extract_pathlist(WIMStruct *wim, int image,
  */
 WIMLIBAPI int
 wimlib_extract_paths(WIMStruct *wim,
-		     int image,
-		     const wimlib_tchar *target,
-		     const wimlib_tchar * const *paths,
-		     size_t num_paths,
-		     int extract_flags);
+                     int image,
+                     const wimlib_tchar *target,
+                     const wimlib_tchar *const *paths,
+                     size_t num_paths,
+                     int extract_flags);
 
 /**
  * @ingroup G_wim_information
@@ -3282,8 +3278,9 @@ wimlib_get_image_name(const WIMStruct *wim, int image);
  *	calls, so the caller should duplicate it if needed.
  */
 WIMLIBAPI const wimlib_tchar *
-wimlib_get_image_property(const WIMStruct *wim, int image,
-			  const wimlib_tchar *property_name);
+wimlib_get_image_property(const WIMStruct *wim,
+                          int image,
+                          const wimlib_tchar *property_name);
 
 /**
  * @ingroup G_general
@@ -3450,9 +3447,12 @@ wimlib_image_name_in_use(const WIMStruct *wim, const wimlib_tchar *name);
  * image over which iteration needed to be done.
  */
 WIMLIBAPI int
-wimlib_iterate_dir_tree(WIMStruct *wim, int image, const wimlib_tchar *path,
-			int flags,
-			wimlib_iterate_dir_tree_callback_t cb, void *user_ctx);
+wimlib_iterate_dir_tree(WIMStruct *wim,
+                        int image,
+                        const wimlib_tchar *path,
+                        int flags,
+                        wimlib_iterate_dir_tree_callback_t cb,
+                        void *user_ctx);
 
 /**
  * @ingroup G_wim_information
@@ -3484,9 +3484,10 @@ wimlib_iterate_dir_tree(WIMStruct *wim, int image, const wimlib_tchar *path,
  * that was returned from @p cb.
  */
 WIMLIBAPI int
-wimlib_iterate_lookup_table(WIMStruct *wim, int flags,
-			    wimlib_iterate_lookup_table_callback_t cb,
-			    void *user_ctx);
+wimlib_iterate_lookup_table(WIMStruct *wim,
+                            int flags,
+                            wimlib_iterate_lookup_table_callback_t cb,
+                            void *user_ctx);
 
 /**
  * @ingroup G_nonstandalone_wims
@@ -3525,11 +3526,11 @@ wimlib_iterate_lookup_table(WIMStruct *wim, int flags,
  * sanity checks).
  */
 WIMLIBAPI int
-wimlib_join(const wimlib_tchar * const *swms,
-	    unsigned num_swms,
-	    const wimlib_tchar *output_path,
-	    int swm_open_flags,
-	    int wim_write_flags);
+wimlib_join(const wimlib_tchar *const *swms,
+            unsigned num_swms,
+            const wimlib_tchar *output_path,
+            int swm_open_flags,
+            int wim_write_flags);
 
 /**
  * @ingroup G_nonstandalone_wims
@@ -3543,14 +3544,13 @@ wimlib_join(const wimlib_tchar * const *swms,
  * parts is opened.
  */
 WIMLIBAPI int
-wimlib_join_with_progress(const wimlib_tchar * const *swms,
-			  unsigned num_swms,
-			  const wimlib_tchar *output_path,
-			  int swm_open_flags,
-			  int wim_write_flags,
-			  wimlib_progress_func_t progfunc,
-			  void *progctx);
-
+wimlib_join_with_progress(const wimlib_tchar *const *swms,
+                          unsigned num_swms,
+                          const wimlib_tchar *output_path,
+                          int swm_open_flags,
+                          int wim_write_flags,
+                          wimlib_progress_func_t progfunc,
+                          void *progctx);
 
 /**
  * @ingroup G_mounting_wim_images
@@ -3629,10 +3629,10 @@ wimlib_join_with_progress(const wimlib_tchar * const *swms,
  */
 WIMLIBAPI int
 wimlib_mount_image(WIMStruct *wim,
-		   int image,
-		   const wimlib_tchar *dir,
-		   int mount_flags,
-		   const wimlib_tchar *staging_dir);
+                   int image,
+                   const wimlib_tchar *dir,
+                   int mount_flags,
+                   const wimlib_tchar *staging_dir);
 
 /**
  * @ingroup G_creating_and_opening_wims
@@ -3705,8 +3705,8 @@ wimlib_mount_image(WIMStruct *wim,
  */
 WIMLIBAPI int
 wimlib_open_wim(const wimlib_tchar *wim_file,
-		int open_flags,
-		WIMStruct **wim_ret);
+                int open_flags,
+                WIMStruct **wim_ret);
 
 /**
  * @ingroup G_creating_and_opening_wims
@@ -3721,10 +3721,10 @@ wimlib_open_wim(const wimlib_tchar *wim_file,
  */
 WIMLIBAPI int
 wimlib_open_wim_with_progress(const wimlib_tchar *wim_file,
-			      int open_flags,
-			      WIMStruct **wim_ret,
-			      wimlib_progress_func_t progfunc,
-			      void *progctx);
+                              int open_flags,
+                              WIMStruct **wim_ret,
+                              wimlib_progress_func_t progfunc,
+                              void *progctx);
 
 /**
  * @ingroup G_writing_and_overwriting_wims
@@ -3861,11 +3861,12 @@ wimlib_print_header(const WIMStruct *wim);
  * wimlib_open_wim().
  */
 WIMLIBAPI int
-wimlib_reference_resource_files(WIMStruct *wim,
-				const wimlib_tchar * const *resource_wimfiles_or_globs,
-				unsigned count,
-				int ref_flags,
-				int open_flags);
+wimlib_reference_resource_files(
+	WIMStruct *wim,
+	const wimlib_tchar *const *resource_wimfiles_or_globs,
+	unsigned count,
+	int ref_flags,
+	int open_flags);
 
 /**
  * @ingroup G_nonstandalone_wims
@@ -3888,8 +3889,10 @@ wimlib_reference_resource_files(WIMStruct *wim,
  * @return 0 on success; a ::wimlib_error_code value on failure.
  */
 WIMLIBAPI int
-wimlib_reference_resources(WIMStruct *wim, WIMStruct **resource_wims,
-			   unsigned num_resource_wims, int ref_flags);
+wimlib_reference_resources(WIMStruct *wim,
+                           WIMStruct **resource_wims,
+                           unsigned num_resource_wims,
+                           int ref_flags);
 
 /**
  * @ingroup G_modifying_wims
@@ -3954,9 +3957,11 @@ wimlib_reference_resources(WIMStruct *wim, WIMStruct **resource_wims,
  * the template image.
  */
 WIMLIBAPI int
-wimlib_reference_template_image(WIMStruct *wim, int new_image,
-				WIMStruct *template_wim, int template_image,
-				int flags);
+wimlib_reference_template_image(WIMStruct *wim,
+                                int new_image,
+                                WIMStruct *template_wim,
+                                int template_image,
+                                int flags);
 
 /**
  * @ingroup G_general
@@ -3975,8 +3980,8 @@ wimlib_reference_template_image(WIMStruct *wim, int new_image,
  */
 WIMLIBAPI void
 wimlib_register_progress_function(WIMStruct *wim,
-				  wimlib_progress_func_t progfunc,
-				  void *progctx);
+                                  wimlib_progress_func_t progfunc,
+                                  void *progctx);
 
 /**
  * @ingroup G_modifying_wims
@@ -3988,8 +3993,10 @@ wimlib_register_progress_function(WIMStruct *wim,
  * wimlib_update_image().
  */
 WIMLIBAPI int
-wimlib_rename_path(WIMStruct *wim, int image,
-		   const wimlib_tchar *source_path, const wimlib_tchar *dest_path);
+wimlib_rename_path(WIMStruct *wim,
+                   int image,
+                   const wimlib_tchar *source_path,
+                   const wimlib_tchar *dest_path);
 
 /**
  * @ingroup G_wim_information
@@ -4022,8 +4029,7 @@ wimlib_rename_path(WIMStruct *wim, int image,
  *	ambiguity.)
  */
 WIMLIBAPI int
-wimlib_resolve_image(WIMStruct *wim,
-		     const wimlib_tchar *image_name_or_num);
+wimlib_resolve_image(WIMStruct *wim, const wimlib_tchar *image_name_or_num);
 
 /**
  * @ingroup G_general
@@ -4068,8 +4074,9 @@ wimlib_set_error_file_by_name(const wimlib_tchar *path);
  * Note that "description" is misspelled in the name of this function.
  */
 WIMLIBAPI int
-wimlib_set_image_descripton(WIMStruct *wim, int image,
-			    const wimlib_tchar *description);
+wimlib_set_image_descripton(WIMStruct *wim,
+                            int image,
+                            const wimlib_tchar *description);
 
 /**
  * @ingroup G_modifying_wims
@@ -4128,9 +4135,10 @@ wimlib_set_image_name(WIMStruct *wim, int image, const wimlib_tchar *name);
  *	a bracketed index that was too high.
  */
 WIMLIBAPI int
-wimlib_set_image_property(WIMStruct *wim, int image,
-			  const wimlib_tchar *property_name,
-			  const wimlib_tchar *property_value);
+wimlib_set_image_property(WIMStruct *wim,
+                          int image,
+                          const wimlib_tchar *property_name,
+                          const wimlib_tchar *property_value);
 
 /**
  * @ingroup G_general
@@ -4162,8 +4170,8 @@ wimlib_set_image_property(WIMStruct *wim, int image,
  */
 WIMLIBAPI int
 wimlib_set_memory_allocator(void *(*malloc_func)(size_t),
-			    void (*free_func)(void *),
-			    void *(*realloc_func)(void *, size_t));
+                            void (*free_func)(void *),
+                            void *(*realloc_func)(void *, size_t));
 
 /**
  * @ingroup G_writing_and_overwriting_wims
@@ -4223,7 +4231,7 @@ wimlib_set_output_pack_chunk_size(WIMStruct *wim, uint32_t chunk_size);
  */
 WIMLIBAPI int
 wimlib_set_output_compression_type(WIMStruct *wim,
-				   enum wimlib_compression_type ctype);
+                                   enum wimlib_compression_type ctype);
 
 /**
  * @ingroup G_writing_and_overwriting_wims
@@ -4233,7 +4241,7 @@ wimlib_set_output_compression_type(WIMStruct *wim,
  */
 WIMLIBAPI int
 wimlib_set_output_pack_compression_type(WIMStruct *wim,
-					enum wimlib_compression_type ctype);
+                                        enum wimlib_compression_type ctype);
 
 /**
  * @ingroup G_general
@@ -4281,8 +4289,9 @@ wimlib_set_print_errors(bool show_messages);
  *	index in the WIM.
  */
 WIMLIBAPI int
-wimlib_set_wim_info(WIMStruct *wim, const struct wimlib_wim_info *info,
-		    int which);
+wimlib_set_wim_info(WIMStruct *wim,
+                    const struct wimlib_wim_info *info,
+                    int which);
 
 /**
  * @ingroup G_nonstandalone_wims
@@ -4326,9 +4335,9 @@ wimlib_set_wim_info(WIMStruct *wim, const struct wimlib_wim_info *info,
  */
 WIMLIBAPI int
 wimlib_split(WIMStruct *wim,
-	     const wimlib_tchar *swm_name,
-	     uint64_t part_size,
-	     int write_flags);
+             const wimlib_tchar *swm_name,
+             uint64_t part_size,
+             int write_flags);
 
 /**
  * @ingroup G_general
@@ -4416,9 +4425,9 @@ wimlib_unmount_image(const wimlib_tchar *dir, int unmount_flags);
  */
 WIMLIBAPI int
 wimlib_unmount_image_with_progress(const wimlib_tchar *dir,
-				   int unmount_flags,
-				   wimlib_progress_func_t progfunc,
-				   void *progctx);
+                                   int unmount_flags,
+                                   wimlib_progress_func_t progfunc,
+                                   void *progctx);
 
 /**
  * @ingroup G_modifying_wims
@@ -4512,10 +4521,10 @@ wimlib_unmount_image_with_progress(const wimlib_tchar *dir,
  */
 WIMLIBAPI int
 wimlib_update_image(WIMStruct *wim,
-		    int image,
-		    const struct wimlib_update_command *cmds,
-		    size_t num_cmds,
-		    int update_flags);
+                    int image,
+                    const struct wimlib_update_command *cmds,
+                    size_t num_cmds,
+                    int update_flags);
 
 /**
  * @ingroup G_writing_and_overwriting_wims
@@ -4580,10 +4589,10 @@ wimlib_update_image(WIMStruct *wim,
  */
 WIMLIBAPI int
 wimlib_write(WIMStruct *wim,
-	     const wimlib_tchar *path,
-	     int image,
-	     int write_flags,
-	     unsigned num_threads);
+             const wimlib_tchar *path,
+             int image,
+             int write_flags,
+             unsigned num_threads);
 
 /**
  * @ingroup G_writing_and_overwriting_wims
@@ -4607,10 +4616,10 @@ wimlib_write(WIMStruct *wim,
  */
 WIMLIBAPI int
 wimlib_write_to_fd(WIMStruct *wim,
-		   int fd,
-		   int image,
-		   int write_flags,
-		   unsigned num_threads);
+                   int fd,
+                   int image,
+                   int write_flags,
+                   unsigned num_threads);
 
 /**
  * @defgroup G_compression Compression and decompression functions
@@ -4676,10 +4685,10 @@ wimlib_set_default_compression_level(int ctype, unsigned int compression_level);
  */
 WIMLIBAPI uint64_t
 wimlib_get_compressor_needed_memory(enum wimlib_compression_type ctype,
-				    size_t max_block_size,
-				    unsigned int compression_level);
+                                    size_t max_block_size,
+                                    unsigned int compression_level);
 
-#define WIMLIB_COMPRESSOR_FLAG_DESTRUCTIVE	0x80000000
+#define WIMLIB_COMPRESSOR_FLAG_DESTRUCTIVE 0x80000000
 
 /**
  * Allocate a compressor for the specified compression type using the specified
@@ -4751,9 +4760,9 @@ wimlib_get_compressor_needed_memory(enum wimlib_compression_type ctype,
  */
 WIMLIBAPI int
 wimlib_create_compressor(enum wimlib_compression_type ctype,
-			 size_t max_block_size,
-			 unsigned int compression_level,
-			 struct wimlib_compressor **compressor_ret);
+                         size_t max_block_size,
+                         unsigned int compression_level,
+                         struct wimlib_compressor **compressor_ret);
 
 /**
  * Compress a buffer of data.
@@ -4776,9 +4785,11 @@ wimlib_create_compressor(enum wimlib_compression_type ctype,
  *	compressed to @p compressed_size_avail or fewer bytes.
  */
 WIMLIBAPI size_t
-wimlib_compress(const void *uncompressed_data, size_t uncompressed_size,
-		void *compressed_data, size_t compressed_size_avail,
-		struct wimlib_compressor *compressor);
+wimlib_compress(const void *uncompressed_data,
+                size_t uncompressed_size,
+                void *compressed_data,
+                size_t compressed_size_avail,
+                struct wimlib_compressor *compressor);
 
 /**
  * Free a compressor previously allocated with wimlib_create_compressor().
@@ -4824,8 +4835,8 @@ wimlib_free_compressor(struct wimlib_compressor *compressor);
  */
 WIMLIBAPI int
 wimlib_create_decompressor(enum wimlib_compression_type ctype,
-			   size_t max_block_size,
-			   struct wimlib_decompressor **decompressor_ret);
+                           size_t max_block_size,
+                           struct wimlib_decompressor **decompressor_ret);
 
 /**
  * Decompress a buffer of data.
@@ -4855,9 +4866,11 @@ wimlib_create_decompressor(enum wimlib_compression_type ctype,
  * decompression may fail or the data may be decompressed incorrectly.
  */
 WIMLIBAPI int
-wimlib_decompress(const void *compressed_data, size_t compressed_size,
-		  void *uncompressed_data, size_t uncompressed_size,
-		  struct wimlib_decompressor *decompressor);
+wimlib_decompress(const void *compressed_data,
+                  size_t compressed_size,
+                  void *uncompressed_data,
+                  size_t uncompressed_size,
+                  struct wimlib_decompressor *decompressor);
 
 /**
  * Free a decompressor previously allocated with wimlib_create_decompressor().
@@ -4868,11 +4881,9 @@ wimlib_decompress(const void *compressed_data, size_t compressed_size,
 WIMLIBAPI void
 wimlib_free_decompressor(struct wimlib_decompressor *decompressor);
 
-
 /**
  * @}
  */
-
 
 #ifdef __cplusplus
 }

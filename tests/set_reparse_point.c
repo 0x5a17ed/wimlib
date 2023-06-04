@@ -8,7 +8,8 @@ win32_error_string(DWORD err)
 {
 	static wchar_t buf[1024];
 	buf[0] = L'\0';
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, 0, buf, 1024, NULL);
+	FormatMessage(
+		FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, 0, buf, 1024, NULL);
 	return buf;
 }
 
@@ -16,8 +17,11 @@ static void
 fail(const char *func)
 {
 	DWORD err = GetLastError();
-	fprintf(stderr, "%s (err 0x%08x: %ls)\n", func,
-		(uint32_t)err, win32_error_string(err));
+	fprintf(stderr,
+	        "%s (err 0x%08x: %ls)\n",
+	        func,
+	        (uint32_t)err,
+	        win32_error_string(err));
 	exit(1);
 }
 
@@ -35,17 +39,18 @@ wmain(int argc, wchar_t **argv)
 		rpdatalen = wcstol(argv[2], NULL, 10);
 
 	HANDLE h = CreateFile(argv[1],
-			      GENERIC_WRITE,
-			      FILE_SHARE_VALID_FLAGS,
-			      NULL,
-			      OPEN_EXISTING,
-			      FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-			      NULL);
+	                      GENERIC_WRITE,
+	                      FILE_SHARE_VALID_FLAGS,
+	                      NULL,
+	                      OPEN_EXISTING,
+	                      FILE_FLAG_BACKUP_SEMANTICS |
+	                              FILE_FLAG_OPEN_REPARSE_POINT,
+	                      NULL);
 	if (h == INVALID_HANDLE_VALUE)
 		fail("CreateFile");
 
 	uint8_t in[8 + rpdatalen];
-	uint8_t *p = in;
+	uint8_t *p     = in;
 	*(uint32_t *)p = 0x80000000; /* rptag */
 	p += 4;
 	*(uint16_t *)p = rpdatalen; /* rpdatalen */
@@ -57,8 +62,14 @@ wmain(int argc, wchar_t **argv)
 
 	DWORD bytes_returned;
 
-	if (!DeviceIoControl(h, FSCTL_SET_REPARSE_POINT, in, p - in,
-			     NULL, 0, &bytes_returned, NULL))
+	if (!DeviceIoControl(h,
+	                     FSCTL_SET_REPARSE_POINT,
+	                     in,
+	                     p - in,
+	                     NULL,
+	                     0,
+	                     &bytes_returned,
+	                     NULL))
 		fail("DeviceIoControl");
 
 	CloseHandle(h);

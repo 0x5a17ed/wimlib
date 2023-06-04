@@ -1,7 +1,8 @@
 #include "../fuzzer.h"
 
 /* Fuzz XML parsing and writing. */
-int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
+int
+LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 {
 	uint16_t fault_nth;
 	char *in_str;
@@ -14,7 +15,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 	in_str = malloc(insize + 1);
 	memcpy(in_str, in, insize);
 	in_str[insize] = '\0';
-	ret = wimlib_parse_and_write_xml_doc(in_str, &out_str);
+	ret            = wimlib_parse_and_write_xml_doc(in_str, &out_str);
 	if (ret == 0) {
 		char *out2_str = NULL;
 

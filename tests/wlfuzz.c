@@ -85,10 +85,10 @@
 #  define O_BINARY 0
 #endif
 
-#define ARRAY_LEN(A)	(sizeof(A) / sizeof((A)[0]))
+#define ARRAY_LEN(A) (sizeof(A) / sizeof((A)[0]))
 
-#define TMP_TARGET_NAME	T("wlfuzz-tmp-target")
-#define MAX_NUM_WIMS		4
+#define TMP_TARGET_NAME T("wlfuzz-tmp-target")
+#define MAX_NUM_WIMS    4
 
 static bool wimfile_in_use[MAX_NUM_WIMS];
 static int in_use_wimfile_indices[MAX_NUM_WIMS];
@@ -111,17 +111,17 @@ assertion_failed(int line, const char *format, ...)
 	exit(1);
 }
 
-#define ASSERT(expr, msg, ...)						\
-({									\
-	if (__builtin_expect(!(expr), 0))				\
-		assertion_failed(__LINE__, (msg), ##__VA_ARGS__);	\
-})
+#define ASSERT(expr, msg, ...)                    \
+  ({                                              \
+if (__builtin_expect(!(expr), 0))                   \
+assertion_failed(__LINE__, (msg), ##__VA_ARGS__); \
+  })
 
-#define CHECK_RET(ret)							\
-({									\
-	int r = (ret);							\
-	ASSERT(!r, "%"TS, wimlib_get_error_string(r));			\
-})
+#define CHECK_RET(ret)                        \
+  ({                                          \
+int r = (ret);                                  \
+ASSERT(!r, "%" TS, wimlib_get_error_string(r)); \
+  })
 
 static void
 change_to_temporary_directory(void)
@@ -132,14 +132,16 @@ change_to_temporary_directory(void)
 	ASSERT(tmpdir != NULL, "TMPDIR must be set");
 	_wmkdir(tmpdir);
 	ASSERT(!_wchdir(tmpdir),
-	       "failed to change to temporary directory '%ls'", tmpdir);
+	       "failed to change to temporary directory '%ls'",
+	       tmpdir);
 #else /* _WIN32 */
 	const char *tmpdir = getenv("TMPDIR") ?: P_tmpdir;
 	struct statfs fs;
 
 	mkdir(tmpdir, 0700);
 	ASSERT(!chdir(tmpdir),
-	       "failed to change to temporary directory '%s': %m", tmpdir);
+	       "failed to change to temporary directory '%s': %m",
+	       tmpdir);
 	ASSERT(!statfs(".", &fs), "statfs of '%s' failed: %m", tmpdir);
 	filesystem_type = fs.f_type;
 #endif /* !_WIN32 */
@@ -148,20 +150,22 @@ change_to_temporary_directory(void)
 static void __attribute__((unused))
 copy_file(const tchar *src, const tchar *dst)
 {
-	int in_fd = topen(src, O_RDONLY|O_BINARY);
-	int out_fd = topen(dst, O_WRONLY|O_TRUNC|O_CREAT|O_BINARY, 0644);
+	int in_fd  = topen(src, O_RDONLY | O_BINARY);
+	int out_fd = topen(dst, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY, 0644);
 	char buf[32768];
 	ssize_t bytes_read, bytes_written, i;
 
-	ASSERT(in_fd >= 0, "%"TS": open error: %m", src);
-	ASSERT(out_fd >= 0, "%"TS": open error: %m", dst);
+	ASSERT(in_fd >= 0, "%" TS ": open error: %m", src);
+	ASSERT(out_fd >= 0, "%" TS ": open error: %m", dst);
 	while ((bytes_read = read(in_fd, buf, sizeof(buf))) > 0) {
 		for (i = 0; i < bytes_read; i += bytes_written) {
 			bytes_written = write(out_fd, &buf[i], bytes_read - i);
-			ASSERT(bytes_written > 0, "%"TS": write error: %m", dst);
+			ASSERT(bytes_written > 0,
+			       "%" TS ": write error: %m",
+			       dst);
 		}
 	}
-	ASSERT(bytes_read == 0, "%"TS": read error: %m", src);
+	ASSERT(bytes_read == 0, "%" TS ": read error: %m", src);
 	close(in_fd);
 	close(out_fd);
 }
@@ -173,12 +177,14 @@ create_ntfs_volume(const char *name)
 	int fd;
 	int pid;
 	int status;
-	static const char buffer[1] = {0};
+	static const char buffer[1] = { 0 };
 
-	fd = open(name, O_WRONLY|O_TRUNC|O_CREAT|O_NOFOLLOW, 0644);
+	fd = open(name, O_WRONLY | O_TRUNC | O_CREAT | O_NOFOLLOW, 0644);
 	ASSERT(fd >= 0, "%s: open error: %m", name);
 
-	ASSERT(lseek(fd, 999999999, SEEK_SET) != -1, "%s: lseek error: %m", name);
+	ASSERT(lseek(fd, 999999999, SEEK_SET) != -1,
+	       "%s: lseek error: %m",
+	       name);
 
 	ASSERT(write(fd, buffer, 1) == 1, "%s: write error: %m", name);
 
@@ -189,37 +195,47 @@ create_ntfs_volume(const char *name)
 	if (pid == 0) {
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
-		execlp("mkntfs", "mkntfs", "--force", "--fast",
-		       name, (char *)NULL);
+		execlp("mkntfs",
+		       "mkntfs",
+		       "--force",
+		       "--fast",
+		       name,
+		       (char *)NULL);
 		ASSERT(false, "Failed to execute mkntfs: %m");
 	}
 
 	ASSERT(wait(&status) != -1, "wait error: %m");
 	ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
-	       "mkntfs error: exited with status %d", status);
+	       "mkntfs error: exited with status %d",
+	       status);
 }
 #endif /* WITH_NTFS_3G */
 
 #ifdef _WIN32
 
-WINAPI NTSTATUS NtQueryDirectoryFile(HANDLE FileHandle,
-				     HANDLE Event,
-				     PIO_APC_ROUTINE ApcRoutine,
-				     PVOID ApcContext,
-				     PIO_STATUS_BLOCK IoStatusBlock,
-				     PVOID FileInformation,
-				     ULONG Length,
-				     FILE_INFORMATION_CLASS FileInformationClass,
-				     BOOLEAN ReturnSingleEntry,
-				     PUNICODE_STRING FileName,
-				     BOOLEAN RestartScan);
+WINAPI NTSTATUS
+NtQueryDirectoryFile(HANDLE FileHandle,
+                     HANDLE Event,
+                     PIO_APC_ROUTINE ApcRoutine,
+                     PVOID ApcContext,
+                     PIO_STATUS_BLOCK IoStatusBlock,
+                     PVOID FileInformation,
+                     ULONG Length,
+                     FILE_INFORMATION_CLASS FileInformationClass,
+                     BOOLEAN ReturnSingleEntry,
+                     PUNICODE_STRING FileName,
+                     BOOLEAN RestartScan);
 
 static void
 delete_directory_tree_recursive(HANDLE cur_dir, UNICODE_STRING *name)
 {
-	OBJECT_ATTRIBUTES attr = { .Length = sizeof(attr), };
+	OBJECT_ATTRIBUTES attr = {
+		.Length = sizeof(attr),
+	};
 	IO_STATUS_BLOCK iosb;
-	FILE_BASIC_INFORMATION basic = { .FileAttributes = FILE_ATTRIBUTE_NORMAL, };
+	FILE_BASIC_INFORMATION basic = {
+		.FileAttributes = FILE_ATTRIBUTE_NORMAL,
+	};
 	HANDLE h;
 	const size_t bufsize = 8192;
 	void *buf;
@@ -227,20 +243,19 @@ delete_directory_tree_recursive(HANDLE cur_dir, UNICODE_STRING *name)
 	ULONG perms;
 	ULONG flags;
 
-	flags = FILE_DELETE_ON_CLOSE |
-		      FILE_OPEN_REPARSE_POINT |
-		      FILE_OPEN_FOR_BACKUP_INTENT |
-		      FILE_SYNCHRONOUS_IO_NONALERT |
-		      FILE_SEQUENTIAL_ONLY;
+	flags = FILE_DELETE_ON_CLOSE | FILE_OPEN_REPARSE_POINT |
+	        FILE_OPEN_FOR_BACKUP_INTENT | FILE_SYNCHRONOUS_IO_NONALERT |
+	        FILE_SEQUENTIAL_ONLY;
 
 	name->MaximumLength = name->Length;
 
 	attr.RootDirectory = cur_dir;
-	attr.ObjectName = name;
+	attr.ObjectName    = name;
 
 	perms = DELETE | SYNCHRONIZE | FILE_LIST_DIRECTORY | FILE_TRAVERSE;
 retry:
-	status = NtOpenFile(&h, perms, &attr, &iosb, FILE_SHARE_VALID_FLAGS, flags);
+	status = NtOpenFile(
+		&h, perms, &attr, &iosb, FILE_SHARE_VALID_FLAGS, flags);
 	if (!NT_SUCCESS(status)) {
 		if (status == STATUS_OBJECT_NAME_NOT_FOUND)
 			return;
@@ -250,15 +265,19 @@ retry:
 			perms |= FILE_WRITE_ATTRIBUTES;
 			goto retry;
 		}
-		ASSERT(false, "NtOpenFile() for deletion failed; status=0x%08"PRIx32, status);
+		ASSERT(false,
+		       "NtOpenFile() for deletion failed; status=0x%08" PRIx32,
+		       status);
 	}
 	if (perms & FILE_WRITE_ATTRIBUTES) {
-		status = NtSetInformationFile(h, &iosb, &basic,
-					      sizeof(basic), FileBasicInformation);
+		status = NtSetInformationFile(
+			h, &iosb, &basic, sizeof(basic), FileBasicInformation);
 		NtClose(h);
 		if (!NT_SUCCESS(status)) {
-			ASSERT(false, "NtSetInformationFile() for deletion "
-			       "failed; status=0x%08"PRIx32, status);
+			ASSERT(false,
+			       "NtSetInformationFile() for deletion "
+			       "failed; status=0x%08" PRIx32,
+			       status);
 		}
 		perms &= ~FILE_WRITE_ATTRIBUTES;
 		perms |= DELETE;
@@ -269,16 +288,25 @@ retry:
 	buf = malloc(bufsize);
 	ASSERT(buf != NULL, "out of memory!");
 
-	while (NT_SUCCESS(status = NtQueryDirectoryFile(h, NULL, NULL, NULL,
-							&iosb, buf, bufsize,
-							FileNamesInformation,
-							FALSE, NULL, FALSE)))
+	while (NT_SUCCESS(status = NtQueryDirectoryFile(h,
+	                                                NULL,
+	                                                NULL,
+	                                                NULL,
+	                                                &iosb,
+	                                                buf,
+	                                                bufsize,
+	                                                FileNamesInformation,
+	                                                FALSE,
+	                                                NULL,
+	                                                FALSE)))
 	{
 		const FILE_NAMES_INFORMATION *info = buf;
 		for (;;) {
-			if (!(info->FileNameLength == 2 && info->FileName[0] == L'.') &&
-			    !(info->FileNameLength == 4 && info->FileName[0] == L'.' &&
-							   info->FileName[1] == L'.'))
+			if (!(info->FileNameLength == 2 &&
+			      info->FileName[0] == L'.') &&
+			    !(info->FileNameLength == 4 &&
+			      info->FileName[0] == L'.' &&
+			      info->FileName[1] == L'.'))
 			{
 				name->Buffer = (wchar_t *)info->FileName;
 				name->Length = info->FileNameLength;
@@ -286,15 +314,18 @@ retry:
 			}
 			if (info->NextEntryOffset == 0)
 				break;
-			info = (const FILE_NAMES_INFORMATION *)
-					((const char *)info + info->NextEntryOffset);
+			info = (const FILE_NAMES_INFORMATION
+			                *)((const char *)info +
+			                   info->NextEntryOffset);
 		}
 	}
 
 	ASSERT(status == STATUS_NO_MORE_FILES || /* end of directory  */
-	       status == STATUS_INVALID_PARAMETER, /* not a directory  */
+	               status ==
+	                       STATUS_INVALID_PARAMETER, /* not a directory  */
 	       "NtQueryDirectoryFile() for deletion failed; "
-	       "status=0x%08"PRIx32, status);
+	       "status=0x%08" PRIx32,
+	       status);
 
 	free(buf);
 	NtClose(h);
@@ -307,7 +338,8 @@ delete_directory_tree(const wchar_t *name)
 	void *buffer;
 
 	ASSERT(RtlDosPathNameToNtPathName_U(name, &uname, NULL, NULL),
-	       "Unable to translate %ls to NT namespace path", name);
+	       "Unable to translate %ls to NT namespace path",
+	       name);
 	buffer = uname.Buffer;
 	delete_directory_tree_recursive(NULL, &uname);
 	HeapFree(GetProcessHeap(), 0, buffer);
@@ -394,7 +426,7 @@ select_new_wimfile(void)
 		index++;
 
 	in_use_wimfile_indices[num_wimfiles_in_use++] = index;
-	wimfile_in_use[index] = true;
+	wimfile_in_use[index]                         = true;
 
 	return get_wimfile(index);
 }
@@ -408,7 +440,7 @@ open_wim(int index)
 
 	open_flags |= randbool() ? 0 : WIMLIB_OPEN_FLAG_CHECK_INTEGRITY;
 
-	printf("Opening %"TS" with flags 0x%08x\n", wimfile, open_flags);
+	printf("Opening %" TS " with flags 0x%08x\n", wimfile, open_flags);
 
 	CHECK_RET(wimlib_open_wim(wimfile, open_flags, &wim));
 
@@ -440,11 +472,11 @@ is_wimboot_capable(WIMStruct *wim)
 	CHECK_RET(wimlib_get_wim_info(wim, &info));
 
 	return info.wim_version == 0x10D00 &&
-		((info.compression_type == WIMLIB_COMPRESSION_TYPE_XPRESS &&
-		  (info.chunk_size == 4096 || info.chunk_size == 8192 ||
-		   info.chunk_size == 16384 || info.chunk_size == 32768)) ||
-		 (info.compression_type == WIMLIB_COMPRESSION_TYPE_LZX &&
-		  info.chunk_size == 32768));
+	       ((info.compression_type == WIMLIB_COMPRESSION_TYPE_XPRESS &&
+	         (info.chunk_size == 4096 || info.chunk_size == 8192 ||
+	          info.chunk_size == 16384 || info.chunk_size == 32768)) ||
+	        (info.compression_type == WIMLIB_COMPRESSION_TYPE_LZX &&
+	         info.chunk_size == 32768));
 }
 #endif /* _WIN32 */
 
@@ -480,17 +512,17 @@ overwrite_wim(WIMStruct *wim)
 	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_SOFT_DELETE;
 	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_IGNORE_READONLY_FLAG;
 	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_RETAIN_GUID;
-	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES;
+	write_flags |=
+		randbool() ? 0 : WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES;
 	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_NO_SOLID_SORT;
 
-	if (rand32() % 8 == 0 &&
-	    !(write_flags & WIMLIB_WRITE_FLAG_PIPABLE) &&
+	if (rand32() % 8 == 0 && !(write_flags & WIMLIB_WRITE_FLAG_PIPABLE) &&
 	    (!info.pipable || (write_flags & WIMLIB_WRITE_FLAG_NOT_PIPABLE)))
 		write_flags |= WIMLIB_WRITE_FLAG_SOLID;
 
 	if (randbool() && !info.pipable &&
-	    !(write_flags & (WIMLIB_WRITE_FLAG_RECOMPRESS |
-			     WIMLIB_WRITE_FLAG_PIPABLE)))
+	    !(write_flags &
+	      (WIMLIB_WRITE_FLAG_RECOMPRESS | WIMLIB_WRITE_FLAG_PIPABLE)))
 		write_flags |= WIMLIB_WRITE_FLAG_UNSAFE_COMPACT;
 
 	printf("overwrite with flags: 0x%08x\n", write_flags);
@@ -504,7 +536,8 @@ get_random_write_flags(void)
 	int write_flags = 0;
 
 	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_CHECK_INTEGRITY;
-	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES;
+	write_flags |=
+		randbool() ? 0 : WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES;
 	write_flags |= randbool() ? 0 : WIMLIB_WRITE_FLAG_NO_SOLID_SORT;
 	switch (rand32() % 8) {
 	case 0:
@@ -531,8 +564,8 @@ op__create_new_wim(void)
 
 	const tchar *wimfile;
 	enum wimlib_compression_type ctype = WIMLIB_COMPRESSION_TYPE_NONE;
-	u32 chunk_size = 0;
-	u32 solid_chunk_size = 0;
+	u32 chunk_size                     = 0;
+	u32 solid_chunk_size               = 0;
 	int write_flags;
 	WIMStruct *wim;
 
@@ -546,7 +579,7 @@ op__create_new_wim(void)
 	case 0:
 		break;
 	case 1:
-		ctype = WIMLIB_COMPRESSION_TYPE_XPRESS;
+		ctype      = WIMLIB_COMPRESSION_TYPE_XPRESS;
 		chunk_size = get_random_chunk_size(12, 16);
 		break;
 	case 2:
@@ -557,7 +590,7 @@ op__create_new_wim(void)
 			chunk_size = get_random_chunk_size(15, 21);
 		break;
 	case 3:
-		ctype = WIMLIB_COMPRESSION_TYPE_LZMS;
+		ctype      = WIMLIB_COMPRESSION_TYPE_LZMS;
 		chunk_size = get_random_chunk_size(15, 28);
 		if (randbool())
 			solid_chunk_size = get_random_chunk_size(15, 26);
@@ -569,18 +602,23 @@ op__create_new_wim(void)
 	/* Select random write flags.  */
 	write_flags = get_random_write_flags();
 
-	printf("Creating %"TS" with write flags 0x%08x, compression_type=%"TS", chunk_size=%u, solid_chunk_size=%u\n",
-	       wimfile, write_flags,
+	printf("Creating %" TS " with write flags 0x%08x, compression_type=%" TS
+	       ", chunk_size=%u, solid_chunk_size=%u\n",
+	       wimfile,
+	       write_flags,
 	       wimlib_get_compression_type_string(ctype),
-	       chunk_size, solid_chunk_size);
+	       chunk_size,
+	       solid_chunk_size);
 
 	CHECK_RET(wimlib_create_new_wim(ctype, &wim));
 	if (chunk_size != 0)
 		CHECK_RET(wimlib_set_output_chunk_size(wim, chunk_size));
 	if (solid_chunk_size != 0)
-		CHECK_RET(wimlib_set_output_pack_chunk_size(wim, solid_chunk_size));
+		CHECK_RET(wimlib_set_output_pack_chunk_size(wim,
+		                                            solid_chunk_size));
 
-	CHECK_RET(wimlib_write(wim, wimfile, WIMLIB_ALL_IMAGES, write_flags, 0));
+	CHECK_RET(
+		wimlib_write(wim, wimfile, WIMLIB_ALL_IMAGES, write_flags, 0));
 
 	wimlib_free(wim);
 }
@@ -598,7 +636,7 @@ op__add_empty_image_to_random_wim(void)
 
 	wim = open_random_wim();
 	CHECK_RET(wimlib_add_empty_image(wim, NULL, &new_idx));
-	printf("Adding empty image to %"TS" at index %d\n", wimfile, new_idx);
+	printf("Adding empty image to %" TS " at index %d\n", wimfile, new_idx);
 	overwrite_wim(wim);
 	wimlib_free(wim);
 }
@@ -615,12 +653,12 @@ op__delete_random_image_from_random_wim(void)
 	if (num_wimfiles_in_use == 0)
 		return;
 
-	wim = open_random_wim();
+	wim         = open_random_wim();
 	image_count = get_image_count(wim);
 	if (image_count != 0) {
 		image = 1 + (rand32() % image_count);
 		CHECK_RET(wimlib_delete_image(wim, image));
-		printf("Deleting image %d from %"TS"\n", image, wimfile);
+		printf("Deleting image %d from %" TS "\n", image, wimfile);
 		overwrite_wim(wim);
 	}
 	wimlib_free(wim);
@@ -643,9 +681,9 @@ op__delete_random_wim(void)
 
 	wimfile = get_wimfile(index);
 
-	ASSERT(!tunlink(wimfile), "failed to unlink %"TS": %m", wimfile);
+	ASSERT(!tunlink(wimfile), "failed to unlink %" TS ": %m", wimfile);
 
-	printf("Deleted %"TS"\n", wimfile);
+	printf("Deleted %" TS "\n", wimfile);
 
 	for (int i = which; i < num_wimfiles_in_use - 1; i++)
 		in_use_wimfile_indices[i] = in_use_wimfile_indices[i + 1];
@@ -665,7 +703,7 @@ op__verify_random_wim(void)
 
 	wim = open_random_wim();
 	CHECK_RET(wimlib_verify_wim(wim, 0));
-	printf("Verified %"TS"\n", wimfile);
+	printf("Verified %" TS "\n", wimfile);
 	wimlib_free(wim);
 }
 
@@ -718,8 +756,12 @@ op__export_random_image(void)
 		src_image = 1 + (rand32() % src_image_count);
 
 	printf("Exporting image %d of %d from wim %d into wim %d\n",
-	       src_image, src_image_count, src_wimfile_index, dst_wimfile_index);
-	CHECK_RET(wimlib_export_image(src_wim, src_image, dst_wim, NULL, NULL, 0));
+	       src_image,
+	       src_image_count,
+	       src_wimfile_index,
+	       dst_wimfile_index);
+	CHECK_RET(wimlib_export_image(
+		src_wim, src_image, dst_wim, NULL, NULL, 0));
 
 	overwrite_wim(dst_wim);
 	wimlib_free(dst_wim);
@@ -729,10 +771,12 @@ op__export_random_image(void)
 	/* Compare the images.  */
 	dst_image = dst_image_count;
 	for (int image = (src_image == WIMLIB_ALL_IMAGES ? 1 : src_image);
-	     image <= (src_image == WIMLIB_ALL_IMAGES ? src_image_count : src_image);
+	     image <=
+	     (src_image == WIMLIB_ALL_IMAGES ? src_image_count : src_image);
 	     image++)
 	{
-		CHECK_RET(wimlib_compare_images(src_wim, image, dst_wim, ++dst_image, 0));
+		CHECK_RET(wimlib_compare_images(
+			src_wim, image, dst_wim, ++dst_image, 0));
 	}
 
 	wimlib_free(src_wim);
@@ -748,19 +792,22 @@ op__apply_and_capture_test(void)
 	int image;
 	int index;
 	int extract_flags = 0;
-	int add_flags = 0;
-	int cmp_flags = 0;
+	int add_flags     = 0;
+	int cmp_flags     = 0;
 
 	if (num_wimfiles_in_use == 0)
 		return;
 
 	/* Generate a random image.  */
 	index = select_random_wimfile_index();
-	wim = open_wim(index);
+	wim   = open_wim(index);
 
-	CHECK_RET(wimlib_add_image(wim, (void *)rand32, NULL, NULL,
-				   WIMLIB_ADD_FLAG_GENERATE_TEST_DATA |
-				   WIMLIB_ADD_FLAG_NORPFIX));
+	CHECK_RET(wimlib_add_image(wim,
+	                           (void *)rand32,
+	                           NULL,
+	                           NULL,
+	                           WIMLIB_ADD_FLAG_GENERATE_TEST_DATA |
+	                                   WIMLIB_ADD_FLAG_NORPFIX));
 
 	image = get_image_count(wim);
 
@@ -811,18 +858,19 @@ op__apply_and_capture_test(void)
 #endif /* !_WIN32 */
 	}
 	add_flags |= WIMLIB_ADD_FLAG_NORPFIX;
-	CHECK_RET(wimlib_extract_image(wim, image, TMP_TARGET_NAME,
-				       extract_flags));
+	CHECK_RET(wimlib_extract_image(
+		wim, image, TMP_TARGET_NAME, extract_flags));
 
 	/* Sometimes extract twice so that we test overwriting existing files.
 	 */
 	if (!(extract_flags & WIMLIB_EXTRACT_FLAG_NTFS) && randbool()) {
-		CHECK_RET(wimlib_extract_image(wim, image, TMP_TARGET_NAME,
-					       extract_flags));
+		CHECK_RET(wimlib_extract_image(
+			wim, image, TMP_TARGET_NAME, extract_flags));
 	}
 
 	/* Capture the applied image.  */
-	CHECK_RET(wimlib_add_image(wim, TMP_TARGET_NAME, NULL, NULL, add_flags));
+	CHECK_RET(
+		wimlib_add_image(wim, TMP_TARGET_NAME, NULL, NULL, add_flags));
 	overwrite_wim(wim);
 	wimlib_free(wim);
 
@@ -859,42 +907,60 @@ unregister_all_backing_wims(void)
 	       (unsigned)GetLastError());
 
 	wsprintf(volume, L"\\\\.\\%lc:", full_path[0]);
-	h = CreateFile(volume, GENERIC_READ | GENERIC_WRITE,
-		       FILE_SHARE_VALID_FLAGS, NULL, OPEN_EXISTING,
-		       FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	h = CreateFile(volume,
+	               GENERIC_READ | GENERIC_WRITE,
+	               FILE_SHARE_VALID_FLAGS,
+	               NULL,
+	               OPEN_EXISTING,
+	               FILE_FLAG_BACKUP_SEMANTICS,
+	               NULL);
 	ASSERT(h != INVALID_HANDLE_VALUE,
-	       "Failed to open %ls; error=%u", volume, (unsigned)GetLastError());
+	       "Failed to open %ls; error=%u",
+	       volume,
+	       (unsigned)GetLastError());
 
 	overlay_list = malloc(32768);
 	ASSERT(overlay_list != NULL, "out of memory");
 
-	in.wof_info.Version = WOF_CURRENT_VERSION;
+	in.wof_info.Version  = WOF_CURRENT_VERSION;
 	in.wof_info.Provider = WOF_PROVIDER_WIM;
 
-	if (!DeviceIoControl(h, FSCTL_ENUM_OVERLAY,
-			     &in, sizeof(WOF_EXTERNAL_INFO),
-			     overlay_list, 32768, &bytes_returned, NULL))
+	if (!DeviceIoControl(h,
+	                     FSCTL_ENUM_OVERLAY,
+	                     &in,
+	                     sizeof(WOF_EXTERNAL_INFO),
+	                     overlay_list,
+	                     32768,
+	                     &bytes_returned,
+	                     NULL))
 	{
 		ASSERT(GetLastError() == ERROR_INVALID_FUNCTION ||
-		       GetLastError() == ERROR_INVALID_PARAMETER ||
-		       GetLastError() == ERROR_FILE_NOT_FOUND,
-		       "FSCTL_ENUM_OVERLAY failed; error=%u", GetLastError());
+		               GetLastError() == ERROR_INVALID_PARAMETER ||
+		               GetLastError() == ERROR_FILE_NOT_FOUND,
+		       "FSCTL_ENUM_OVERLAY failed; error=%u",
+		       GetLastError());
 		return;
 	}
 
 	entry = overlay_list;
 	for (;;) {
-		printf("Unregistering data source ID %"PRIu64"\n",
+		printf("Unregistering data source ID %" PRIu64 "\n",
 		       entry->DataSourceId.QuadPart);
 		in.wim.DataSourceId = entry->DataSourceId;
-		ASSERT(DeviceIoControl(h, FSCTL_REMOVE_OVERLAY, &in, sizeof(in),
-				       NULL, 0, &bytes_returned, NULL),
+		ASSERT(DeviceIoControl(h,
+		                       FSCTL_REMOVE_OVERLAY,
+		                       &in,
+		                       sizeof(in),
+		                       NULL,
+		                       0,
+		                       &bytes_returned,
+		                       NULL),
 		       "FSCTL_REMOVE_OVERLAY failed; error=%u",
 		       (unsigned)GetLastError());
 		if (entry->NextEntryOffset == 0)
 			break;
-		entry = (const WIM_PROVIDER_OVERLAY_ENTRY *)
-			((const u8 *)entry + entry->NextEntryOffset);
+		entry = (const WIM_PROVIDER_OVERLAY_ENTRY
+		                 *)((const u8 *)entry + entry->NextEntryOffset);
 	}
 	free(overlay_list);
 	CloseHandle(h);
@@ -926,27 +992,28 @@ op__wimboot_test(void)
 		return;
 	}
 
-
 	image = 1 + (rand32() % image_count);
 
 	printf("WIMBOOT test; wim%d image %d\n", index, image);
 
 	delete_directory_tree(TMP_TARGET_NAME);
 
-	CHECK_RET(wimlib_extract_image(wim, image, TMP_TARGET_NAME,
-				       WIMLIB_EXTRACT_FLAG_WIMBOOT));
+	CHECK_RET(wimlib_extract_image(
+		wim, image, TMP_TARGET_NAME, WIMLIB_EXTRACT_FLAG_WIMBOOT));
 
 	if (randbool()) {
-		CHECK_RET(wimlib_extract_image(wim, image, TMP_TARGET_NAME,
-					       WIMLIB_EXTRACT_FLAG_WIMBOOT));
+		CHECK_RET(wimlib_extract_image(wim,
+		                               image,
+		                               TMP_TARGET_NAME,
+		                               WIMLIB_EXTRACT_FLAG_WIMBOOT));
 	}
 
-	index2 = select_random_wimfile_index();
-	wim2 = open_wim(index2);
+	index2      = select_random_wimfile_index();
+	wim2        = open_wim(index2);
 	image_count = get_image_count(wim2);
 
-	CHECK_RET(wimlib_add_image(wim2, TMP_TARGET_NAME, NULL, NULL,
-				   WIMLIB_ADD_FLAG_NORPFIX));
+	CHECK_RET(wimlib_add_image(
+		wim2, TMP_TARGET_NAME, NULL, NULL, WIMLIB_ADD_FLAG_NORPFIX));
 
 	overwrite_wim(wim2);
 	wimlib_free(wim2);
@@ -954,10 +1021,15 @@ op__wimboot_test(void)
 	wim2 = open_wim(index2);
 
 	printf("comparing wimboot.wim:%d with wim%d:%d\n",
-	       image, index2, image_count + 1);
+	       image,
+	       index2,
+	       image_count + 1);
 
-	CHECK_RET(wimlib_compare_images(wim, image, wim2, image_count + 1,
-					WIMLIB_CMP_FLAG_WINDOWS_MODE));
+	CHECK_RET(wimlib_compare_images(wim,
+	                                image,
+	                                wim2,
+	                                image_count + 1,
+	                                WIMLIB_CMP_FLAG_WINDOWS_MODE));
 
 	wimlib_free(wim);
 	wimlib_free(wim2);
@@ -1004,26 +1076,33 @@ op__split_test(void)
 
 	image_count = get_image_count(wim);
 
-	part_size = 10000 + (rand32() % 1000000);
+	part_size   = 10000 + (rand32() % 1000000);
 	write_flags = get_random_write_flags();
 	write_flags &= ~WIMLIB_WRITE_FLAG_SOLID;
 
-	printf("splitting WIM %"TS": part_size=%"PRIu64", write_flags=0x%08x\n",
-	       wimfile, part_size, write_flags);
+	printf("splitting WIM %" TS ": part_size=%" PRIu64
+	       ", write_flags=0x%08x\n",
+	       wimfile,
+	       part_size,
+	       write_flags);
 
 	CHECK_RET(wimlib_split(wim, T("tmp.swm"), part_size, write_flags));
 
-	CHECK_RET(wimlib_open_wim(T("tmp.swm"), WIMLIB_OPEN_FLAG_CHECK_INTEGRITY,
-				  &swm));
+	CHECK_RET(wimlib_open_wim(
+		T("tmp.swm"), WIMLIB_OPEN_FLAG_CHECK_INTEGRITY, &swm));
 
-	CHECK_RET(wimlib_reference_resource_files(swm, globs, 1,
-						  WIMLIB_REF_FLAG_GLOB_ENABLE |
-							WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH,
-						  WIMLIB_OPEN_FLAG_CHECK_INTEGRITY));
+	CHECK_RET(wimlib_reference_resource_files(
+		swm,
+		globs,
+		1,
+		WIMLIB_REF_FLAG_GLOB_ENABLE |
+			WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH,
+		WIMLIB_OPEN_FLAG_CHECK_INTEGRITY));
 
 	CHECK_RET(wimlib_verify_wim(swm, 0));
 
-	CHECK_RET(wimlib_write(swm, T("joined.wim"), WIMLIB_ALL_IMAGES, write_flags, 0));
+	CHECK_RET(wimlib_write(
+		swm, T("joined.wim"), WIMLIB_ALL_IMAGES, write_flags, 0));
 	wimlib_free(swm);
 
 	CHECK_RET(wimlib_open_wim(T("joined.wim"), 0, &joined_wim));
@@ -1034,7 +1113,7 @@ op__split_test(void)
 	wimlib_free(wim);
 
 	tunlink(T("tmp.swm"));
-	for (int i = 2; ; i++) {
+	for (int i = 2;; i++) {
 		tchar name[32];
 		tsprintf(name, T("tmp%d.swm"), i);
 		if (tunlink(name))
@@ -1076,8 +1155,9 @@ static const operation_func operation_table[] = {
 };
 
 #ifdef _WIN32
-int wmain(int argc, wchar_t **argv);
-#define main wmain
+int
+wmain(int argc, wchar_t **argv);
+#  define main wmain
 #endif
 
 int
@@ -1099,20 +1179,22 @@ main(int argc, tchar **argv)
 		printf("Starting wlfuzz with time limit of %lu seconds\n",
 		       time_limit);
 
-	CHECK_RET(wimlib_global_init(WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES |
-				     WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES));
+	CHECK_RET(
+		wimlib_global_init(WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES |
+	                           WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES));
 	wimlib_set_print_errors(true);
 	wimlib_seed_random(rand64());
 
 	change_to_temporary_directory();
 
 	for (i = 0; i < MAX_NUM_WIMS; i++)
-		ASSERT(!tunlink(get_wimfile(i)) || errno == ENOENT, "unlink: %m");
+		ASSERT(!tunlink(get_wimfile(i)) || errno == ENOENT,
+		       "unlink: %m");
 
-	i = 0;
+	i          = 0;
 	start_time = time(NULL);
 	while (time_limit == 0 || time(NULL) < start_time + time_limit) {
-		printf("--> iteration %"PRIu64"\n", ++i);
+		printf("--> iteration %" PRIu64 "\n", ++i);
 		(*operation_table[rand32() % ARRAY_LEN(operation_table)])();
 	}
 

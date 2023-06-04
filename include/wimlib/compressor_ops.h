@@ -10,21 +10,20 @@
 #include "wimlib/types.h"
 
 struct compressor_ops {
-
 	u64 (*get_needed_memory)(size_t max_block_size,
-				 unsigned int compression_level,
-				 bool destructive);
+	                         unsigned int compression_level,
+	                         bool destructive);
 
 	int (*create_compressor)(size_t max_block_size,
-				 unsigned int compression_level,
-				 bool destructive,
-				 void **private_ret);
+	                         unsigned int compression_level,
+	                         bool destructive,
+	                         void **private_ret);
 
 	size_t (*compress)(const void *uncompressed_data,
-			   size_t uncompressed_size,
-			   void *compressed_data,
-			   size_t compressed_size_avail,
-			   void *private);
+	                   size_t uncompressed_size,
+	                   void *compressed_data,
+	                   size_t compressed_size_avail,
+	                   void *private);
 
 	void (*free_compressor)(void *private);
 };

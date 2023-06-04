@@ -57,9 +57,10 @@ delete_wim_image(WIMStruct *wim, int image)
 	put_image_metadata(imd);
 
 	/* Remove the empty slot from the image metadata array.  */
-	memmove(&wim->image_metadata[image - 1], &wim->image_metadata[image],
-		(wim->hdr.image_count - image) *
-			sizeof(wim->image_metadata[0]));
+	memmove(&wim->image_metadata[image - 1],
+	        &wim->image_metadata[image],
+	        (wim->hdr.image_count - image) *
+	                sizeof(wim->image_metadata[0]));
 
 	/* Decrement the image count. */
 	wim->hdr.image_count--;
@@ -85,11 +86,11 @@ wimlib_delete_image(WIMStruct *wim, int image)
 
 	if (image == WIMLIB_ALL_IMAGES) {
 		/* Deleting all images  */
-		last = wim->hdr.image_count;
+		last  = wim->hdr.image_count;
 		first = 1;
 	} else {
 		/* Deleting one image  */
-		last = image;
+		last  = image;
 		first = image;
 	}
 

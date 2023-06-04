@@ -53,7 +53,7 @@
 
 static int
 ntfs_3g_get_supported_features(const char *target,
-			       struct wim_features *supported_features)
+                               struct wim_features *supported_features)
 {
 	supported_features->readonly_files            = 1;
 	supported_features->hidden_files              = 1;
@@ -133,8 +133,9 @@ ntfs_3g_restore_timestamps(ntfs_volume *vol, const struct wim_inode *inode)
 	return 0;
 
 fail:
-	ERROR_WITH_ERRNO("Failed to update timestamps of \"%s\" in NTFS volume",
-			 dentry_full_path(inode_first_extraction_dentry(inode)));
+	ERROR_WITH_ERRNO(
+		"Failed to update timestamps of \"%s\" in NTFS volume",
+		dentry_full_path(inode_first_extraction_dentry(inode)));
 	return WIMLIB_ERR_SET_TIMESTAMPS;
 }
 
@@ -142,8 +143,10 @@ fail:
  * This closes both @ni and @dir_ni.
  * If either is NULL, then they are opened temporarily.  */
 static int
-ntfs_3g_restore_dos_name(ntfs_inode *ni, ntfs_inode *dir_ni,
-			 struct wim_dentry *dentry, ntfs_volume *vol)
+ntfs_3g_restore_dos_name(ntfs_inode *ni,
+                         ntfs_inode *dir_ni,
+                         struct wim_dentry *dentry,
+                         ntfs_volume *vol)
 {
 	int ret;
 	const char *dos_name;
@@ -154,20 +157,23 @@ ntfs_3g_restore_dos_name(ntfs_inode *ni, ntfs_inode *dir_ni,
 	 * UTF-16LE internally... which is annoying because we currently have
 	 * the UTF-16LE string but not the multibyte string.  */
 
-	ret = utf16le_get_tstr(dentry->d_short_name, dentry->d_short_name_nbytes,
-			       &dos_name, &dos_name_nbytes);
+	ret = utf16le_get_tstr(dentry->d_short_name,
+	                       dentry->d_short_name_nbytes,
+	                       &dos_name,
+	                       &dos_name_nbytes);
 	if (ret)
 		goto out_close;
 
 	if (!dir_ni)
-		dir_ni = ntfs_inode_open(vol, dentry->d_parent->d_inode->i_mft_no);
+		dir_ni = ntfs_inode_open(vol,
+		                         dentry->d_parent->d_inode->i_mft_no);
 	if (!ni)
 		ni = ntfs_inode_open(vol, dentry->d_inode->i_mft_no);
 	if (dir_ni && ni) {
-		ret = ntfs_set_ntfs_dos_name(ni, dir_ni,
-					     dos_name, dos_name_nbytes, 0);
+		ret = ntfs_set_ntfs_dos_name(
+			ni, dir_ni, dos_name, dos_name_nbytes, 0);
 		dir_ni = NULL;
-		ni = NULL;
+		ni     = NULL;
 	} else {
 		ret = -1;
 	}
@@ -175,7 +181,8 @@ ntfs_3g_restore_dos_name(ntfs_inode *ni, ntfs_inode *dir_ni,
 	if (unlikely(ret)) {
 		int err = errno;
 		ERROR_WITH_ERRNO("Failed to set DOS name of \"%s\" in NTFS "
-				 "volume", dentry_full_path(dentry));
+		                 "volume",
+		                 dentry_full_path(dentry));
 		if (err == EILSEQ) {
 			ERROR("This error may have been caused by a known "
 			      "bug in libntfs-3g where it is unable to set "
@@ -215,25 +222,29 @@ out_close:
 }
 
 static int
-ntfs_3g_restore_reparse_point(ntfs_inode *ni, const struct wim_inode *inode,
-			      unsigned blob_size, struct ntfs_3g_apply_ctx *ctx)
+ntfs_3g_restore_reparse_point(ntfs_inode *ni,
+                              const struct wim_inode *inode,
+                              unsigned blob_size,
+                              struct ntfs_3g_apply_ctx *ctx)
 {
 	complete_reparse_point(&ctx->rpbuf, inode, blob_size);
 
-	if (ntfs_set_ntfs_reparse_data(ni, (const char *)&ctx->rpbuf,
-				       REPARSE_DATA_OFFSET + blob_size, 0))
+	if (ntfs_set_ntfs_reparse_data(ni,
+	                               (const char *)&ctx->rpbuf,
+	                               REPARSE_DATA_OFFSET + blob_size,
+	                               0))
 	{
 		int err = errno;
-		ERROR_WITH_ERRNO("Failed to set reparse data on \"%s\"",
-				 dentry_full_path(
-					inode_first_extraction_dentry(inode)));
+		ERROR_WITH_ERRNO(
+			"Failed to set reparse data on \"%s\"",
+			dentry_full_path(inode_first_extraction_dentry(inode)));
 		if (err == EINVAL && !(inode->i_reparse_tag & 0x80000000)) {
 			WARNING("This reparse point had a non-Microsoft reparse "
-				"tag.  The preceding error may have been caused "
-				"by a known bug in libntfs-3g where it does not "
-				"correctly validate non-Microsoft reparse "
-				"points.  This bug was fixed in NTFS-3G version "
-				"2016.2.22.");
+			        "tag.  The preceding error may have been caused "
+			        "by a known bug in libntfs-3g where it does not "
+			        "correctly validate non-Microsoft reparse "
+			        "points.  This bug was fixed in NTFS-3G version "
+			        "2016.2.22.");
 		}
 		return WIMLIB_ERR_SET_REPARSE_DATA;
 	}
@@ -266,11 +277,10 @@ ntfs_3g_has_empty_attributes(const struct wim_inode *inode)
  */
 static int
 ntfs_3g_create_empty_attributes(ntfs_inode *ni,
-				const struct wim_inode *inode,
-				struct ntfs_3g_apply_ctx *ctx)
+                                const struct wim_inode *inode,
+                                struct ntfs_3g_apply_ctx *ctx)
 {
 	for (unsigned i = 0; i < inode->i_num_streams; i++) {
-
 		const struct wim_inode_stream *strm = &inode->i_streams[i];
 		int ret;
 
@@ -282,14 +292,19 @@ ntfs_3g_create_empty_attributes(ntfs_inode *ni,
 			if (ret)
 				return ret;
 		} else if (stream_is_named_data_stream(strm)) {
-			if (ntfs_attr_add(ni, AT_DATA, strm->stream_name,
-					  utf16le_len_chars(strm->stream_name),
-					  NULL, 0))
+			if (ntfs_attr_add(ni,
+			                  AT_DATA,
+			                  strm->stream_name,
+			                  utf16le_len_chars(strm->stream_name),
+			                  NULL,
+			                  0))
 			{
-				ERROR_WITH_ERRNO("Failed to create named data "
-						 "stream of \"%s\"",
-						 dentry_full_path(
-					inode_first_extraction_dentry(inode)));
+				ERROR_WITH_ERRNO(
+					"Failed to create named data "
+					"stream of \"%s\"",
+					dentry_full_path(
+						inode_first_extraction_dentry(
+							inode)));
 				return WIMLIB_ERR_NTFS_3G;
 			}
 		}
@@ -300,8 +315,9 @@ ntfs_3g_create_empty_attributes(ntfs_inode *ni,
 /* Set attributes, security descriptor, and timestamps on the NTFS inode @ni.
  */
 static int
-ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
-		     const struct ntfs_3g_apply_ctx *ctx)
+ntfs_3g_set_metadata(ntfs_inode *ni,
+                     const struct wim_inode *inode,
+                     const struct ntfs_3g_apply_ctx *ctx)
 {
 	int extract_flags;
 	const struct wim_security_data *sd;
@@ -309,8 +325,8 @@ ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
 	int ret;
 
 	extract_flags = ctx->common.extract_flags;
-	sd = wim_get_current_security_data(ctx->common.wim);
-	one_dentry = inode_first_extraction_dentry(inode);
+	sd            = wim_get_current_security_data(ctx->common.wim);
+	one_dentry    = inode_first_extraction_dentry(inode);
 
 	/* Object ID */
 	{
@@ -321,11 +337,11 @@ ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
 		{
 			if (errno == EEXIST) {
 				WARNING("Duplicate object ID on file \"%s\"",
-					dentry_full_path(one_dentry));
+				        dentry_full_path(one_dentry));
 			} else {
 				ERROR_WITH_ERRNO("Failed to set object ID on "
-						 "\"%s\" in NTFS volume",
-						 dentry_full_path(one_dentry));
+				                 "\"%s\" in NTFS volume",
+				                 dentry_full_path(one_dentry));
 				return WIMLIB_ERR_NTFS_3G;
 			}
 		}
@@ -335,25 +351,25 @@ ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
 	if (!(extract_flags & WIMLIB_EXTRACT_FLAG_NO_ATTRIBUTES)) {
 		u32 attrib = inode->i_attributes;
 
-		if (ntfs_set_ntfs_attrib(ni, (const char *)&attrib,
-					 sizeof(attrib), 0))
+		if (ntfs_set_ntfs_attrib(
+			    ni, (const char *)&attrib, sizeof(attrib), 0))
 		{
 			ERROR_WITH_ERRNO("Failed to set attributes on \"%s\" "
-					 "in NTFS volume",
-					 dentry_full_path(one_dentry));
+			                 "in NTFS volume",
+			                 dentry_full_path(one_dentry));
 			return WIMLIB_ERR_SET_ATTRIBUTES;
 		}
 	}
 
 	/* Security descriptor  */
-	if (inode_has_security_descriptor(inode)
-	    && !(extract_flags & WIMLIB_EXTRACT_FLAG_NO_ACLS))
+	if (inode_has_security_descriptor(inode) &&
+	    !(extract_flags & WIMLIB_EXTRACT_FLAG_NO_ACLS))
 	{
 		struct SECURITY_CONTEXT sec_ctx = { ctx->vol };
 		const void *desc;
 		size_t desc_size;
 
-		desc = sd->descriptors[inode->i_security_id];
+		desc      = sd->descriptors[inode->i_security_id];
 		desc_size = sd->sizes[inode->i_security_id];
 
 		ret = ntfs_set_ntfs_acl(&sec_ctx, ni, desc, desc_size, 0);
@@ -361,19 +377,20 @@ ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
 		if (unlikely(ret)) {
 			int err = errno;
 			ERROR_WITH_ERRNO("Failed to set security descriptor on "
-					 "\"%s\" in NTFS volume",
-					 dentry_full_path(one_dentry));
+			                 "\"%s\" in NTFS volume",
+			                 dentry_full_path(one_dentry));
 			if (err == EINVAL && wimlib_print_errors) {
 				fprintf(wimlib_error_file,
-					"The security descriptor is: ");
-				print_byte_field(desc, desc_size, wimlib_error_file);
+				        "The security descriptor is: ");
+				print_byte_field(
+					desc, desc_size, wimlib_error_file);
 				fprintf(wimlib_error_file,
-					"\n\nThis error occurred because libntfs-3g thinks "
-					"the security descriptor is invalid.  There "
-					"are several known bugs with libntfs-3g's "
-					"security descriptor validation logic in older "
-					"versions.  Please upgrade to NTFS-3G version "
-					"2016.2.22 or later if you haven't already.\n");
+				        "\n\nThis error occurred because libntfs-3g thinks "
+				        "the security descriptor is invalid.  There "
+				        "are several known bugs with libntfs-3g's "
+				        "security descriptor validation logic in older "
+				        "versions.  Please upgrade to NTFS-3G version "
+				        "2016.2.22 or later if you haven't already.\n");
 			}
 			return WIMLIB_ERR_SET_SECURITY;
 		}
@@ -383,8 +400,8 @@ ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
 	ret = ntfs_3g_set_timestamps(ni, inode);
 	if (ret) {
 		ERROR_WITH_ERRNO("Failed to set timestamps on \"%s\" "
-				 "in NTFS volume",
-				 dentry_full_path(one_dentry));
+		                 "in NTFS volume",
+		                 dentry_full_path(one_dentry));
 		return ret;
 	}
 	return 0;
@@ -393,12 +410,14 @@ ntfs_3g_set_metadata(ntfs_inode *ni, const struct wim_inode *inode,
 /* Recursively creates all the subdirectories of @dir, which has been created as
  * the NTFS inode @dir_ni.  */
 static int
-ntfs_3g_create_dirs_recursive(ntfs_inode *dir_ni, struct wim_dentry *dir,
-			      struct ntfs_3g_apply_ctx *ctx)
+ntfs_3g_create_dirs_recursive(ntfs_inode *dir_ni,
+                              struct wim_dentry *dir,
+                              struct ntfs_3g_apply_ctx *ctx)
 {
 	struct wim_dentry *child;
 
-	for_dentry_child(child, dir) {
+	for_dentry_child(child, dir)
+	{
 		ntfs_inode *ni;
 		int ret;
 
@@ -407,11 +426,14 @@ ntfs_3g_create_dirs_recursive(ntfs_inode *dir_ni, struct wim_dentry *dir,
 		if (!will_extract_dentry(child))
 			continue;
 
-		ni = ntfs_create(dir_ni, 0, child->d_extraction_name,
-				 child->d_extraction_name_nchars, S_IFDIR);
+		ni = ntfs_create(dir_ni,
+		                 0,
+		                 child->d_extraction_name,
+		                 child->d_extraction_name_nchars,
+		                 S_IFDIR);
 		if (!ni) {
 			ERROR_WITH_ERRNO("Error creating \"%s\" in NTFS volume",
-					 dentry_full_path(child));
+			                 dentry_full_path(child));
 			return WIMLIB_ERR_NTFS_3G;
 		}
 
@@ -425,7 +447,7 @@ ntfs_3g_create_dirs_recursive(ntfs_inode *dir_ni, struct wim_dentry *dir,
 
 		if (ntfs_inode_close_in_dir(ni, dir_ni) && !ret) {
 			ERROR_WITH_ERRNO("Error closing \"%s\" in NTFS volume",
-					 dentry_full_path(child));
+			                 dentry_full_path(child));
 			ret = WIMLIB_ERR_NTFS_3G;
 		}
 		if (ret)
@@ -438,8 +460,8 @@ ntfs_3g_create_dirs_recursive(ntfs_inode *dir_ni, struct wim_dentry *dir,
  * corresponding directory in the NTFS volume @ctx->vol.  */
 static int
 ntfs_3g_create_directories(struct wim_dentry *root,
-			   struct list_head *dentry_list,
-			   struct ntfs_3g_apply_ctx *ctx)
+                           struct list_head *dentry_list,
+                           struct ntfs_3g_apply_ctx *ctx)
 {
 	ntfs_inode *root_ni;
 	int ret;
@@ -478,8 +500,8 @@ ntfs_3g_create_directories(struct wim_dentry *root,
 		if (!(inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY))
 			continue;
 		if (dentry_has_short_name(dentry)) {
-			ret = ntfs_3g_restore_dos_name(NULL, NULL, dentry,
-						       ctx->vol);
+			ret = ntfs_3g_restore_dos_name(
+				NULL, NULL, dentry, ctx->vol);
 			if (ret)
 				return ret;
 			ret = report_file_created(&ctx->common);
@@ -490,18 +512,18 @@ ntfs_3g_create_directories(struct wim_dentry *root,
 			ntfs_inode *ni;
 
 			ret = WIMLIB_ERR_NTFS_3G;
-			ni = ntfs_inode_open(ctx->vol, inode->i_mft_no);
+			ni  = ntfs_inode_open(ctx->vol, inode->i_mft_no);
 			if (ni) {
-				ret = ntfs_3g_create_empty_attributes(ni, inode,
-								      ctx);
+				ret = ntfs_3g_create_empty_attributes(
+					ni, inode, ctx);
 				if (ntfs_inode_close(ni) && !ret)
 					ret = WIMLIB_ERR_NTFS_3G;
 			}
 			if (ret) {
 				ERROR_WITH_ERRNO("Failed to create empty "
-						 "attributes of directory "
-						 "\"%s\" in NTFS volume",
-						 dentry_full_path(dentry));
+				                 "attributes of directory "
+				                 "\"%s\" in NTFS volume",
+				                 dentry_full_path(dentry));
 				return ret;
 			}
 		}
@@ -543,8 +565,10 @@ ntfs_3g_add_link(ntfs_inode *ni, struct wim_dentry *dentry)
 		goto fail;
 
 	/* Create the link.  */
-	res = ntfs_link(ni, dir_ni, dentry->d_extraction_name,
-			dentry->d_extraction_name_nchars);
+	res = ntfs_link(ni,
+	                dir_ni,
+	                dentry->d_extraction_name,
+	                dentry->d_extraction_name_nchars);
 
 	/* Close the parent directory.  */
 	if (ntfs_inode_close(dir_ni) || res)
@@ -554,13 +578,13 @@ ntfs_3g_add_link(ntfs_inode *ni, struct wim_dentry *dentry)
 
 fail:
 	ERROR_WITH_ERRNO("Can't create link \"%s\" in NTFS volume",
-			 dentry_full_path(dentry));
+	                 dentry_full_path(dentry));
 	return WIMLIB_ERR_NTFS_3G;
 }
 
 static int
 ntfs_3g_create_nondirectory(struct wim_inode *inode,
-			    struct ntfs_3g_apply_ctx *ctx)
+                            struct ntfs_3g_apply_ctx *ctx)
 {
 	struct wim_dentry *first_dentry;
 	ntfs_inode *dir_ni;
@@ -572,19 +596,23 @@ ntfs_3g_create_nondirectory(struct wim_inode *inode,
 
 	/* Create first link.  */
 
-	dir_ni = ntfs_inode_open(ctx->vol, first_dentry->d_parent->d_inode->i_mft_no);
+	dir_ni = ntfs_inode_open(ctx->vol,
+	                         first_dentry->d_parent->d_inode->i_mft_no);
 	if (!dir_ni) {
 		ERROR_WITH_ERRNO("Can't open \"%s\" in NTFS volume",
-				 dentry_full_path(first_dentry->d_parent));
+		                 dentry_full_path(first_dentry->d_parent));
 		return WIMLIB_ERR_NTFS_3G;
 	}
 
-	ni = ntfs_create(dir_ni, 0, first_dentry->d_extraction_name,
-			 first_dentry->d_extraction_name_nchars, S_IFREG);
+	ni = ntfs_create(dir_ni,
+	                 0,
+	                 first_dentry->d_extraction_name,
+	                 first_dentry->d_extraction_name_nchars,
+	                 S_IFREG);
 
 	if (!ni) {
 		ERROR_WITH_ERRNO("Can't create \"%s\" in NTFS volume",
-				 dentry_full_path(first_dentry));
+		                 dentry_full_path(first_dentry));
 		ntfs_inode_close(dir_ni);
 		return WIMLIB_ERR_NTFS_3G;
 	}
@@ -593,8 +621,8 @@ ntfs_3g_create_nondirectory(struct wim_inode *inode,
 
 	/* Set short name if present.  */
 	if (dentry_has_short_name(first_dentry)) {
-
-		ret = ntfs_3g_restore_dos_name(ni, dir_ni, first_dentry, ctx->vol);
+		ret = ntfs_3g_restore_dos_name(
+			ni, dir_ni, first_dentry, ctx->vol);
 
 		/* ntfs_3g_restore_dos_name() closed both 'ni' and 'dir_ni'.  */
 
@@ -605,15 +633,16 @@ ntfs_3g_create_nondirectory(struct wim_inode *inode,
 		ni = ntfs_inode_open(ctx->vol, inode->i_mft_no);
 		if (!ni) {
 			ERROR_WITH_ERRNO("Failed to reopen \"%s\" "
-					 "in NTFS volume",
-					 dentry_full_path(first_dentry));
+			                 "in NTFS volume",
+			                 dentry_full_path(first_dentry));
 			return WIMLIB_ERR_NTFS_3G;
 		}
 	} else {
 		/* Close the directory in which the first link was created.  */
 		if (ntfs_inode_close(dir_ni)) {
-			ERROR_WITH_ERRNO("Failed to close \"%s\" in NTFS volume",
-					 dentry_full_path(first_dentry->d_parent));
+			ERROR_WITH_ERRNO(
+				"Failed to close \"%s\" in NTFS volume",
+				dentry_full_path(first_dentry->d_parent));
 			ret = WIMLIB_ERR_NTFS_3G;
 			goto out_close_ni;
 		}
@@ -639,7 +668,7 @@ out_close_ni:
 	/* Close the inode.  */
 	if (ntfs_inode_close(ni) && !ret) {
 		ERROR_WITH_ERRNO("Error closing \"%s\" in NTFS volume",
-				 dentry_full_path(first_dentry));
+		                 dentry_full_path(first_dentry));
 		ret = WIMLIB_ERR_NTFS_3G;
 	}
 	return ret;
@@ -651,7 +680,7 @@ out_close_ni:
  * Directories must have already been created.  */
 static int
 ntfs_3g_create_nondirectories(struct list_head *dentry_list,
-			      struct ntfs_3g_apply_ctx *ctx)
+                              struct ntfs_3g_apply_ctx *ctx)
 {
 	struct wim_dentry *dentry;
 	struct wim_inode *inode;
@@ -675,10 +704,10 @@ ntfs_3g_create_nondirectories(struct list_head *dentry_list,
 
 static int
 ntfs_3g_begin_extract_blob_instance(struct blob_descriptor *blob,
-				    ntfs_inode *ni,
-				    struct wim_inode *inode,
-				    const struct wim_inode_stream *strm,
-				    struct ntfs_3g_apply_ctx *ctx)
+                                    ntfs_inode *ni,
+                                    struct wim_inode *inode,
+                                    const struct wim_inode_stream *strm,
+                                    struct ntfs_3g_apply_ctx *ctx)
 {
 	struct wim_dentry *one_dentry = inode_first_extraction_dentry(inode);
 	ntfschar *stream_name;
@@ -686,17 +715,17 @@ ntfs_3g_begin_extract_blob_instance(struct blob_descriptor *blob,
 	ntfs_attr *na;
 
 	if (unlikely(strm->stream_type == STREAM_TYPE_REPARSE_POINT)) {
-
 		if (blob->size > REPARSE_DATA_MAX_SIZE) {
 			ERROR("Reparse data of \"%s\" has size "
-			      "%"PRIu64" bytes (exceeds %u bytes)",
+			      "%" PRIu64 " bytes (exceeds %u bytes)",
 			      dentry_full_path(one_dentry),
-			      blob->size, REPARSE_DATA_MAX_SIZE);
+			      blob->size,
+			      REPARSE_DATA_MAX_SIZE);
 			return WIMLIB_ERR_INVALID_REPARSE_DATA;
 		}
 		ctx->reparse_ptr = ctx->rpbuf.rpdata;
 		ctx->ntfs_reparse_inodes[ctx->num_reparse_inodes] = ni;
-		ctx->wim_reparse_inodes[ctx->num_reparse_inodes] = inode;
+		ctx->wim_reparse_inodes[ctx->num_reparse_inodes]  = inode;
 		ctx->num_reparse_inodes++;
 		return 0;
 	}
@@ -705,21 +734,26 @@ ntfs_3g_begin_extract_blob_instance(struct blob_descriptor *blob,
 	wimlib_assert(strm->stream_type == STREAM_TYPE_DATA);
 
 	if (unlikely(stream_is_named(strm))) {
-		stream_name = strm->stream_name;
+		stream_name        = strm->stream_name;
 		stream_name_nchars = utf16le_len_chars(stream_name);
 
-		if (ntfs_attr_add(ni, AT_DATA, stream_name,
-				  stream_name_nchars, NULL, 0))
+		if (ntfs_attr_add(ni,
+		                  AT_DATA,
+		                  stream_name,
+		                  stream_name_nchars,
+		                  NULL,
+		                  0))
 		{
-			ERROR_WITH_ERRNO("Failed to create named data stream of \"%s\"",
-					 dentry_full_path(one_dentry));
+			ERROR_WITH_ERRNO(
+				"Failed to create named data stream of \"%s\"",
+				dentry_full_path(one_dentry));
 			return WIMLIB_ERR_NTFS_3G;
 		}
 	} else {
 		/* Don't pass an empty string other than AT_UNNAMED to
 		 * ntfs_attr_open() --- it violates assumptions made by
 		 * libntfs-3g.  */
-		stream_name = AT_UNNAMED;
+		stream_name        = AT_UNNAMED;
 		stream_name_nchars = 0;
 	}
 
@@ -729,7 +763,7 @@ ntfs_3g_begin_extract_blob_instance(struct blob_descriptor *blob,
 	na = ntfs_attr_open(ni, AT_DATA, stream_name, stream_name_nchars);
 	if (!na) {
 		ERROR_WITH_ERRNO("Failed to open data stream of \"%s\"",
-				 dentry_full_path(one_dentry));
+		                 dentry_full_path(one_dentry));
 		return WIMLIB_ERR_NTFS_3G;
 	}
 
@@ -747,7 +781,7 @@ ntfs_3g_begin_extract_blob_instance(struct blob_descriptor *blob,
 	if (!(na->data_flags & ATTR_COMPRESSION_MASK)) {
 		if (inode->i_attributes & FILE_ATTRIBUTE_SPARSE_FILE) {
 			ctx->is_sparse_attr[ctx->num_open_attrs] = true;
-			ctx->any_sparse_attrs = true;
+			ctx->any_sparse_attrs                    = true;
 		} else {
 			ntfs_attr_truncate_solid(na, blob->size);
 		}
@@ -775,8 +809,8 @@ ntfs_3g_cleanup_blob_extract(struct ntfs_3g_apply_ctx *ctx)
 	}
 	ctx->num_open_inodes = 0;
 
-	ctx->any_sparse_attrs = false;
-	ctx->reparse_ptr = NULL;
+	ctx->any_sparse_attrs   = false;
+	ctx->reparse_ptr        = NULL;
 	ctx->num_reparse_inodes = 0;
 	return ret;
 }
@@ -798,9 +832,9 @@ ntfs_3g_open_inode(struct wim_inode *inode, struct ntfs_3g_apply_ctx *ctx)
 
 	ni = ntfs_inode_open(ctx->vol, inode->i_mft_no);
 	if (unlikely(!ni)) {
-		ERROR_WITH_ERRNO("Can't open \"%s\" in NTFS volume",
-				 dentry_full_path(
-					inode_first_extraction_dentry(inode)));
+		ERROR_WITH_ERRNO(
+			"Can't open \"%s\" in NTFS volume",
+			dentry_full_path(inode_first_extraction_dentry(inode)));
 		return NULL;
 	}
 
@@ -812,19 +846,19 @@ static int
 ntfs_3g_begin_extract_blob(struct blob_descriptor *blob, void *_ctx)
 {
 	struct ntfs_3g_apply_ctx *ctx = _ctx;
-	const struct blob_extraction_target *targets = blob_extraction_targets(blob);
+	const struct blob_extraction_target *targets =
+		blob_extraction_targets(blob);
 	int ret;
 	ntfs_inode *ni;
 
 	for (u32 i = 0; i < blob->out_refcnt; i++) {
 		ret = WIMLIB_ERR_NTFS_3G;
-		ni = ntfs_3g_open_inode(targets[i].inode, ctx);
+		ni  = ntfs_3g_open_inode(targets[i].inode, ctx);
 		if (!ni)
 			goto out_cleanup;
 
-		ret = ntfs_3g_begin_extract_blob_instance(blob, ni,
-							  targets[i].inode,
-							  targets[i].stream, ctx);
+		ret = ntfs_3g_begin_extract_blob_instance(
+			blob, ni, targets[i].inode, targets[i].stream, ctx);
 		if (ret)
 			goto out_cleanup;
 	}
@@ -861,11 +895,14 @@ ntfs_3g_full_pwrite(ntfs_attr *na, u64 offset, size_t size, const u8 *data)
 }
 
 static int
-ntfs_3g_extract_chunk(const struct blob_descriptor *blob, u64 offset,
-		      const void *chunk, size_t size, void *_ctx)
+ntfs_3g_extract_chunk(const struct blob_descriptor *blob,
+                      u64 offset,
+                      const void *chunk,
+                      size_t size,
+                      void *_ctx)
 {
 	struct ntfs_3g_apply_ctx *ctx = _ctx;
-	const void * const end = chunk + size;
+	const void *const end         = chunk + size;
 	const void *p;
 	bool zeroes;
 	size_t len;
@@ -876,12 +913,12 @@ ntfs_3g_extract_chunk(const struct blob_descriptor *blob, u64 offset,
 	 * filesystem use holes to represent zero regions.
 	 */
 	for (p = chunk; p != end; p += len, offset += len) {
-		zeroes = maybe_detect_sparse_region(p, end - p, &len,
-						    ctx->any_sparse_attrs);
+		zeroes = maybe_detect_sparse_region(
+			p, end - p, &len, ctx->any_sparse_attrs);
 		for (i = 0; i < ctx->num_open_attrs; i++) {
 			if (!zeroes || !ctx->is_sparse_attr[i]) {
-				if (!ntfs_3g_full_pwrite(ctx->open_attrs[i],
-							 offset, len, p))
+				if (!ntfs_3g_full_pwrite(
+					    ctx->open_attrs[i], offset, len, p))
 					goto err;
 			}
 		}
@@ -915,7 +952,7 @@ ntfs_3g_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 			if (ntfs_attr_truncate(ctx->open_attrs[i], blob->size))
 			{
 				ERROR_WITH_ERRNO("Error extending attribute to "
-						 "final size");
+				                 "final size");
 				ret = WIMLIB_ERR_WRITE;
 				goto out;
 			}
@@ -924,8 +961,9 @@ ntfs_3g_end_extract_blob(struct blob_descriptor *blob, int status, void *_ctx)
 
 	for (u32 i = 0; i < ctx->num_reparse_inodes; i++) {
 		ret = ntfs_3g_restore_reparse_point(ctx->ntfs_reparse_inodes[i],
-						    ctx->wim_reparse_inodes[i],
-						    blob->size, ctx);
+		                                    ctx->wim_reparse_inodes[i],
+		                                    blob->size,
+		                                    ctx);
 		if (ret)
 			goto out;
 	}
@@ -946,7 +984,8 @@ ntfs_3g_count_dentries(const struct list_head *dentry_list)
 
 	list_for_each_entry(dentry, dentry_list, d_extraction_list_node) {
 		count++;
-		if ((dentry->d_inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY) &&
+		if ((dentry->d_inode->i_attributes &
+		     FILE_ATTRIBUTE_DIRECTORY) &&
 		    dentry_has_short_name(dentry))
 		{
 			count++;
@@ -966,14 +1005,14 @@ ntfs_3g_extract(struct list_head *dentry_list, struct apply_ctx *_ctx)
 
 	/* For NTFS-3G extraction mode we require that the dentries to extract
 	 * form a single tree.  */
-	root = list_first_entry(dentry_list, struct wim_dentry,
-				d_extraction_list_node);
+	root = list_first_entry(
+		dentry_list, struct wim_dentry, d_extraction_list_node);
 
 	/* Mount the NTFS volume.  */
 	vol = ntfs_mount(ctx->common.target, 0);
 	if (!vol) {
 		ERROR_WITH_ERRNO("Failed to mount \"%s\" with NTFS-3G",
-				 ctx->common.target);
+		                 ctx->common.target);
 		return WIMLIB_ERR_NTFS_3G;
 	}
 	ctx->vol = vol;
@@ -983,7 +1022,8 @@ ntfs_3g_extract(struct list_head *dentry_list, struct apply_ctx *_ctx)
 	 * rather than being fully specified for each file.  */
 	if (ntfs_open_secure(vol) && vol->major_ver >= 3) {
 		ERROR_WITH_ERRNO("Unable to open security descriptor index of "
-				 "NTFS volume \"%s\"", ctx->common.target);
+		                 "NTFS volume \"%s\"",
+		                 ctx->common.target);
 		ret = WIMLIB_ERR_NTFS_3G;
 		goto out_unmount;
 	}
@@ -992,7 +1032,7 @@ ntfs_3g_extract(struct list_head *dentry_list, struct apply_ctx *_ctx)
 	 * metadata (attributes, security descriptors, and timestamps).  */
 
 	ret = start_file_structure_phase(&ctx->common,
-					 ntfs_3g_count_dentries(dentry_list));
+	                                 ntfs_3g_count_dentries(dentry_list));
 	if (ret)
 		goto out_unmount;
 
@@ -1010,10 +1050,10 @@ ntfs_3g_extract(struct list_head *dentry_list, struct apply_ctx *_ctx)
 
 	/* Extract blobs.  */
 	struct read_blob_callbacks cbs = {
-		.begin_blob	= ntfs_3g_begin_extract_blob,
-		.continue_blob	= ntfs_3g_extract_chunk,
-		.end_blob	= ntfs_3g_end_extract_blob,
-		.ctx		= ctx,
+		.begin_blob    = ntfs_3g_begin_extract_blob,
+		.continue_blob = ntfs_3g_extract_chunk,
+		.end_blob      = ntfs_3g_end_extract_blob,
+		.ctx           = ctx,
 	};
 	ret = extract_blob_list(&ctx->common, &cbs);
 
@@ -1027,24 +1067,24 @@ out_unmount:
 		ntfs_index_ctx_put(vol->secure_xsdh);
 		if (ntfs_inode_close(vol->secure_ni) && !ret) {
 			ERROR_WITH_ERRNO("Failed to close security descriptor "
-					 "index of NTFS volume \"%s\"",
-					 ctx->common.target);
+			                 "index of NTFS volume \"%s\"",
+			                 ctx->common.target);
 			ret = WIMLIB_ERR_NTFS_3G;
 		}
 		vol->secure_ni = NULL;
 	}
 	if (ntfs_umount(ctx->vol, FALSE) && !ret) {
 		ERROR_WITH_ERRNO("Failed to unmount \"%s\" with NTFS-3G",
-				 ctx->common.target);
+		                 ctx->common.target);
 		ret = WIMLIB_ERR_NTFS_3G;
 	}
 	return ret;
 }
 
 const struct apply_operations ntfs_3g_apply_ops = {
-	.name			= "NTFS-3G",
+	.name                   = "NTFS-3G",
 	.get_supported_features = ntfs_3g_get_supported_features,
 	.extract                = ntfs_3g_extract,
 	.context_size           = sizeof(struct ntfs_3g_apply_ctx),
-	.single_tree_only	= true,
+	.single_tree_only       = true,
 };

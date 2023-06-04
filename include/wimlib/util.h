@@ -13,21 +13,21 @@
 
 /* Cast a pointer to a struct member to a pointer to the containing struct.  */
 #define container_of(ptr, type, member) \
-	((type *)((char *)(ptr) - offsetof(type, member)))
+  ((type *)((char *)(ptr)-offsetof(type, member)))
 
 /* Calculate 'n / d', but round up instead of down.  */
-#define DIV_ROUND_UP(n, d)	(((n) + (d) - 1) / (d))
+#define DIV_ROUND_UP(n, d) (((n) + (d)-1) / (d))
 
 /* Calculate 'n % d', but return 'd' if the result would be 0.  */
-#define MODULO_NONZERO(n, d)	(((n) % (d)) ? ((n) % (d)) : (d))
+#define MODULO_NONZERO(n, d) (((n) % (d)) ? ((n) % (d)) : (d))
 
 /* Get the number of elements of an array type.  */
-#define ARRAY_LEN(array)	(sizeof(array) / sizeof((array)[0]))
+#define ARRAY_LEN(array) (sizeof(array) / sizeof((array)[0]))
 
 /* Round 'v' up to the next 'alignment'-byte aligned boundary.  'alignment' must
  * be a power of 2.  */
-#undef ALIGN	/* NetBSD <sys/param.h> defines this already */
-#define ALIGN(v, alignment)	(((v) + ((alignment) - 1)) & ~((alignment) - 1))
+#undef ALIGN /* NetBSD <sys/param.h> defines this already */
+#define ALIGN(v, alignment) (((v) + ((alignment)-1)) & ~((alignment)-1))
 
 /* Maximum number of bytes that can be allocated on the stack.
  *
@@ -71,14 +71,14 @@ wimlib_aligned_free(void *ptr);
 void *
 memdup(const void *mem, size_t size);
 
-#define MALLOC		wimlib_malloc
-#define FREE		wimlib_free_memory
-#define REALLOC		wimlib_realloc
-#define CALLOC		wimlib_calloc
-#define STRDUP		wimlib_strdup
-#define WCSDUP		wimlib_wcsdup
-#define ALIGNED_MALLOC	wimlib_aligned_malloc
-#define ALIGNED_FREE	wimlib_aligned_free
+#define MALLOC         wimlib_malloc
+#define FREE           wimlib_free_memory
+#define REALLOC        wimlib_realloc
+#define CALLOC         wimlib_calloc
+#define STRDUP         wimlib_strdup
+#define WCSDUP         wimlib_wcsdup
+#define ALIGNED_MALLOC wimlib_aligned_malloc
+#define ALIGNED_FREE   wimlib_aligned_free
 
 /*******************
  * String utilities
@@ -107,7 +107,6 @@ static inline bool
 is_power_of_2(unsigned long n)
 {
 	return (n != 0 && (n & (n - 1)) == 0);
-
 }
 
 static inline u64

@@ -84,8 +84,6 @@ struct parallel_chunk_compressor {
 	size_t next_chunk_idx;
 };
 
-
-
 static int
 message_queue_init(struct message_queue *q)
 {
@@ -156,7 +154,7 @@ init_message(struct message *msg, size_t num_chunks, u32 out_chunk_size)
 {
 	msg->num_alloc_chunks = num_chunks;
 	for (size_t i = 0; i < num_chunks; i++) {
-		msg->compressed_chunks[i] = MALLOC(out_chunk_size - 1);
+		msg->compressed_chunks[i]   = MALLOC(out_chunk_size - 1);
 		msg->uncompressed_chunks[i] = MALLOC(out_chunk_size);
 		if (msg->compressed_chunks[i] == NULL ||
 		    msg->uncompressed_chunks[i] == NULL)
@@ -204,15 +202,14 @@ allocate_messages(size_t count, size_t chunks_per_msg, u32 out_chunk_size)
 static void
 compress_chunks(struct message *msg, struct wimlib_compressor *compressor)
 {
-
 	for (size_t i = 0; i < msg->num_filled_chunks; i++) {
 		wimlib_assert(msg->uncompressed_chunk_sizes[i] != 0);
 		msg->compressed_chunk_sizes[i] =
 			wimlib_compress(msg->uncompressed_chunks[i],
-					msg->uncompressed_chunk_sizes[i],
-					msg->compressed_chunks[i],
-					msg->uncompressed_chunk_sizes[i] - 1,
-					compressor);
+		                        msg->uncompressed_chunk_sizes[i],
+		                        msg->compressed_chunks[i],
+		                        msg->uncompressed_chunk_sizes[i] - 1,
+		                        compressor);
 	}
 }
 
@@ -222,7 +219,9 @@ compressor_thread_proc(void *arg)
 	struct compressor_thread_data *params = arg;
 	struct message *msg;
 
-	while ((msg = message_queue_get(params->chunks_to_compress_queue)) != NULL) {
+	while ((msg = message_queue_get(params->chunks_to_compress_queue)) !=
+	       NULL)
+	{
 		compress_chunks(msg, params->compressor);
 		message_queue_put(params->compressed_chunks_queue, msg);
 	}
@@ -232,7 +231,8 @@ compressor_thread_proc(void *arg)
 static void
 parallel_chunk_compressor_destroy(struct chunk_compressor *_ctx)
 {
-	struct parallel_chunk_compressor *ctx = (struct parallel_chunk_compressor *)_ctx;
+	struct parallel_chunk_compressor *ctx =
+		(struct parallel_chunk_compressor *)_ctx;
 	unsigned i;
 
 	if (ctx == NULL)
@@ -273,7 +273,8 @@ submit_compression_msg(struct parallel_chunk_compressor *ctx)
 static void *
 parallel_chunk_compressor_get_chunk_buffer(struct chunk_compressor *_ctx)
 {
-	struct parallel_chunk_compressor *ctx = (struct parallel_chunk_compressor *)_ctx;
+	struct parallel_chunk_compressor *ctx =
+		(struct parallel_chunk_compressor *)_ctx;
 	struct message *msg;
 
 	if (ctx->next_submit_msg) {
@@ -282,9 +283,10 @@ parallel_chunk_compressor_get_chunk_buffer(struct chunk_compressor *_ctx)
 		if (list_empty(&ctx->available_msgs))
 			return NULL;
 
-		msg = list_entry(ctx->available_msgs.next, struct message, list);
+		msg = list_entry(
+			ctx->available_msgs.next, struct message, list);
 		list_del(&msg->list);
-		ctx->next_submit_msg = msg;
+		ctx->next_submit_msg   = msg;
 		msg->num_filled_chunks = 0;
 	}
 
@@ -292,9 +294,11 @@ parallel_chunk_compressor_get_chunk_buffer(struct chunk_compressor *_ctx)
 }
 
 static void
-parallel_chunk_compressor_signal_chunk_filled(struct chunk_compressor *_ctx, u32 usize)
+parallel_chunk_compressor_signal_chunk_filled(struct chunk_compressor *_ctx,
+                                              u32 usize)
 {
-	struct parallel_chunk_compressor *ctx = (struct parallel_chunk_compressor *)_ctx;
+	struct parallel_chunk_compressor *ctx =
+		(struct parallel_chunk_compressor *)_ctx;
 	struct message *msg;
 
 	wimlib_assert(usize > 0);
@@ -309,10 +313,12 @@ parallel_chunk_compressor_signal_chunk_filled(struct chunk_compressor *_ctx, u32
 
 static bool
 parallel_chunk_compressor_get_compression_result(struct chunk_compressor *_ctx,
-						 const void **cdata_ret, u32 *csize_ret,
-						 u32 *usize_ret)
+                                                 const void **cdata_ret,
+                                                 u32 *csize_ret,
+                                                 u32 *usize_ret)
 {
-	struct parallel_chunk_compressor *ctx = (struct parallel_chunk_compressor *)_ctx;
+	struct parallel_chunk_compressor *ctx =
+		(struct parallel_chunk_compressor *)_ctx;
 	struct message *msg;
 
 	if (ctx->next_submit_msg)
@@ -325,9 +331,11 @@ parallel_chunk_compressor_get_compression_result(struct chunk_compressor *_ctx,
 			return false;
 
 		while (!(msg = list_entry(ctx->submitted_msgs.next,
-					  struct message,
-					  submission_list))->complete)
-			message_queue_get(&ctx->compressed_chunks_queue)->complete = true;
+		                          struct message,
+		                          submission_list))
+		                ->complete)
+			message_queue_get(&ctx->compressed_chunks_queue)
+				->complete = true;
 
 		ctx->next_ready_msg = msg;
 		ctx->next_chunk_idx = 0;
@@ -351,9 +359,11 @@ parallel_chunk_compressor_get_compression_result(struct chunk_compressor *_ctx,
 }
 
 int
-new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
-			      unsigned num_threads, u64 max_memory,
-			      struct chunk_compressor **compressor_ret)
+new_parallel_chunk_compressor(int out_ctype,
+                              u32 out_chunk_size,
+                              unsigned num_threads,
+                              u64 max_memory,
+                              struct chunk_compressor **compressor_ret)
 {
 	u64 approx_mem_required;
 	size_t chunks_per_msg;
@@ -382,26 +392,22 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 		 * are lots of threads and/or the chunks are very small.  */
 		chunks_per_msg = 2;
 		chunks_per_msg += num_threads * (65536 / out_chunk_size) / 16;
-		chunks_per_msg = max(chunks_per_msg, 2);
-		chunks_per_msg = min(chunks_per_msg, MAX_CHUNKS_PER_MSG);
+		chunks_per_msg  = max(chunks_per_msg, 2);
+		chunks_per_msg  = min(chunks_per_msg, MAX_CHUNKS_PER_MSG);
 		msgs_per_thread = 2;
 	} else {
 		/* Big chunks: Just have one buffer per thread --- more would
 		 * just waste memory.  */
-		chunks_per_msg = 1;
+		chunks_per_msg  = 1;
 		msgs_per_thread = 1;
 	}
 	for (;;) {
 		approx_mem_required =
-			(u64)chunks_per_msg *
-			(u64)msgs_per_thread *
-			(u64)num_threads *
-			(u64)out_chunk_size
-			+ out_chunk_size
-			+ 1000000
-			+ num_threads * wimlib_get_compressor_needed_memory(out_ctype,
-									    out_chunk_size,
-									    0);
+			(u64)chunks_per_msg * (u64)msgs_per_thread *
+				(u64)num_threads * (u64)out_chunk_size +
+			out_chunk_size + 1000000 +
+			num_threads * wimlib_get_compressor_needed_memory(
+					      out_ctype, out_chunk_size, 0);
 		if (approx_mem_required <= max_memory)
 			break;
 
@@ -417,8 +423,9 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 
 	if (num_threads < desired_num_threads) {
 		WARNING("Wanted to use %u threads, but limiting to %u "
-			"to fit in available memory!",
-			desired_num_threads, num_threads);
+		        "to fit in available memory!",
+		        desired_num_threads,
+		        num_threads);
 	}
 
 	if (num_threads == 1)
@@ -429,12 +436,14 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 	if (ctx == NULL)
 		goto err;
 
-	ctx->base.out_ctype = out_ctype;
-	ctx->base.out_chunk_size = out_chunk_size;
-	ctx->base.destroy = parallel_chunk_compressor_destroy;
+	ctx->base.out_ctype        = out_ctype;
+	ctx->base.out_chunk_size   = out_chunk_size;
+	ctx->base.destroy          = parallel_chunk_compressor_destroy;
 	ctx->base.get_chunk_buffer = parallel_chunk_compressor_get_chunk_buffer;
-	ctx->base.signal_chunk_filled = parallel_chunk_compressor_signal_chunk_filled;
-	ctx->base.get_compression_result = parallel_chunk_compressor_get_compression_result;
+	ctx->base.signal_chunk_filled =
+		parallel_chunk_compressor_signal_chunk_filled;
+	ctx->base.get_compression_result =
+		parallel_chunk_compressor_get_compression_result;
 
 	ctx->num_thread_data = num_threads;
 
@@ -446,7 +455,7 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 	if (ret)
 		goto err;
 
-	ret = WIMLIB_ERR_NOMEM;
+	ret              = WIMLIB_ERR_NOMEM;
 	ctx->thread_data = CALLOC(num_threads, sizeof(ctx->thread_data[0]));
 	if (ctx->thread_data == NULL)
 		goto err;
@@ -457,10 +466,12 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 		dat = &ctx->thread_data[i];
 
 		dat->chunks_to_compress_queue = &ctx->chunks_to_compress_queue;
-		dat->compressed_chunks_queue = &ctx->compressed_chunks_queue;
-		ret = wimlib_create_compressor(out_ctype, out_chunk_size,
-					       WIMLIB_COMPRESSOR_FLAG_DESTRUCTIVE,
-					       &dat->compressor);
+		dat->compressed_chunks_queue  = &ctx->compressed_chunks_queue;
+		ret                           = wimlib_create_compressor(
+                        out_ctype,
+                        out_chunk_size,
+                        WIMLIB_COMPRESSOR_FLAG_DESTRUCTIVE,
+                        &dat->compressor);
 		if (ret)
 			goto err;
 	}
@@ -469,9 +480,10 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 	     ctx->num_started_threads < num_threads;
 	     ctx->num_started_threads++)
 	{
-		if (!thread_create(&ctx->thread_data[ctx->num_started_threads].thread,
-				   compressor_thread_proc,
-				   &ctx->thread_data[ctx->num_started_threads]))
+		if (!thread_create(
+			    &ctx->thread_data[ctx->num_started_threads].thread,
+			    compressor_thread_proc,
+			    &ctx->thread_data[ctx->num_started_threads]))
 		{
 			ret = WIMLIB_ERR_NOMEM;
 			if (ctx->num_started_threads >= 2)
@@ -482,10 +494,10 @@ new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
 
 	ctx->base.num_threads = ctx->num_started_threads;
 
-	ret = WIMLIB_ERR_NOMEM;
+	ret               = WIMLIB_ERR_NOMEM;
 	ctx->num_messages = ctx->num_started_threads * msgs_per_thread;
-	ctx->msgs = allocate_messages(ctx->num_messages,
-				      chunks_per_msg, out_chunk_size);
+	ctx->msgs         = allocate_messages(
+                ctx->num_messages, chunks_per_msg, out_chunk_size);
 	if (ctx->msgs == NULL)
 		goto err;
 

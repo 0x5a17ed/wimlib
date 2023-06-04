@@ -38,7 +38,7 @@ struct inode_fixup_params {
 
 static bool
 inodes_consistent(const struct wim_inode *inode_1,
-		  const struct wim_inode *inode_2)
+                  const struct wim_inode *inode_2)
 {
 	/* This certainly isn't the only thing we need to check to make sure the
 	 * inodes are consistent.  However, this seems to be the only thing that
@@ -54,15 +54,15 @@ inodes_consistent(const struct wim_inode *inode_1,
 	 *
 	 * For non-buggy WIMs this function will always return true.  */
 	return hashes_equal(inode_get_hash_of_unnamed_data_stream(inode_1),
-			    inode_get_hash_of_unnamed_data_stream(inode_2));
+	                    inode_get_hash_of_unnamed_data_stream(inode_2));
 }
 
 static int
 inode_table_insert(struct wim_dentry *dentry, void *_params)
 {
 	struct inode_fixup_params *params = _params;
-	struct wim_inode_table *table = &params->inode_table;
-	struct wim_inode *d_inode = dentry->d_inode;
+	struct wim_inode_table *table     = &params->inode_table;
+	struct wim_inode *d_inode         = dentry->d_inode;
 	size_t pos;
 	struct wim_inode *inode;
 
@@ -81,22 +81,23 @@ inode_table_insert(struct wim_dentry *dentry, void *_params)
 			params->num_inconsistent_inodes++;
 			continue;
 		}
-		if (unlikely((d_inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY) ||
-			     (inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY)))
+		if (unlikely((d_inode->i_attributes &
+		              FILE_ATTRIBUTE_DIRECTORY) ||
+		             (inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY)))
 		{
 			params->num_dir_hard_links++;
 			if (params->num_dir_hard_links <=
 			    MAX_DIR_HARD_LINK_WARNINGS)
 			{
 				WARNING("Unsupported directory hard link "
-					"\"%"TS"\" <=> \"%"TS"\"",
-					dentry_full_path(dentry),
-					inode_any_full_path(inode));
+				        "\"%" TS "\" <=> \"%" TS "\"",
+				        dentry_full_path(dentry),
+				        inode_any_full_path(inode));
 			} else if (params->num_dir_hard_links ==
-				   MAX_DIR_HARD_LINK_WARNINGS + 1)
+			           MAX_DIR_HARD_LINK_WARNINGS + 1)
 			{
 				WARNING("Suppressing additional warnings about "
-					"directory hard links...");
+				        "directory hard links...");
 			}
 			continue;
 		}
@@ -127,7 +128,7 @@ hlist_move_all(struct hlist_head *src, struct hlist_head *dest)
 /* Move the inodes from the 'struct wim_inode_table' to the 'inode_list'.  */
 static void
 build_inode_list(struct wim_inode_table *inode_table,
-		 struct hlist_head *inode_list)
+                 struct hlist_head *inode_list)
 {
 	hlist_move_all(&inode_table->extra_inodes, inode_list);
 	for (size_t i = 0; i < inode_table->capacity; i++)
@@ -181,7 +182,7 @@ dentry_tree_fix_inodes(struct wim_dentry *root, struct hlist_head *inode_list)
 	if (ret)
 		return ret;
 
-	params.num_dir_hard_links = 0;
+	params.num_dir_hard_links      = 0;
 	params.num_inconsistent_inodes = 0;
 
 	for_dentry_in_tree(root, inode_table_insert, &params);
@@ -193,10 +194,10 @@ dentry_tree_fix_inodes(struct wim_dentry *root, struct hlist_head *inode_list)
 
 	if (unlikely(params.num_dir_hard_links))
 		WARNING("Ignoring %lu directory hard links",
-			params.num_dir_hard_links);
+		        params.num_dir_hard_links);
 
 	if (unlikely(params.num_inconsistent_inodes ||
-		     params.num_dir_hard_links))
+	             params.num_dir_hard_links))
 		reassign_inode_numbers(inode_list);
 	return 0;
 }

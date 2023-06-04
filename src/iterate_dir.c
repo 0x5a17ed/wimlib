@@ -41,10 +41,10 @@
 
 static int
 stream_to_wimlib_stream_entry(const struct wim_inode *inode,
-			      const struct wim_inode_stream *strm,
-			      struct wimlib_stream_entry *wstream,
-			      const struct blob_table *blob_table,
-			      int flags)
+                              const struct wim_inode_stream *strm,
+                              struct wimlib_stream_entry *wstream,
+                              const struct blob_table *blob_table,
+                              int flags)
 {
 	const struct blob_descriptor *blob;
 	const u8 *hash;
@@ -53,8 +53,9 @@ stream_to_wimlib_stream_entry(const struct wim_inode *inode,
 		int ret;
 
 		ret = utf16le_get_tstr(strm->stream_name,
-				       utf16le_len_bytes(strm->stream_name),
-				       &wstream->stream_name, NULL);
+		                       utf16le_len_bytes(strm->stream_name),
+		                       &wstream->stream_name,
+		                       NULL);
 		if (ret)
 			return ret;
 	}
@@ -82,8 +83,10 @@ get_default_stream_type(const struct wim_inode *inode)
 }
 
 static int
-init_wimlib_dentry(struct wimlib_dir_entry *wdentry, struct wim_dentry *dentry,
-		   WIMStruct *wim, int flags)
+init_wimlib_dentry(struct wimlib_dir_entry *wdentry,
+                   struct wim_dentry *dentry,
+                   WIMStruct *wim,
+                   int flags)
 {
 	int ret;
 	const struct wim_inode *inode = dentry->d_inode;
@@ -92,13 +95,17 @@ init_wimlib_dentry(struct wimlib_dir_entry *wdentry, struct wim_dentry *dentry,
 	const void *object_id;
 	u32 object_id_len;
 
-	ret = utf16le_get_tstr(dentry->d_name, dentry->d_name_nbytes,
-			       &wdentry->filename, NULL);
+	ret = utf16le_get_tstr(dentry->d_name,
+	                       dentry->d_name_nbytes,
+	                       &wdentry->filename,
+	                       NULL);
 	if (ret)
 		return ret;
 
-	ret = utf16le_get_tstr(dentry->d_short_name, dentry->d_short_name_nbytes,
-			       &wdentry->dos_name, NULL);
+	ret = utf16le_get_tstr(dentry->d_short_name,
+	                       dentry->d_short_name_nbytes,
+	                       &wdentry->dos_name,
+	                       NULL);
 	if (ret)
 		return ret;
 
@@ -114,49 +121,53 @@ init_wimlib_dentry(struct wimlib_dir_entry *wdentry, struct wim_dentry *dentry,
 		struct wim_security_data *sd;
 
 		sd = wim_get_current_security_data(wim);
-		wdentry->security_descriptor = sd->descriptors[inode->i_security_id];
-		wdentry->security_descriptor_size = sd->sizes[inode->i_security_id];
+		wdentry->security_descriptor =
+			sd->descriptors[inode->i_security_id];
+		wdentry->security_descriptor_size =
+			sd->sizes[inode->i_security_id];
 	}
-	wdentry->reparse_tag = inode->i_reparse_tag;
-	wdentry->num_links = inode->i_nlink;
-	wdentry->attributes = inode->i_attributes;
+	wdentry->reparse_tag        = inode->i_reparse_tag;
+	wdentry->num_links          = inode->i_nlink;
+	wdentry->attributes         = inode->i_attributes;
 	wdentry->hard_link_group_id = inode->i_ino;
 
 	wim_timestamp_to_wimlib_timespec(inode->i_creation_time,
-					 &wdentry->creation_time,
-					 &wdentry->creation_time_high);
+	                                 &wdentry->creation_time,
+	                                 &wdentry->creation_time_high);
 
 	wim_timestamp_to_wimlib_timespec(inode->i_last_write_time,
-					 &wdentry->last_write_time,
-					 &wdentry->last_write_time_high);
+	                                 &wdentry->last_write_time,
+	                                 &wdentry->last_write_time_high);
 
 	wim_timestamp_to_wimlib_timespec(inode->i_last_access_time,
-					 &wdentry->last_access_time,
-					 &wdentry->last_access_time_high);
+	                                 &wdentry->last_access_time,
+	                                 &wdentry->last_access_time_high);
 
 	if (inode_get_unix_data(inode, &unix_data)) {
-		wdentry->unix_uid = unix_data.uid;
-		wdentry->unix_gid = unix_data.gid;
+		wdentry->unix_uid  = unix_data.uid;
+		wdentry->unix_gid  = unix_data.gid;
 		wdentry->unix_mode = unix_data.mode;
 		wdentry->unix_rdev = unix_data.rdev;
 	}
 	object_id = inode_get_object_id(inode, &object_id_len);
 	if (unlikely(object_id != NULL)) {
-		memcpy(&wdentry->object_id, object_id,
+		memcpy(&wdentry->object_id,
+		       object_id,
 		       min(object_id_len, sizeof(wdentry->object_id)));
 	}
 
 	strm = inode_get_unnamed_stream(inode, get_default_stream_type(inode));
 	if (strm) {
-		ret = stream_to_wimlib_stream_entry(inode, strm,
-						    &wdentry->streams[0],
-						    wim->blob_table, flags);
+		ret = stream_to_wimlib_stream_entry(inode,
+		                                    strm,
+		                                    &wdentry->streams[0],
+		                                    wim->blob_table,
+		                                    flags);
 		if (ret)
 			return ret;
 	}
 
 	for (unsigned i = 0; i < inode->i_num_streams; i++) {
-
 		strm = &inode->i_streams[i];
 
 		if (!stream_is_named_data_stream(strm))
@@ -164,10 +175,12 @@ init_wimlib_dentry(struct wimlib_dir_entry *wdentry, struct wim_dentry *dentry,
 
 		wdentry->num_named_streams++;
 
-		ret = stream_to_wimlib_stream_entry(inode, strm,
-						    &wdentry->streams[
-							wdentry->num_named_streams],
-						    wim->blob_table, flags);
+		ret = stream_to_wimlib_stream_entry(
+			inode,
+			strm,
+			&wdentry->streams[wdentry->num_named_streams],
+			wim->blob_table,
+			flags);
 		if (ret)
 			return ret;
 	}
@@ -186,17 +199,18 @@ free_wimlib_dentry(struct wimlib_dir_entry *wdentry)
 
 static int
 do_iterate_dir_tree(WIMStruct *wim,
-		    struct wim_dentry *dentry, int flags,
-		    wimlib_iterate_dir_tree_callback_t cb,
-		    void *user_ctx)
+                    struct wim_dentry *dentry,
+                    int flags,
+                    wimlib_iterate_dir_tree_callback_t cb,
+                    void *user_ctx)
 {
 	struct wimlib_dir_entry *wdentry;
 	int ret = WIMLIB_ERR_NOMEM;
 
-
-	wdentry = CALLOC(1, sizeof(struct wimlib_dir_entry) +
-				  (1 + dentry->d_inode->i_num_streams) *
-					sizeof(struct wimlib_stream_entry));
+	wdentry = CALLOC(1,
+	                 sizeof(struct wimlib_dir_entry) +
+	                         (1 + dentry->d_inode->i_num_streams) *
+	                                 sizeof(struct wimlib_stream_entry));
 	if (wdentry == NULL)
 		goto out;
 
@@ -211,15 +225,19 @@ do_iterate_dir_tree(WIMStruct *wim,
 	}
 
 	if (flags & (WIMLIB_ITERATE_DIR_TREE_FLAG_RECURSIVE |
-		     WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN))
+	             WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN))
 	{
 		struct wim_dentry *child;
 
 		ret = 0;
-		for_dentry_child(child, dentry) {
-			ret = do_iterate_dir_tree(wim, child,
-						  flags & ~WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN,
-						  cb, user_ctx);
+		for_dentry_child(child, dentry)
+		{
+			ret = do_iterate_dir_tree(
+				wim,
+				child,
+				flags & ~WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN,
+				cb,
+				user_ctx);
 			if (ret)
 				break;
 		}
@@ -239,7 +257,6 @@ struct image_iterate_dir_tree_ctx {
 	void *user_ctx;
 };
 
-
 static int
 image_do_iterate_dir_tree(WIMStruct *wim)
 {
@@ -249,34 +266,38 @@ image_do_iterate_dir_tree(WIMStruct *wim)
 	dentry = get_dentry(wim, ctx->path, WIMLIB_CASE_PLATFORM_DEFAULT);
 	if (dentry == NULL)
 		return WIMLIB_ERR_PATH_DOES_NOT_EXIST;
-	return do_iterate_dir_tree(wim, dentry, ctx->flags, ctx->cb, ctx->user_ctx);
+	return do_iterate_dir_tree(
+		wim, dentry, ctx->flags, ctx->cb, ctx->user_ctx);
 }
 
 /* API function documented in wimlib.h  */
 WIMLIBAPI int
-wimlib_iterate_dir_tree(WIMStruct *wim, int image, const tchar *_path,
-			int flags,
-			wimlib_iterate_dir_tree_callback_t cb, void *user_ctx)
+wimlib_iterate_dir_tree(WIMStruct *wim,
+                        int image,
+                        const tchar *_path,
+                        int flags,
+                        wimlib_iterate_dir_tree_callback_t cb,
+                        void *user_ctx)
 {
 	tchar *path;
 	int ret;
 
 	if (flags & ~(WIMLIB_ITERATE_DIR_TREE_FLAG_RECURSIVE |
-		      WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN |
-		      WIMLIB_ITERATE_DIR_TREE_FLAG_RESOURCES_NEEDED))
+	              WIMLIB_ITERATE_DIR_TREE_FLAG_CHILDREN |
+	              WIMLIB_ITERATE_DIR_TREE_FLAG_RESOURCES_NEEDED))
 		return WIMLIB_ERR_INVALID_PARAM;
 
 	path = canonicalize_wim_path(_path);
 	if (path == NULL)
 		return WIMLIB_ERR_NOMEM;
 	struct image_iterate_dir_tree_ctx ctx = {
-		.path = path,
-		.flags = flags,
-		.cb = cb,
+		.path     = path,
+		.flags    = flags,
+		.cb       = cb,
 		.user_ctx = user_ctx,
 	};
 	wim->private = &ctx;
-	ret = for_image(wim, image, image_do_iterate_dir_tree);
+	ret          = for_image(wim, image, image_do_iterate_dir_tree);
 	FREE(path);
 	return ret;
 }

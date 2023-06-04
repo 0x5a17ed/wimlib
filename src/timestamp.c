@@ -38,16 +38,16 @@
  * that it is not also before 1601-01-01.
  */
 
-#define NANOSECONDS_PER_TICK	100
-#define TICKS_PER_SECOND	(1000000000 / NANOSECONDS_PER_TICK)
-#define TICKS_PER_MICROSECOND	(TICKS_PER_SECOND / 1000000)
+#define NANOSECONDS_PER_TICK  100
+#define TICKS_PER_SECOND      (1000000000 / NANOSECONDS_PER_TICK)
+#define TICKS_PER_MICROSECOND (TICKS_PER_SECOND / 1000000)
 
 /*
  * EPOCH_DISTANCE is the number of seconds separating the Windows NT and UNIX
  * epochs.  This is equal to ((1970-1601)*365+89)*24*60*60.  89 is the number
  * of leap years between 1970 and 1601.
  */
-#define EPOCH_DISTANCE		11644473600
+#define EPOCH_DISTANCE 11644473600
 
 /* Windows NT timestamps to UNIX timestamps  */
 
@@ -58,12 +58,13 @@ wim_timestamp_to_time_t(u64 timestamp)
 }
 
 void
-wim_timestamp_to_wimlib_timespec(u64 timestamp, struct wimlib_timespec *wts,
-				 s32 *high_part_ret)
+wim_timestamp_to_wimlib_timespec(u64 timestamp,
+                                 struct wimlib_timespec *wts,
+                                 s32 *high_part_ret)
 {
 	s64 sec = (timestamp / TICKS_PER_SECOND) - EPOCH_DISTANCE;
 
-	wts->tv_sec = sec;
+	wts->tv_sec  = sec;
 	wts->tv_nsec = (timestamp % TICKS_PER_SECOND) * NANOSECONDS_PER_TICK;
 
 	if (sizeof(wts->tv_sec) == 4)
@@ -71,8 +72,7 @@ wim_timestamp_to_wimlib_timespec(u64 timestamp, struct wimlib_timespec *wts,
 }
 
 #ifdef _WIN32
-static void __attribute__((unused))
-check_sizeof_time_t(void)
+static void __attribute__((unused)) check_sizeof_time_t(void)
 {
 	/* Windows builds should always be using 64-bit time_t now. */
 	STATIC_ASSERT(sizeof(time_t) == 8);
@@ -81,18 +81,20 @@ check_sizeof_time_t(void)
 struct timeval
 wim_timestamp_to_timeval(u64 timestamp)
 {
-	return (struct timeval) {
+	return (struct timeval){
 		.tv_sec = wim_timestamp_to_time_t(timestamp),
-		.tv_usec = (timestamp % TICKS_PER_SECOND) / TICKS_PER_MICROSECOND,
+		.tv_usec =
+			(timestamp % TICKS_PER_SECOND) / TICKS_PER_MICROSECOND,
 	};
 }
 
 struct timespec
 wim_timestamp_to_timespec(u64 timestamp)
 {
-	return (struct timespec) {
+	return (struct timespec){
 		.tv_sec = wim_timestamp_to_time_t(timestamp),
-		.tv_nsec = (timestamp % TICKS_PER_SECOND) * NANOSECONDS_PER_TICK,
+		.tv_nsec =
+			(timestamp % TICKS_PER_SECOND) * NANOSECONDS_PER_TICK,
 	};
 }
 #endif /* !_WIN32 */
@@ -110,14 +112,14 @@ u64
 timeval_to_wim_timestamp(const struct timeval *tv)
 {
 	return time_t_to_wim_timestamp(tv->tv_sec) +
-		(u32)tv->tv_usec * TICKS_PER_MICROSECOND;
+	       (u32)tv->tv_usec * TICKS_PER_MICROSECOND;
 }
 
 u64
 timespec_to_wim_timestamp(const struct timespec *ts)
 {
 	return time_t_to_wim_timestamp(ts->tv_sec) +
-		(u32)ts->tv_nsec / NANOSECONDS_PER_TICK;
+	       (u32)ts->tv_nsec / NANOSECONDS_PER_TICK;
 }
 
 /* Retrieve the current time as a WIM timestamp.  */

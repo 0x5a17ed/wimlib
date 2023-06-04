@@ -8,7 +8,7 @@ struct blob_descriptor;
 struct blob_table;
 
 /* Windows enforces this limit on the size of a reparse point buffer.  */
-#define REPARSE_POINT_MAX_SIZE	16384
+#define REPARSE_POINT_MAX_SIZE 16384
 
 /*
  * On-disk format of a reparse point buffer.  See:
@@ -37,7 +37,7 @@ struct reparse_buffer_disk {
 
 				struct {
 					le32 flags;
-			#define SYMBOLIC_LINK_RELATIVE 0x00000001
+#define SYMBOLIC_LINK_RELATIVE 0x00000001
 					u8 data[REPARSE_POINT_MAX_SIZE - 20];
 				} symlink;
 			};
@@ -45,23 +45,25 @@ struct reparse_buffer_disk {
 	};
 };
 
-#define REPARSE_DATA_OFFSET ((unsigned)offsetof(struct reparse_buffer_disk, rpdata))
+#define REPARSE_DATA_OFFSET \
+  ((unsigned)offsetof(struct reparse_buffer_disk, rpdata))
 
 #define REPARSE_DATA_MAX_SIZE (REPARSE_POINT_MAX_SIZE - REPARSE_DATA_OFFSET)
 
-static void __attribute__((unused))
-check_reparse_buffer_disk(void)
+static void __attribute__((unused)) check_reparse_buffer_disk(void)
 {
 	STATIC_ASSERT(offsetof(struct reparse_buffer_disk, rpdata) == 8);
-	STATIC_ASSERT(offsetof(struct reparse_buffer_disk, link.junction.data) == 16);
-	STATIC_ASSERT(offsetof(struct reparse_buffer_disk, link.symlink.data) == 20);
-	STATIC_ASSERT(sizeof(struct reparse_buffer_disk) == REPARSE_POINT_MAX_SIZE);
+	STATIC_ASSERT(
+		offsetof(struct reparse_buffer_disk, link.junction.data) == 16);
+	STATIC_ASSERT(offsetof(struct reparse_buffer_disk, link.symlink.data) ==
+	              20);
+	STATIC_ASSERT(sizeof(struct reparse_buffer_disk) ==
+	              REPARSE_POINT_MAX_SIZE);
 }
 
 /* Wrapper around a symbolic link or junction reparse point
  * (WIM_IO_REPARSE_TAG_SYMLINK or WIM_IO_REPARSE_TAG_MOUNT_POINT)  */
 struct link_reparse_point {
-
 	u32 rptag;
 	u16 rpreserved;
 
@@ -88,25 +90,32 @@ link_is_relative_symlink(const struct link_reparse_point *link)
 
 void
 complete_reparse_point(struct reparse_buffer_disk *rpbuf,
-		       const struct wim_inode *inode, u16 blob_size);
+                       const struct wim_inode *inode,
+                       u16 blob_size);
 
 int
-parse_link_reparse_point(const struct reparse_buffer_disk *rpbuf, u16 rpbuflen,
-			 struct link_reparse_point *link);
+parse_link_reparse_point(const struct reparse_buffer_disk *rpbuf,
+                         u16 rpbuflen,
+                         struct link_reparse_point *link);
 
 int
 make_link_reparse_point(const struct link_reparse_point *link,
-			struct reparse_buffer_disk *rpbuf, u16 *rpbuflen_ret);
+                        struct reparse_buffer_disk *rpbuf,
+                        u16 *rpbuflen_ret);
 
 #ifndef _WIN32
 int
-wim_inode_readlink(const struct wim_inode *inode, char *buf, size_t bufsize,
-		   const struct blob_descriptor *blob,
-		   const char *altroot, size_t altroot_len);
+wim_inode_readlink(const struct wim_inode *inode,
+                   char *buf,
+                   size_t bufsize,
+                   const struct blob_descriptor *blob,
+                   const char *altroot,
+                   size_t altroot_len);
 
 int
-wim_inode_set_symlink(struct wim_inode *inode, const char *target,
-		      struct blob_table *blob_table);
+wim_inode_set_symlink(struct wim_inode *inode,
+                      const char *target,
+                      struct blob_table *blob_table);
 #endif
 
 #endif /* _WIMLIB_REPARSE_H */

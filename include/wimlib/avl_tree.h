@@ -34,7 +34,6 @@
 
 /* Node in an AVL tree.  Embed this in some other data structure.  */
 struct avl_tree_node {
-
 	/* Pointer to left child or NULL  */
 	struct avl_tree_node *left;
 
@@ -60,7 +59,7 @@ struct avl_tree_node {
 
 /* Cast an AVL tree node to the containing data structure.  */
 #define avl_tree_entry(entry, type, member) \
-	((type*) ((char *)(entry) - offsetof(type, member)))
+  ((type *)((char *)(entry)-offsetof(type, member)))
 
 /* Returns a pointer to the parent of the specified AVL tree node, or NULL if it
  * is already the root of the tree.  */
@@ -73,7 +72,7 @@ avl_get_parent(const struct avl_tree_node *node)
 /* (Internal use only)  */
 void
 avl_tree_rebalance_after_insert(struct avl_tree_node **root_ptr,
-				struct avl_tree_node *inserted);
+                                struct avl_tree_node *inserted);
 
 /*
  * Looks up an item in the specified AVL tree.
@@ -125,8 +124,8 @@ avl_tree_rebalance_after_insert(struct avl_tree_node **root_ptr,
  */
 static AVL_INLINE struct avl_tree_node *
 avl_tree_lookup(const struct avl_tree_node *root,
-		const void *cmp_ctx,
-		int (*cmp)(const void *, const struct avl_tree_node *))
+                const void *cmp_ctx,
+                int (*cmp)(const void *, const struct avl_tree_node *))
 {
 	const struct avl_tree_node *cur = root;
 
@@ -139,7 +138,7 @@ avl_tree_lookup(const struct avl_tree_node *root,
 		else
 			break;
 	}
-	return (struct avl_tree_node*)cur;
+	return (struct avl_tree_node *)cur;
 }
 
 /* Same as avl_tree_lookup(), but uses a more specific type for the comparison
@@ -148,9 +147,9 @@ avl_tree_lookup(const struct avl_tree_node *root,
  * embedded 'struct avl_tree_node'.  */
 static AVL_INLINE struct avl_tree_node *
 avl_tree_lookup_node(const struct avl_tree_node *root,
-		     const struct avl_tree_node *node,
-		     int (*cmp)(const struct avl_tree_node *,
-				const struct avl_tree_node *))
+                     const struct avl_tree_node *node,
+                     int (*cmp)(const struct avl_tree_node *,
+                                const struct avl_tree_node *))
 {
 	const struct avl_tree_node *cur = root;
 
@@ -163,7 +162,7 @@ avl_tree_lookup_node(const struct avl_tree_node *root,
 		else
 			break;
 	}
-	return (struct avl_tree_node*)cur;
+	return (struct avl_tree_node *)cur;
 }
 
 /*
@@ -228,9 +227,9 @@ avl_tree_lookup_node(const struct avl_tree_node *root,
  */
 static AVL_INLINE struct avl_tree_node *
 avl_tree_insert(struct avl_tree_node **root_ptr,
-		struct avl_tree_node *item,
-		int (*cmp)(const struct avl_tree_node *,
-			   const struct avl_tree_node *))
+                struct avl_tree_node *item,
+                int (*cmp)(const struct avl_tree_node *,
+                           const struct avl_tree_node *))
 {
 	struct avl_tree_node **cur_ptr = root_ptr, *cur = NULL;
 	int res;
@@ -245,7 +244,7 @@ avl_tree_insert(struct avl_tree_node **root_ptr,
 		else
 			return cur;
 	}
-	*cur_ptr = item;
+	*cur_ptr             = item;
 	item->parent_balance = (uintptr_t)cur | 1;
 	avl_tree_rebalance_after_insert(root_ptr, item);
 	return NULL;
@@ -275,7 +274,7 @@ avl_tree_first_in_postorder(const struct avl_tree_node *root);
 
 struct avl_tree_node *
 avl_tree_next_in_postorder(const struct avl_tree_node *prev,
-			   const struct avl_tree_node *prev_parent);
+                           const struct avl_tree_node *prev_parent);
 
 /*
  * Iterate through the nodes in an AVL tree in sorted order.
@@ -306,39 +305,35 @@ avl_tree_next_in_postorder(const struct avl_tree_node *prev,
  *		printf("%d\n", i->data);
  * }
  */
-#define avl_tree_for_each_in_order(child_struct, root,			\
-				   struct_name, struct_member)		\
-	for (struct avl_tree_node *_cur =				\
-		avl_tree_first_in_order(root);				\
-	     _cur && ((child_struct) =					\
-		      avl_tree_entry(_cur, struct_name,			\
-				     struct_member), 1);		\
-	     _cur = avl_tree_next_in_order(_cur))
+#define avl_tree_for_each_in_order(                                            \
+	child_struct, root, struct_name, struct_member)                        \
+  for (struct avl_tree_node *_cur = avl_tree_first_in_order(root);             \
+       _cur &&                                                                 \
+       ((child_struct) = avl_tree_entry(_cur, struct_name, struct_member), 1); \
+       _cur = avl_tree_next_in_order(_cur))
 
 /*
  * Like avl_tree_for_each_in_order(), but uses the reverse order.
  */
-#define avl_tree_for_each_in_reverse_order(child_struct, root,		\
-					   struct_name, struct_member)	\
-	for (struct avl_tree_node *_cur =				\
-		avl_tree_last_in_order(root);				\
-	     _cur && ((child_struct) =					\
-		      avl_tree_entry(_cur, struct_name,			\
-				     struct_member), 1);		\
-	     _cur = avl_tree_prev_in_order(_cur))
+#define avl_tree_for_each_in_reverse_order(                                    \
+	child_struct, root, struct_name, struct_member)                        \
+  for (struct avl_tree_node *_cur = avl_tree_last_in_order(root);              \
+       _cur &&                                                                 \
+       ((child_struct) = avl_tree_entry(_cur, struct_name, struct_member), 1); \
+       _cur = avl_tree_prev_in_order(_cur))
 
 /*
  * Like avl_tree_for_each_in_order(), but iterates through the nodes in
  * postorder, so the current node may be deleted or freed.
  */
-#define avl_tree_for_each_in_postorder(child_struct, root,		\
-				       struct_name, struct_member)	\
-	for (struct avl_tree_node *_cur =				\
-		avl_tree_first_in_postorder(root), *_parent;		\
-	     _cur && ((child_struct) =					\
-		      avl_tree_entry(_cur, struct_name,			\
-				     struct_member), 1)			\
-	          && (_parent = avl_get_parent(_cur), 1);		\
-	     _cur = avl_tree_next_in_postorder(_cur, _parent))
+#define avl_tree_for_each_in_postorder(                                    \
+	child_struct, root, struct_name, struct_member)                    \
+  for (struct avl_tree_node *_cur = avl_tree_first_in_postorder(root),     \
+	                    *_parent;                                      \
+       _cur &&                                                             \
+       ((child_struct) = avl_tree_entry(_cur, struct_name, struct_member), \
+       1) &&                                                               \
+       (_parent = avl_get_parent(_cur), 1);                                \
+       _cur = avl_tree_next_in_postorder(_cur, _parent))
 
 #endif /* _AVL_TREE_H_ */

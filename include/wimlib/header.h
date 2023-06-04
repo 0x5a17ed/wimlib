@@ -25,31 +25,20 @@
  * supported by wimlib.  */
 
 /* WIM magic characters, translated to a single 64-bit number.  */
-#define WIM_MAGIC				\
-		(((u64)'M'  <<  0) |		\
-		 ((u64)'S'  <<  8) |		\
-		 ((u64)'W'  << 16) |		\
-		 ((u64)'I'  << 24) |		\
-		 ((u64)'M'  << 32) |		\
-		 ((u64)'\0' << 40) |		\
-		 ((u64)'\0' << 48) |		\
-		 ((u64)'\0' << 54))
+#define WIM_MAGIC                                                            \
+  (((u64)'M' << 0) | ((u64)'S' << 8) | ((u64)'W' << 16) | ((u64)'I' << 24) | \
+   ((u64)'M' << 32) | ((u64)'\0' << 40) | ((u64)'\0' << 48) |                \
+   ((u64)'\0' << 54))
 
 /* wimlib pipable WIM magic characters, translated to a single 64-bit number.
  * */
-#define PWM_MAGIC				\
-		(((u64)'W'  <<  0) |		\
-		 ((u64)'L'  <<  8) |		\
-		 ((u64)'P'  << 16) |		\
-		 ((u64)'W'  << 24) |		\
-		 ((u64)'M'  << 32) |		\
-		 ((u64)'\0' << 40) |		\
-		 ((u64)'\0' << 48) |		\
-		 ((u64)'\0' << 54))
+#define PWM_MAGIC                                                            \
+  (((u64)'W' << 0) | ((u64)'L' << 8) | ((u64)'P' << 16) | ((u64)'W' << 24) | \
+   ((u64)'M' << 32) | ((u64)'\0' << 40) | ((u64)'\0' << 48) |                \
+   ((u64)'\0' << 54))
 
 /* On-disk format of the WIM header.  */
 struct wim_header_disk {
-
 	/* +0x00: Magic characters WIM_MAGIC or PWM_MAGIC.  */
 	le64 magic;
 
@@ -117,7 +106,7 @@ struct wim_header_disk {
  * memory allocations when processing fuzzed files.  This can be increased if
  * ever needed (up to INT_MAX - 1).
  */
-#define MAX_IMAGES	65535
+#define MAX_IMAGES 65535
 
 /* In-memory representation of a WIM header.  See `struct wim_header_disk' for
  * field descriptions.  */
@@ -140,33 +129,33 @@ struct wim_header {
 /* WIM header flags ('wim_flags' field of 'struct wim_header_disk'):  */
 
 /* Reserved flag.  */
-#define WIM_HDR_FLAG_RESERVED           0x00000001
+#define WIM_HDR_FLAG_RESERVED 0x00000001
 
 /* The WIM may contain compressed resources --- specifically, resources with
  * WIM_RESHDR_FLAG_COMPRESSED set in their headers.  Exactly one of the more
  * specific WIM_HDR_FLAG_COMPRESSION_* flags must be set to specify the
  * compression format used.  */
-#define WIM_HDR_FLAG_COMPRESSION        0x00000002
+#define WIM_HDR_FLAG_COMPRESSION 0x00000002
 
 /* The WIM is read-only, so modifications should not be allowed even if the WIM
  * is writable at the filesystem level.  */
-#define WIM_HDR_FLAG_READONLY           0x00000004
+#define WIM_HDR_FLAG_READONLY 0x00000004
 
 /* The WIM is part of a split WIM.  */
-#define WIM_HDR_FLAG_SPANNED            0x00000008
+#define WIM_HDR_FLAG_SPANNED 0x00000008
 
 /* All blobs included in the WIM's blob table are non-metadata (do not have
  * WIM_RESHDR_FLAG_METADATA set).  wimlib ignores this flag and clears it on new
  * WIM files it writes.  */
-#define WIM_HDR_FLAG_RESOURCE_ONLY      0x00000010
+#define WIM_HDR_FLAG_RESOURCE_ONLY 0x00000010
 
 /* All blobs included in the WIM's blob table are metadata (have
  * WIM_RESHDR_FLAG_METADATA set).  wimlib ignores this flag and clears it on new
  * WIM files it writes.  */
-#define WIM_HDR_FLAG_METADATA_ONLY      0x00000020
+#define WIM_HDR_FLAG_METADATA_ONLY 0x00000020
 
 /* The WIM is currently being written or appended to.  */
-#define WIM_HDR_FLAG_WRITE_IN_PROGRESS  0x00000040
+#define WIM_HDR_FLAG_WRITE_IN_PROGRESS 0x00000040
 
 /* Reparse point fixup flag.  See docs for the --rpfix and --norpfix options to
  * 'wimlib-imagex capture', or the WIMLIB_ADD_FLAG_{RPFIX,NORPFIX} flags in
@@ -174,26 +163,26 @@ struct wim_header {
  * default behavior for the WIM; it can still be programatically overridden on a
  * per-image basis.  But there is no flag in the file format to set the default
  * behavior for a specific image.  */
-#define WIM_HDR_FLAG_RP_FIX             0x00000080
+#define WIM_HDR_FLAG_RP_FIX 0x00000080
 
 /* Unused, reserved flag for another compression type.  */
-#define WIM_HDR_FLAG_COMPRESS_RESERVED  0x00010000
+#define WIM_HDR_FLAG_COMPRESS_RESERVED 0x00010000
 
 /* Resources in the WIM with WIM_RESHDR_FLAG_COMPRESSED set in their headers are
  * compressed with XPRESS compression.  */
-#define WIM_HDR_FLAG_COMPRESS_XPRESS    0x00020000
+#define WIM_HDR_FLAG_COMPRESS_XPRESS 0x00020000
 
 /* Resources in the WIM with WIM_RESHDR_FLAG_COMPRESSED set in their headers are
  * compressed with LZX compression.  */
-#define WIM_HDR_FLAG_COMPRESS_LZX       0x00040000
+#define WIM_HDR_FLAG_COMPRESS_LZX 0x00040000
 
 /* Resources in the WIM with WIM_RESHDR_FLAG_COMPRESSED set in their headers are
  * compressed with LZMS compression.  Note: this flag is only valid if the WIM
  * version is WIM_VERSION_SOLID.  Also, this flag is only supported in wimlib
  * v1.6.0 and later and WIMGAPI Windows 8 and later.  */
-#define WIM_HDR_FLAG_COMPRESS_LZMS      0x00080000
+#define WIM_HDR_FLAG_COMPRESS_LZMS 0x00080000
 
 /* XPRESS, with small chunk size???  */
-#define WIM_HDR_FLAG_COMPRESS_XPRESS_2	0x00200000
+#define WIM_HDR_FLAG_COMPRESS_XPRESS_2 0x00200000
 
 #endif /* _WIMLIB_HEADER_H */

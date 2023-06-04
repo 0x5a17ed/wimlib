@@ -72,7 +72,6 @@
 /* On-disk format of a WIM dentry (directory entry), located in the metadata
  * resource for a WIM image.  */
 struct wim_dentry_on_disk {
-
 	/* Length of this directory entry in bytes, not including any extra
 	 * stream entries.  Should be a multiple of 8 so that the following
 	 * dentry or extra stream entry is aligned on an 8-byte boundary.  (If
@@ -197,7 +196,7 @@ struct wim_dentry_on_disk {
 	/* u8 tagged_items[] __attribute__((aligned(8))); */
 
 } __attribute__((packed));
-	/* If num_extra_streams != 0, then there are that many extra stream
+/* If num_extra_streams != 0, then there are that many extra stream
 	 * entries following the dentry, starting on the next 8-byte aligned
 	 * boundary.  They are not counted in the 'length' field of the dentry.
 	 */
@@ -205,7 +204,6 @@ struct wim_dentry_on_disk {
 /* On-disk format of an extra stream entry.  This represents an extra NTFS-style
  * "stream" associated with the file, such as a named data stream.  */
 struct wim_extra_stream_entry_on_disk {
-
 	/* Length of this extra stream entry, in bytes.  This includes all
 	 * fixed-length fields, plus the name and null terminator if present,
 	 * and any needed padding such that the length is a multiple of 8.  */
@@ -229,16 +227,17 @@ struct wim_extra_stream_entry_on_disk {
 } __attribute__((packed));
 
 static void
-do_dentry_set_name(struct wim_dentry *dentry, utf16lechar *name,
-		   size_t name_nbytes)
+do_dentry_set_name(struct wim_dentry *dentry,
+                   utf16lechar *name,
+                   size_t name_nbytes)
 {
 	FREE(dentry->d_name);
-	dentry->d_name = name;
+	dentry->d_name        = name;
 	dentry->d_name_nbytes = name_nbytes;
 
 	if (dentry_has_short_name(dentry)) {
 		FREE(dentry->d_short_name);
-		dentry->d_short_name = NULL;
+		dentry->d_short_name        = NULL;
 		dentry->d_short_name_nbytes = 0;
 	}
 }
@@ -262,8 +261,9 @@ do_dentry_set_name(struct wim_dentry *dentry, utf16lechar *name,
  * Returns 0 or WIMLIB_ERR_NOMEM.
  */
 int
-dentry_set_name_utf16le(struct wim_dentry *dentry, const utf16lechar *name,
-			size_t name_nbytes)
+dentry_set_name_utf16le(struct wim_dentry *dentry,
+                        const utf16lechar *name,
+                        size_t name_nbytes)
 {
 	utf16lechar *dup = NULL;
 
@@ -275,7 +275,6 @@ dentry_set_name_utf16le(struct wim_dentry *dentry, const utf16lechar *name,
 	do_dentry_set_name(dentry, dup, name_nbytes);
 	return 0;
 }
-
 
 /*
  * Set the name of a WIM dentry from a 'tchar' string.
@@ -295,13 +294,15 @@ dentry_set_name_utf16le(struct wim_dentry *dentry, const utf16lechar *name,
 int
 dentry_set_name(struct wim_dentry *dentry, const tchar *name)
 {
-	utf16lechar *name_utf16le = NULL;
+	utf16lechar *name_utf16le  = NULL;
 	size_t name_utf16le_nbytes = 0;
 	int ret;
 
 	if (name && *name) {
-		ret = tstr_to_utf16le(name, tstrlen(name) * sizeof(tchar),
-				      &name_utf16le, &name_utf16le_nbytes);
+		ret = tstr_to_utf16le(name,
+		                      tstrlen(name) * sizeof(tchar),
+		                      &name_utf16le,
+		                      &name_utf16le_nbytes);
 		if (ret)
 			return ret;
 	}
@@ -325,7 +326,6 @@ dentry_min_len_with_names(u16 name_nbytes, u16 short_name_nbytes)
 		length += (u32)short_name_nbytes + 2;
 	return length;
 }
-
 
 /* Return the length, in bytes, required for the specified stream on-disk, when
  * represented as an extra stream entry.  */
@@ -356,7 +356,7 @@ dentry_out_total_length(const struct wim_dentry *dentry)
 	size_t len;
 
 	len = dentry_min_len_with_names(dentry->d_name_nbytes,
-					dentry->d_short_name_nbytes);
+	                                dentry->d_short_name_nbytes);
 	len = ALIGN(len, 8);
 
 	if (inode->i_extra)
@@ -372,23 +372,31 @@ dentry_out_total_length(const struct wim_dentry *dentry)
 		 *	- at least one named data stream (for Windows PE bug workaround)
 		 * - Use one extra stream entry for the reparse point stream if there is one
 		 */
-		bool have_named_data_stream = false;
+		bool have_named_data_stream    = false;
 		bool have_reparse_point_stream = false;
 		for (unsigned i = 0; i < inode->i_num_streams; i++) {
-			const struct wim_inode_stream *strm = &inode->i_streams[i];
+			const struct wim_inode_stream *strm =
+				&inode->i_streams[i];
 			if (stream_is_named_data_stream(strm)) {
 				len += stream_out_total_length(strm);
 				have_named_data_stream = true;
-			} else if (strm->stream_type == STREAM_TYPE_REPARSE_POINT) {
-				wimlib_assert(inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT);
+			} else if (strm->stream_type ==
+			           STREAM_TYPE_REPARSE_POINT)
+			{
+				wimlib_assert(inode->i_attributes &
+				              FILE_ATTRIBUTE_REPARSE_POINT);
 				have_reparse_point_stream = true;
 			}
 		}
 
 		if (have_named_data_stream || have_reparse_point_stream) {
 			if (have_reparse_point_stream)
-				len += ALIGN(sizeof(struct wim_extra_stream_entry_on_disk), 8);
-			len += ALIGN(sizeof(struct wim_extra_stream_entry_on_disk), 8);
+				len += ALIGN(
+					sizeof(struct wim_extra_stream_entry_on_disk),
+					8);
+			len += ALIGN(
+				sizeof(struct wim_extra_stream_entry_on_disk),
+				8);
 		}
 	}
 
@@ -398,7 +406,8 @@ dentry_out_total_length(const struct wim_dentry *dentry)
 /* Internal version of for_dentry_in_tree() that omits the NULL check  */
 static int
 do_for_dentry_in_tree(struct wim_dentry *dentry,
-		      int (*visitor)(struct wim_dentry *, void *), void *arg)
+                      int (*visitor)(struct wim_dentry *, void *),
+                      void *arg)
 {
 	int ret;
 	struct wim_dentry *child;
@@ -407,7 +416,8 @@ do_for_dentry_in_tree(struct wim_dentry *dentry,
 	if (unlikely(ret))
 		return ret;
 
-	for_dentry_child(child, dentry) {
+	for_dentry_child(child, dentry)
+	{
 		ret = do_for_dentry_in_tree(child, visitor, arg);
 		if (unlikely(ret))
 			return ret;
@@ -418,12 +428,14 @@ do_for_dentry_in_tree(struct wim_dentry *dentry,
 /* Internal version of for_dentry_in_tree_depth() that omits the NULL check  */
 static int
 do_for_dentry_in_tree_depth(struct wim_dentry *dentry,
-			    int (*visitor)(struct wim_dentry *, void *), void *arg)
+                            int (*visitor)(struct wim_dentry *, void *),
+                            void *arg)
 {
 	int ret;
 	struct wim_dentry *child;
 
-	for_dentry_child_postorder(child, dentry) {
+	for_dentry_child_postorder(child, dentry)
+	{
 		ret = do_for_dentry_in_tree_depth(child, visitor, arg);
 		if (unlikely(ret))
 			return ret;
@@ -451,7 +463,8 @@ do_for_dentry_in_tree_depth(struct wim_dentry *dentry,
  */
 int
 for_dentry_in_tree(struct wim_dentry *root,
-		   int (*visitor)(struct wim_dentry *, void *), void *arg)
+                   int (*visitor)(struct wim_dentry *, void *),
+                   void *arg)
 {
 	if (unlikely(!root))
 		return 0;
@@ -463,7 +476,8 @@ for_dentry_in_tree(struct wim_dentry *root,
  * itself.  It will be safe to free a dentry when visiting it.  */
 static int
 for_dentry_in_tree_depth(struct wim_dentry *root,
-			 int (*visitor)(struct wim_dentry *, void *), void *arg)
+                         int (*visitor)(struct wim_dentry *, void *),
+                         void *arg)
 {
 	if (unlikely(!root))
 		return 0;
@@ -490,11 +504,11 @@ calculate_dentry_full_path(struct wim_dentry *dentry)
 		return 0;
 
 	ulen = 0;
-	d = dentry;
+	d    = dentry;
 	do {
 		ulen += d->d_name_nbytes / sizeof(utf16lechar);
 		ulen++;
-		d = d->d_parent;  /* assumes d == d->d_parent for root  */
+		d = d->d_parent; /* assumes d == d->d_parent for root  */
 	} while (!dentry_is_root(d));
 
 	utf16lechar ubuf[ulen];
@@ -506,13 +520,13 @@ calculate_dentry_full_path(struct wim_dentry *dentry)
 		if (d->d_name_nbytes)
 			memcpy(p, d->d_name, d->d_name_nbytes);
 		*--p = cpu_to_le16(WIM_PATH_SEPARATOR);
-		d = d->d_parent;  /* assumes d == d->d_parent for root  */
+		d    = d->d_parent; /* assumes d == d->d_parent for root  */
 	} while (!dentry_is_root(d));
 
 	wimlib_assert(p == ubuf);
 
-	return utf16le_to_tstr(ubuf, ulen * sizeof(utf16lechar),
-			       &dentry->d_full_path, NULL);
+	return utf16le_to_tstr(
+		ubuf, ulen * sizeof(utf16lechar), &dentry->d_full_path, NULL);
 }
 
 /*
@@ -530,7 +544,8 @@ dentry_full_path(struct wim_dentry *dentry)
 }
 
 static int
-dentry_calculate_subdir_offset(struct wim_dentry *dentry, void *_subdir_offset_p)
+dentry_calculate_subdir_offset(struct wim_dentry *dentry,
+                               void *_subdir_offset_p)
 {
 	if (dentry_is_directory(dentry)) {
 		u64 *subdir_offset_p = _subdir_offset_p;
@@ -540,8 +555,8 @@ dentry_calculate_subdir_offset(struct wim_dentry *dentry, void *_subdir_offset_p
 		dentry->d_subdir_offset = *subdir_offset_p;
 
 		/* Account for child dentries  */
-		for_dentry_child(child, dentry)
-			*subdir_offset_p += dentry_out_total_length(child);
+		for_dentry_child(child, dentry) *subdir_offset_p +=
+			dentry_out_total_length(child);
 
 		/* Account for end-of-directory entry  */
 		*subdir_offset_p += 8;
@@ -569,16 +584,20 @@ dentry_calculate_subdir_offset(struct wim_dentry *dentry, void *_subdir_offset_p
 void
 calculate_subdir_offsets(struct wim_dentry *root, u64 *subdir_offset_p)
 {
-	for_dentry_in_tree(root, dentry_calculate_subdir_offset, subdir_offset_p);
+	for_dentry_in_tree(
+		root, dentry_calculate_subdir_offset, subdir_offset_p);
 }
 
 static int
-dentry_compare_names(const struct wim_dentry *d1, const struct wim_dentry *d2,
-		     bool ignore_case)
+dentry_compare_names(const struct wim_dentry *d1,
+                     const struct wim_dentry *d2,
+                     bool ignore_case)
 {
-	return cmp_utf16le_strings(d1->d_name, d1->d_name_nbytes / 2,
-				   d2->d_name, d2->d_name_nbytes / 2,
-				   ignore_case);
+	return cmp_utf16le_strings(d1->d_name,
+	                           d1->d_name_nbytes / 2,
+	                           d2->d_name,
+	                           d2->d_name_nbytes / 2,
+	                           ignore_case);
 }
 
 /*
@@ -588,7 +607,7 @@ dentry_compare_names(const struct wim_dentry *d1, const struct wim_dentry *d2,
  */
 static int
 collate_dentry_names(const struct avl_tree_node *n1,
-		     const struct avl_tree_node *n2)
+                     const struct avl_tree_node *n2)
 {
 	const struct wim_dentry *d1, *d2;
 	int res;
@@ -612,7 +631,7 @@ bool default_ignore_case =
 #else
 	false
 #endif
-;
+	;
 
 /*
  * Find the dentry within the given directory that has the given UTF-16LE
@@ -621,15 +640,15 @@ bool default_ignore_case =
  */
 struct wim_dentry *
 get_dentry_child_with_utf16le_name(const struct wim_dentry *dir,
-				   const utf16lechar *name,
-				   size_t name_nbytes,
-				   CASE_SENSITIVITY_TYPE case_type)
+                                   const utf16lechar *name,
+                                   size_t name_nbytes,
+                                   CASE_SENSITIVITY_TYPE case_type)
 {
 	struct wim_dentry wanted;
-	struct avl_tree_node *cur = dir->d_inode->i_children;
+	struct avl_tree_node *cur   = dir->d_inode->i_children;
 	struct wim_dentry *ci_match = NULL;
 
-	wanted.d_name = (utf16lechar *)name;
+	wanted.d_name        = (utf16lechar *)name;
 	wanted.d_name_nbytes = name_nbytes;
 
 	if (unlikely(wanted.d_name_nbytes != name_nbytes))
@@ -675,10 +694,11 @@ get_dentry_child_with_utf16le_name(const struct wim_dentry *dir,
 
 		if (num_other_ci_matches != 0) {
 			WARNING("Result of case-insensitive lookup is ambiguous\n"
-				"          (returning \"%"TS"\" of %zu "
-				"possible files, including \"%"TS"\")",
-				dentry_full_path(ci_match), num_other_ci_matches,
-				dentry_full_path(other_ci_match));
+			        "          (returning \"%" TS "\" of %zu "
+			        "possible files, including \"%" TS "\")",
+			        dentry_full_path(ci_match),
+			        num_other_ci_matches,
+			        dentry_full_path(other_ci_match));
 		}
 	}
 
@@ -692,23 +712,22 @@ get_dentry_child_with_utf16le_name(const struct wim_dentry *dir,
  * case sensitivity.
  */
 struct wim_dentry *
-get_dentry_child_with_name(const struct wim_dentry *dir, const tchar *name,
-			   CASE_SENSITIVITY_TYPE case_type)
+get_dentry_child_with_name(const struct wim_dentry *dir,
+                           const tchar *name,
+                           CASE_SENSITIVITY_TYPE case_type)
 {
 	int ret;
 	const utf16lechar *name_utf16le;
 	size_t name_utf16le_nbytes;
 	struct wim_dentry *child;
 
-	ret = tstr_get_utf16le_and_len(name, &name_utf16le,
-				       &name_utf16le_nbytes);
+	ret = tstr_get_utf16le_and_len(
+		name, &name_utf16le, &name_utf16le_nbytes);
 	if (ret)
 		return NULL;
 
-	child = get_dentry_child_with_utf16le_name(dir,
-						   name_utf16le,
-						   name_utf16le_nbytes,
-						   case_type);
+	child = get_dentry_child_with_utf16le_name(
+		dir, name_utf16le, name_utf16le_nbytes, case_type);
 	tstr_put_utf16le(name_utf16le);
 	return child;
 }
@@ -716,8 +735,9 @@ get_dentry_child_with_name(const struct wim_dentry *dir, const tchar *name,
 /* This is the UTF-16LE version of get_dentry(), currently private to this file
  * because no one needs it besides get_dentry().  */
 static struct wim_dentry *
-get_dentry_utf16le(WIMStruct *wim, const utf16lechar *path,
-		   CASE_SENSITIVITY_TYPE case_type)
+get_dentry_utf16le(WIMStruct *wim,
+                   const utf16lechar *path,
+                   CASE_SENSITIVITY_TYPE case_type)
 {
 	struct wim_dentry *cur_dentry;
 	const utf16lechar *name_start, *name_end;
@@ -748,12 +768,14 @@ get_dentry_utf16le(WIMStruct *wim, const utf16lechar *path,
 		name_end = name_start;
 		do {
 			++name_end;
-		} while (*name_end != cpu_to_le16(WIM_PATH_SEPARATOR) && *name_end);
+		} while (*name_end != cpu_to_le16(WIM_PATH_SEPARATOR) &&
+		         *name_end);
 
-		cur_dentry = get_dentry_child_with_utf16le_name(cur_dentry,
-								name_start,
-								(u8*)name_end - (u8*)name_start,
-								case_type);
+		cur_dentry = get_dentry_child_with_utf16le_name(
+			cur_dentry,
+			name_start,
+			(u8 *)name_end - (u8 *)name_start,
+			case_type);
 		name_start = name_end;
 	}
 }
@@ -851,8 +873,9 @@ to_parent_name(tchar *path, size_t len)
  *
  * Note: The returned dentry is NOT guaranteed to be a directory.  */
 struct wim_dentry *
-get_parent_dentry(WIMStruct *wim, const tchar *path,
-		  CASE_SENSITIVITY_TYPE case_type)
+get_parent_dentry(WIMStruct *wim,
+                  const tchar *path,
+                  CASE_SENSITIVITY_TYPE case_type)
 {
 	size_t path_len = tstrlen(path);
 	tchar buf[path_len + 1];
@@ -892,7 +915,7 @@ new_dentry(const tchar *name, struct wim_dentry **dentry_ret)
 		}
 	}
 	dentry->d_parent = dentry;
-	*dentry_ret = dentry;
+	*dentry_ret      = dentry;
 	return 0;
 }
 
@@ -900,8 +923,9 @@ new_dentry(const tchar *name, struct wim_dentry **dentry_ret)
  * dentry.  If set_timestamps=true, the timestamps for the inode will be set to
  * the current time; otherwise, they will be left 0.  */
 int
-new_dentry_with_new_inode(const tchar *name, bool set_timestamps,
-			  struct wim_dentry **dentry_ret)
+new_dentry_with_new_inode(const tchar *name,
+                          bool set_timestamps,
+                          struct wim_dentry **dentry_ret)
 {
 	struct wim_dentry *dentry;
 	struct wim_inode *inode;
@@ -924,8 +948,9 @@ new_dentry_with_new_inode(const tchar *name, bool set_timestamps,
 /* Like new_dentry(), but also associate the new dentry with the specified inode
  * and acquire a reference to each of the inode's blobs.  */
 int
-new_dentry_with_existing_inode(const tchar *name, struct wim_inode *inode,
-			       struct wim_dentry **dentry_ret)
+new_dentry_with_existing_inode(const tchar *name,
+                               struct wim_inode *inode,
+                               struct wim_dentry **dentry_ret)
 {
 	int ret = new_dentry(name, dentry_ret);
 	if (ret)
@@ -949,7 +974,7 @@ new_filler_directory(struct wim_dentry **dentry_ret)
 	/* Leave the inode number as 0; this is allowed for non
 	 * hard-linked files. */
 	dentry->d_inode->i_attributes = FILE_ATTRIBUTE_DIRECTORY;
-	*dentry_ret = dentry;
+	*dentry_ret                   = dentry;
 	return 0;
 }
 
@@ -1058,7 +1083,8 @@ dentry_get_next_ci_match(struct wim_dentry *dentry, struct wim_dentry *ci_match)
 		node = avl_tree_next_in_order(&ci_match->d_index_node);
 		if (!node)
 			return NULL;
-		ci_match = avl_tree_entry(node, struct wim_dentry, d_index_node);
+		ci_match =
+			avl_tree_entry(node, struct wim_dentry, d_index_node);
 	} while (ci_match == dentry);
 
 	if (dentry_compare_names(ci_match, dentry, true))
@@ -1089,10 +1115,11 @@ dentry_add_child(struct wim_dentry *parent, struct wim_dentry *child)
 	wimlib_assert(parent != child);
 	wimlib_assert(inode_is_directory(dir));
 
-	duplicate = avl_tree_insert(&dir->i_children, &child->d_index_node,
-				    collate_dentry_names);
+	duplicate = avl_tree_insert(
+		&dir->i_children, &child->d_index_node, collate_dentry_names);
 	if (duplicate)
-		return avl_tree_entry(duplicate, struct wim_dentry, d_index_node);
+		return avl_tree_entry(
+			duplicate, struct wim_dentry, d_index_node);
 
 	child->d_parent = parent;
 	return NULL;
@@ -1109,7 +1136,7 @@ unlink_dentry(struct wim_dentry *dentry)
 		return;
 
 	avl_tree_remove(&dentry->d_parent->d_inode->i_children,
-			&dentry->d_index_node);
+	                &dentry->d_index_node);
 
 	/* Not actually necessary, but to be safe don't retain the now-obsolete
 	 * parent pointer.  */
@@ -1123,8 +1150,8 @@ read_extra_data(const u8 *p, const u8 *end, struct wim_inode *inode)
 		p++;
 
 	if (unlikely(p < end)) {
-		inode->i_extra = MALLOC(sizeof(struct wim_inode_extra) +
-					end - p);
+		inode->i_extra =
+			MALLOC(sizeof(struct wim_inode_extra) + end - p);
 		if (!inode->i_extra)
 			return WIMLIB_ERR_NOMEM;
 		inode->i_extra->size = end - p;
@@ -1175,8 +1202,8 @@ assign_stream_types_encrypted(struct wim_inode *inode)
 static void
 assign_stream_types_unencrypted(struct wim_inode *inode)
 {
-	bool found_reparse_point_stream = false;
-	bool found_unnamed_data_stream = false;
+	bool found_reparse_point_stream                        = false;
+	bool found_unnamed_data_stream                         = false;
 	struct wim_inode_stream *unnamed_stream_with_zero_hash = NULL;
 
 	for (unsigned i = 0; i < inode->i_num_streams; i++) {
@@ -1189,13 +1216,15 @@ assign_stream_types_unencrypted(struct wim_inode *inode)
 			/* Unnamed stream in the extra stream entries, OR the
 			 * default stream in the dentry provided that it has a
 			 * nonzero hash.  */
-			if ((inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
-			    !found_reparse_point_stream) {
+			if ((inode->i_attributes &
+			     FILE_ATTRIBUTE_REPARSE_POINT) &&
+			    !found_reparse_point_stream)
+			{
 				found_reparse_point_stream = true;
 				strm->stream_type = STREAM_TYPE_REPARSE_POINT;
 			} else if (!found_unnamed_data_stream) {
 				found_unnamed_data_stream = true;
-				strm->stream_type = STREAM_TYPE_DATA;
+				strm->stream_type         = STREAM_TYPE_DATA;
 			}
 		} else if (!unnamed_stream_with_zero_hash) {
 			unnamed_stream_with_zero_hash = strm;
@@ -1205,7 +1234,8 @@ assign_stream_types_unencrypted(struct wim_inode *inode)
 	if (unnamed_stream_with_zero_hash) {
 		int type = STREAM_TYPE_UNKNOWN;
 		if ((inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
-		    !found_reparse_point_stream) {
+		    !found_reparse_point_stream)
+		{
 			type = STREAM_TYPE_REPARSE_POINT;
 		} else if (!found_unnamed_data_stream) {
 			type = STREAM_TYPE_DATA;
@@ -1218,17 +1248,22 @@ assign_stream_types_unencrypted(struct wim_inode *inode)
  * Read and interpret the collection of streams for the specified inode.
  */
 static int
-setup_inode_streams(const u8 *p, const u8 *end, struct wim_inode *inode,
-		    unsigned num_extra_streams, const u8 *default_hash,
-		    u64 *offset_p)
+setup_inode_streams(const u8 *p,
+                    const u8 *end,
+                    struct wim_inode *inode,
+                    unsigned num_extra_streams,
+                    const u8 *default_hash,
+                    u64 *offset_p)
 {
 	const u8 *orig_p = p;
 
 	inode->i_num_streams = 1 + num_extra_streams;
 
-	if (unlikely(inode->i_num_streams > ARRAY_LEN(inode->i_embedded_streams))) {
+	if (unlikely(inode->i_num_streams >
+	             ARRAY_LEN(inode->i_embedded_streams)))
+	{
 		inode->i_streams = CALLOC(inode->i_num_streams,
-					  sizeof(inode->i_streams[0]));
+		                          sizeof(inode->i_streams[0]));
 		if (!inode->i_streams)
 			return WIMLIB_ERR_NOMEM;
 	}
@@ -1237,7 +1272,7 @@ setup_inode_streams(const u8 *p, const u8 *end, struct wim_inode *inode,
 	inode->i_streams[0].stream_name = (utf16lechar *)NO_STREAM_NAME;
 	copy_hash(inode->i_streams[0]._stream_hash, default_hash);
 	inode->i_streams[0].stream_type = STREAM_TYPE_UNKNOWN;
-	inode->i_streams[0].stream_id = 0;
+	inode->i_streams[0].stream_id   = 0;
 
 	/* Read the extra stream entries  */
 	for (unsigned i = 1; i < inode->i_num_streams; i++) {
@@ -1284,11 +1319,12 @@ setup_inode_streams(const u8 *p, const u8 *end, struct wim_inode *inode,
 			 * we actually need to read.  Make sure this isn't more
 			 * than the specified length of the entry.  */
 			if (sizeof(struct wim_extra_stream_entry_on_disk) +
-			    name_nbytes > length)
+			            name_nbytes >
+			    length)
 				return WIMLIB_ERR_INVALID_METADATA_RESOURCE;
 
-			strm->stream_name = utf16le_dupz(disk_strm->name,
-							 name_nbytes);
+			strm->stream_name =
+				utf16le_dupz(disk_strm->name, name_nbytes);
 			if (!strm->stream_name)
 				return WIMLIB_ERR_NOMEM;
 		} else {
@@ -1318,8 +1354,10 @@ setup_inode_streams(const u8 *p, const u8 *end, struct wim_inode *inode,
 /* Read a dentry, including all extra stream entries that follow it, from an
  * uncompressed metadata resource buffer.  */
 static int
-read_dentry(const u8 * restrict buf, size_t buf_len,
-	    u64 *offset_p, struct wim_dentry **dentry_ret)
+read_dentry(const u8 *restrict buf,
+            size_t buf_len,
+            u64 *offset_p,
+            struct wim_dentry **dentry_ret)
 {
 	u64 offset = *offset_p;
 	u64 length;
@@ -1332,7 +1370,8 @@ read_dentry(const u8 * restrict buf, size_t buf_len,
 	u64 calculated_size;
 	int ret;
 
-	STATIC_ASSERT(sizeof(struct wim_dentry_on_disk) == WIM_DENTRY_DISK_SIZE);
+	STATIC_ASSERT(sizeof(struct wim_dentry_on_disk) ==
+	              WIM_DENTRY_DISK_SIZE);
 
 	/* Before reading the whole dentry, we need to read just the length.
 	 * This is because a dentry of length 8 (that is, just the length field)
@@ -1340,12 +1379,12 @@ read_dentry(const u8 * restrict buf, size_t buf_len,
 
 	/* Check for buffer overrun.  */
 	if (unlikely(offset + sizeof(u64) > buf_len ||
-		     offset + sizeof(u64) < offset))
+	             offset + sizeof(u64) < offset))
 		return WIMLIB_ERR_INVALID_METADATA_RESOURCE;
 
 	/* Get pointer to the dentry data.  */
-	p = &buf[offset];
-	disk_dentry = (const struct wim_dentry_on_disk*)p;
+	p           = &buf[offset];
+	disk_dentry = (const struct wim_dentry_on_disk *)p;
 
 	/* Get dentry length.  */
 	length = ALIGN(le64_to_cpu(disk_dentry->length), 8);
@@ -1361,8 +1400,7 @@ read_dentry(const u8 * restrict buf, size_t buf_len,
 		return WIMLIB_ERR_INVALID_METADATA_RESOURCE;
 
 	/* Check for buffer overrun.  */
-	if (unlikely(offset + length > buf_len ||
-		     offset + length < offset))
+	if (unlikely(offset + length > buf_len || offset + length < offset))
 		return WIMLIB_ERR_INVALID_METADATA_RESOURCE;
 
 	/* Allocate new dentry structure, along with a preliminary inode.  */
@@ -1373,29 +1411,32 @@ read_dentry(const u8 * restrict buf, size_t buf_len,
 	inode = dentry->d_inode;
 
 	/* Read more fields: some into the dentry, and some into the inode.  */
-	inode->i_attributes = le32_to_cpu(disk_dentry->attributes);
-	inode->i_security_id = le32_to_cpu(disk_dentry->security_id);
-	dentry->d_subdir_offset = le64_to_cpu(disk_dentry->subdir_offset);
-	inode->i_creation_time = le64_to_cpu(disk_dentry->creation_time);
+	inode->i_attributes       = le32_to_cpu(disk_dentry->attributes);
+	inode->i_security_id      = le32_to_cpu(disk_dentry->security_id);
+	dentry->d_subdir_offset   = le64_to_cpu(disk_dentry->subdir_offset);
+	inode->i_creation_time    = le64_to_cpu(disk_dentry->creation_time);
 	inode->i_last_access_time = le64_to_cpu(disk_dentry->last_access_time);
-	inode->i_last_write_time = le64_to_cpu(disk_dentry->last_write_time);
-	inode->i_unknown_0x54 = le32_to_cpu(disk_dentry->unknown_0x54);
+	inode->i_last_write_time  = le64_to_cpu(disk_dentry->last_write_time);
+	inode->i_unknown_0x54     = le32_to_cpu(disk_dentry->unknown_0x54);
 
 	if (inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-		inode->i_reparse_tag = le32_to_cpu(disk_dentry->reparse.reparse_tag);
-		inode->i_rp_reserved = le16_to_cpu(disk_dentry->reparse.rp_reserved);
+		inode->i_reparse_tag =
+			le32_to_cpu(disk_dentry->reparse.reparse_tag);
+		inode->i_rp_reserved =
+			le16_to_cpu(disk_dentry->reparse.rp_reserved);
 		inode->i_rp_flags = le16_to_cpu(disk_dentry->reparse.rp_flags);
 		/* Leave inode->i_ino at 0.  Note: this means that WIM cannot
 		 * represent multiple hard links to a reparse point file.  */
 	} else {
-		inode->i_ino = le64_to_cpu(disk_dentry->nonreparse.hard_link_group_id);
+		inode->i_ino =
+			le64_to_cpu(disk_dentry->nonreparse.hard_link_group_id);
 	}
 
 	/* Now onto reading the names.  There are two of them: the (long) file
 	 * name, and the short name.  */
 
 	short_name_nbytes = le16_to_cpu(disk_dentry->short_name_nbytes);
-	name_nbytes = le16_to_cpu(disk_dentry->name_nbytes);
+	name_nbytes       = le16_to_cpu(disk_dentry->name_nbytes);
 
 	if (unlikely((short_name_nbytes & 1) | (name_nbytes & 1))) {
 		ret = WIMLIB_ERR_INVALID_METADATA_RESOURCE;
@@ -1404,8 +1445,8 @@ read_dentry(const u8 * restrict buf, size_t buf_len,
 
 	/* We now know the length of the file name and short name.  Make sure
 	 * the length of the dentry is large enough to actually hold them.  */
-	calculated_size = dentry_min_len_with_names(name_nbytes,
-						    short_name_nbytes);
+	calculated_size =
+		dentry_min_len_with_names(name_nbytes, short_name_nbytes);
 
 	if (unlikely(length < calculated_size)) {
 		ret = WIMLIB_ERR_INVALID_METADATA_RESOURCE;
@@ -1449,15 +1490,15 @@ read_dentry(const u8 * restrict buf, size_t buf_len,
 
 	/* Set up the inode's collection of streams.  */
 	ret = setup_inode_streams(&buf[offset],
-				  &buf[buf_len],
-				  inode,
-				  le16_to_cpu(disk_dentry->num_extra_streams),
-				  disk_dentry->default_hash,
-				  &offset);
+	                          &buf[buf_len],
+	                          inode,
+	                          le16_to_cpu(disk_dentry->num_extra_streams),
+	                          disk_dentry->default_hash,
+	                          &offset);
 	if (ret)
 		goto err_free_dentry;
 
-	*offset_p = offset;  /* Sets offset of next dentry in directory  */
+	*offset_p   = offset; /* Sets offset of next dentry in directory  */
 	*dentry_ret = dentry;
 	return 0;
 
@@ -1496,8 +1537,8 @@ should_ignore_dentry(struct wim_dentry *dir, const struct wim_dentry *dentry)
 {
 	/* All dentries except the root must be named. */
 	if (!dentry_has_long_name(dentry)) {
-		WARNING("Ignoring unnamed file in directory \"%"TS"\"",
-			dentry_full_path(dir));
+		WARNING("Ignoring unnamed file in directory \"%" TS "\"",
+		        dentry_full_path(dir));
 		return true;
 	}
 
@@ -1505,7 +1546,8 @@ should_ignore_dentry(struct wim_dentry *dir, const struct wim_dentry *dentry)
 	 * path traversal attacks. */
 	if (dentry_is_dot_or_dotdot(dentry)) {
 		WARNING("Ignoring file named \".\" or \"..\" in directory "
-			"\"%"TS"\"", dentry_full_path(dir));
+		        "\"%" TS "\"",
+		        dentry_full_path(dir));
 		return true;
 	}
 
@@ -1515,7 +1557,8 @@ should_ignore_dentry(struct wim_dentry *dir, const struct wim_dentry *dentry)
 	 * such names entirely. */
 	if (dentry_contains_embedded_null(dentry)) {
 		WARNING("Ignoring filename with embedded null character in "
-			"directory \"%"TS"\"", dentry_full_path(dir));
+		        "directory \"%" TS "\"",
+		        dentry_full_path(dir));
 		return true;
 	}
 
@@ -1523,8 +1566,10 @@ should_ignore_dentry(struct wim_dentry *dir, const struct wim_dentry *dentry)
 }
 
 static int
-read_dentry_tree_recursive(const u8 * restrict buf, size_t buf_len,
-			   struct wim_dentry * restrict dir, unsigned depth)
+read_dentry_tree_recursive(const u8 *restrict buf,
+                           size_t buf_len,
+                           struct wim_dentry *restrict dir,
+                           unsigned depth)
 {
 	u64 cur_offset = dir->d_subdir_offset;
 
@@ -1560,10 +1605,10 @@ read_dentry_tree_recursive(const u8 * restrict buf, size_t buf_len,
 			/* We already found a dentry with this same
 			 * case-sensitive long name.  Only keep the first one.
 			 */
-			WARNING("Ignoring duplicate file \"%"TS"\" "
-				"(the WIM image already contains a file "
-				"at that path with the exact same name)",
-				dentry_full_path(duplicate));
+			WARNING("Ignoring duplicate file \"%" TS "\" "
+			        "(the WIM image already contains a file "
+			        "at that path with the exact same name)",
+			        dentry_full_path(duplicate));
 			free_dentry(child);
 			continue;
 		}
@@ -1572,16 +1617,14 @@ read_dentry_tree_recursive(const u8 * restrict buf, size_t buf_len,
 		 * this procedure recursively.  */
 		if (child->d_subdir_offset != 0) {
 			if (likely(dentry_is_directory(child))) {
-				ret = read_dentry_tree_recursive(buf,
-								 buf_len,
-								 child,
-								 depth + 1);
+				ret = read_dentry_tree_recursive(
+					buf, buf_len, child, depth + 1);
 				if (ret)
 					return ret;
 			} else {
 				WARNING("Ignoring children of "
-					"non-directory file \"%"TS"\"",
-					dentry_full_path(child));
+				        "non-directory file \"%" TS "\"",
+				        dentry_full_path(child));
 			}
 		}
 	}
@@ -1610,8 +1653,10 @@ read_dentry_tree_recursive(const u8 * restrict buf, size_t buf_len,
  *	WIMLIB_ERR_NOMEM
  */
 int
-read_dentry_tree(const u8 *buf, size_t buf_len,
-		 u64 root_offset, struct wim_dentry **root_ret)
+read_dentry_tree(const u8 *buf,
+                 size_t buf_len,
+                 u64 root_offset,
+                 struct wim_dentry **root_ret)
 {
 	int ret;
 	struct wim_dentry *root;
@@ -1622,10 +1667,10 @@ read_dentry_tree(const u8 *buf, size_t buf_len,
 
 	if (likely(root != NULL)) {
 		if (unlikely(dentry_has_long_name(root) ||
-			     dentry_has_short_name(root)))
+		             dentry_has_short_name(root)))
 		{
 			WARNING("The root directory has a nonempty name; "
-				"removing it.");
+			        "removing it.");
 			dentry_set_name(root, NULL);
 		}
 
@@ -1642,7 +1687,7 @@ read_dentry_tree(const u8 *buf, size_t buf_len,
 		}
 	} else {
 		WARNING("The metadata resource has no directory entries; "
-			"treating as an empty image.");
+		        "treating as an empty image.");
 	}
 	*root_ret = root;
 	return 0;
@@ -1653,11 +1698,12 @@ err_free_dentry_tree:
 }
 
 static u8 *
-write_extra_stream_entry(u8 * restrict p, const utf16lechar * restrict name,
-			 const u8 * restrict hash)
+write_extra_stream_entry(u8 *restrict p,
+                         const utf16lechar *restrict name,
+                         const u8 *restrict hash)
 {
 	struct wim_extra_stream_entry_on_disk *disk_strm =
-			(struct wim_extra_stream_entry_on_disk *)p;
+		(struct wim_extra_stream_entry_on_disk *)p;
 	u8 *orig_p = p;
 	size_t name_nbytes;
 
@@ -1693,7 +1739,7 @@ write_extra_stream_entry(u8 * restrict p, const utf16lechar * restrict name,
  * Returns a pointer to the byte following the last written.
  */
 static u8 *
-write_dentry(const struct wim_dentry * restrict dentry, u8 * restrict p)
+write_dentry(const struct wim_dentry *restrict dentry, u8 *restrict p)
 {
 	const struct wim_inode *inode;
 	struct wim_dentry_on_disk *disk_dentry;
@@ -1702,30 +1748,33 @@ write_dentry(const struct wim_dentry * restrict dentry, u8 * restrict p)
 	wimlib_assert(((uintptr_t)p & 7) == 0); /* 8 byte aligned */
 	orig_p = p;
 
-	inode = dentry->d_inode;
-	disk_dentry = (struct wim_dentry_on_disk*)p;
+	inode       = dentry->d_inode;
+	disk_dentry = (struct wim_dentry_on_disk *)p;
 
-	disk_dentry->attributes = cpu_to_le32(inode->i_attributes);
-	disk_dentry->security_id = cpu_to_le32(inode->i_security_id);
+	disk_dentry->attributes    = cpu_to_le32(inode->i_attributes);
+	disk_dentry->security_id   = cpu_to_le32(inode->i_security_id);
 	disk_dentry->subdir_offset = cpu_to_le64(dentry->d_subdir_offset);
 
 	disk_dentry->unused_1 = cpu_to_le64(0);
 	disk_dentry->unused_2 = cpu_to_le64(0);
 
-	disk_dentry->creation_time = cpu_to_le64(inode->i_creation_time);
+	disk_dentry->creation_time    = cpu_to_le64(inode->i_creation_time);
 	disk_dentry->last_access_time = cpu_to_le64(inode->i_last_access_time);
-	disk_dentry->last_write_time = cpu_to_le64(inode->i_last_write_time);
-	disk_dentry->unknown_0x54 = cpu_to_le32(inode->i_unknown_0x54);
+	disk_dentry->last_write_time  = cpu_to_le64(inode->i_last_write_time);
+	disk_dentry->unknown_0x54     = cpu_to_le32(inode->i_unknown_0x54);
 	if (inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-		disk_dentry->reparse.reparse_tag = cpu_to_le32(inode->i_reparse_tag);
-		disk_dentry->reparse.rp_reserved = cpu_to_le16(inode->i_rp_reserved);
+		disk_dentry->reparse.reparse_tag =
+			cpu_to_le32(inode->i_reparse_tag);
+		disk_dentry->reparse.rp_reserved =
+			cpu_to_le16(inode->i_rp_reserved);
 		disk_dentry->reparse.rp_flags = cpu_to_le16(inode->i_rp_flags);
 	} else {
 		disk_dentry->nonreparse.hard_link_group_id =
 			cpu_to_le64((inode->i_nlink == 1) ? 0 : inode->i_ino);
 	}
 
-	disk_dentry->short_name_nbytes = cpu_to_le16(dentry->d_short_name_nbytes);
+	disk_dentry->short_name_nbytes =
+		cpu_to_le16(dentry->d_short_name_nbytes);
 	disk_dentry->name_nbytes = cpu_to_le16(dentry->d_name_nbytes);
 	p += sizeof(struct wim_dentry_on_disk);
 
@@ -1735,7 +1784,9 @@ write_dentry(const struct wim_dentry * restrict dentry, u8 * restrict p)
 		p = mempcpy(p, dentry->d_name, (u32)dentry->d_name_nbytes + 2);
 
 	if (dentry_has_short_name(dentry))
-		p = mempcpy(p, dentry->d_short_name, (u32)dentry->d_short_name_nbytes + 2);
+		p = mempcpy(p,
+		            dentry->d_short_name,
+		            (u32)dentry->d_short_name_nbytes + 2);
 
 	/* Align to 8-byte boundary */
 	while ((uintptr_t)p & 7)
@@ -1758,7 +1809,8 @@ write_dentry(const struct wim_dentry * restrict dentry, u8 * restrict p)
 		const struct wim_inode_stream *efs_strm;
 		const u8 *efs_hash;
 
-		efs_strm = inode_get_unnamed_stream(inode, STREAM_TYPE_EFSRPC_RAW_DATA);
+		efs_strm = inode_get_unnamed_stream(
+			inode, STREAM_TYPE_EFSRPC_RAW_DATA);
 		efs_hash = efs_strm ? stream_hash(efs_strm) : zero_hash;
 		copy_hash(disk_dentry->default_hash, efs_hash);
 		disk_dentry->num_extra_streams = cpu_to_le16(0);
@@ -1772,52 +1824,62 @@ write_dentry(const struct wim_dentry * restrict dentry, u8 * restrict p)
 		 *	- at least one named data stream (for Windows PE bug workaround)
 		 * - Use one extra stream entry for the reparse point stream if there is one
 		 */
-		bool have_named_data_stream = false;
-		bool have_reparse_point_stream = false;
+		bool have_named_data_stream        = false;
+		bool have_reparse_point_stream     = false;
 		const u8 *unnamed_data_stream_hash = zero_hash;
 		const u8 *reparse_point_hash;
 		for (unsigned i = 0; i < inode->i_num_streams; i++) {
-			const struct wim_inode_stream *strm = &inode->i_streams[i];
+			const struct wim_inode_stream *strm =
+				&inode->i_streams[i];
 			if (strm->stream_type == STREAM_TYPE_DATA) {
 				if (stream_is_named(strm))
 					have_named_data_stream = true;
 				else
-					unnamed_data_stream_hash = stream_hash(strm);
-			} else if (strm->stream_type == STREAM_TYPE_REPARSE_POINT) {
+					unnamed_data_stream_hash =
+						stream_hash(strm);
+			} else if (strm->stream_type ==
+			           STREAM_TYPE_REPARSE_POINT)
+			{
 				have_reparse_point_stream = true;
-				reparse_point_hash = stream_hash(strm);
+				reparse_point_hash        = stream_hash(strm);
 			}
 		}
 
-		if (unlikely(have_reparse_point_stream || have_named_data_stream)) {
-
+		if (unlikely(have_reparse_point_stream ||
+		             have_named_data_stream))
+		{
 			unsigned num_extra_streams = 0;
 
 			copy_hash(disk_dentry->default_hash, zero_hash);
 
 			if (have_reparse_point_stream) {
-				p = write_extra_stream_entry(p, NO_STREAM_NAME,
-							     reparse_point_hash);
+				p = write_extra_stream_entry(
+					p, NO_STREAM_NAME, reparse_point_hash);
 				num_extra_streams++;
 			}
 
-			p = write_extra_stream_entry(p, NO_STREAM_NAME,
-						     unnamed_data_stream_hash);
+			p = write_extra_stream_entry(
+				p, NO_STREAM_NAME, unnamed_data_stream_hash);
 			num_extra_streams++;
 
 			for (unsigned i = 0; i < inode->i_num_streams; i++) {
-				const struct wim_inode_stream *strm = &inode->i_streams[i];
+				const struct wim_inode_stream *strm =
+					&inode->i_streams[i];
 				if (stream_is_named_data_stream(strm)) {
-					p = write_extra_stream_entry(p, strm->stream_name,
-								     stream_hash(strm));
+					p = write_extra_stream_entry(
+						p,
+						strm->stream_name,
+						stream_hash(strm));
 					num_extra_streams++;
 				}
 			}
 			wimlib_assert(num_extra_streams <= 0xFFFF);
 
-			disk_dentry->num_extra_streams = cpu_to_le16(num_extra_streams);
+			disk_dentry->num_extra_streams =
+				cpu_to_le16(num_extra_streams);
 		} else {
-			copy_hash(disk_dentry->default_hash, unnamed_data_stream_hash);
+			copy_hash(disk_dentry->default_hash,
+			          unnamed_data_stream_hash);
 			disk_dentry->num_extra_streams = cpu_to_le16(0);
 		}
 	}
@@ -1830,15 +1892,14 @@ write_dir_dentries(struct wim_dentry *dir, void *_pp)
 {
 	if (dir->d_subdir_offset != 0) {
 		u8 **pp = _pp;
-		u8 *p = *pp;
+		u8 *p   = *pp;
 		struct wim_dentry *child;
 
 		/* write child dentries */
-		for_dentry_child(child, dir)
-			p = write_dentry(child, p);
+		for_dentry_child(child, dir) p = write_dentry(child, p);
 
 		/* write end of directory entry */
-		*(u64*)p = 0;
+		*(u64 *)p = 0;
 		p += 8;
 		*pp = p;
 	}
@@ -1863,8 +1924,8 @@ u8 *
 write_dentry_tree(struct wim_dentry *root, u8 *p)
 {
 	/* write root dentry and end-of-directory entry following it */
-	p = write_dentry(root, p);
-	*(u64*)p = 0;
+	p         = write_dentry(root, p);
+	*(u64 *)p = 0;
 	p += 8;
 
 	/* write the rest of the dentry tree */

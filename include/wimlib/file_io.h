@@ -36,14 +36,16 @@ filedes_seek(struct filedes *fd, off_t offset);
 bool
 filedes_is_seekable(struct filedes *fd);
 
-static inline void filedes_init(struct filedes *fd, int raw_fd)
+static inline void
+filedes_init(struct filedes *fd, int raw_fd)
 {
-	fd->fd = raw_fd;
-	fd->offset = 0;
+	fd->fd      = raw_fd;
+	fd->offset  = 0;
 	fd->is_pipe = 0;
 }
 
-static inline void filedes_invalidate(struct filedes *fd)
+static inline void
+filedes_invalidate(struct filedes *fd)
 {
 	fd->fd = -1;
 }

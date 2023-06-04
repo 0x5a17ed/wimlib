@@ -33,31 +33,31 @@
 
 #ifdef ENABLE_TEST_SUPPORT
 
-#include <ctype.h>
-#include <math.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#ifdef _WIN32
-#  include <windows.h>
-#  include <sddl.h>
-#  undef ERROR
-#endif
+#  include <ctype.h>
+#  include <math.h>
+#  include <stdlib.h>
+#  include <sys/stat.h>
+#  include <unistd.h>
+#  ifdef _WIN32
+#    include <windows.h>
+#    include <sddl.h>
+#    undef ERROR
+#  endif
 
-#include "wimlib.h"
-#include "wimlib/endianness.h"
-#include "wimlib/encoding.h"
-#include "wimlib/metadata.h"
-#include "wimlib/dentry.h"
-#include "wimlib/inode.h"
-#include "wimlib/object_id.h"
-#include "wimlib/reparse.h"
-#include "wimlib/scan.h"
-#include "wimlib/security_descriptor.h"
-#include "wimlib/test_support.h"
-#include "wimlib/timestamp.h"
-#include "wimlib/unix_data.h"
-#include "wimlib/xattr.h"
+#  include "wimlib.h"
+#  include "wimlib/endianness.h"
+#  include "wimlib/encoding.h"
+#  include "wimlib/metadata.h"
+#  include "wimlib/dentry.h"
+#  include "wimlib/inode.h"
+#  include "wimlib/object_id.h"
+#  include "wimlib/reparse.h"
+#  include "wimlib/scan.h"
+#  include "wimlib/security_descriptor.h"
+#  include "wimlib/test_support.h"
+#  include "wimlib/timestamp.h"
+#  include "wimlib/unix_data.h"
+#  include "wimlib/xattr.h"
 
 /*----------------------------------------------------------------------------*
  *                            File tree generation                            *
@@ -129,34 +129,30 @@ generate_random_timestamp(void)
 static inline bool
 is_valid_windows_filename_char(utf16lechar c)
 {
-	return le16_to_cpu(c) > 31 &&
-		c != cpu_to_le16('/') &&
-		c != cpu_to_le16('<') &&
-		c != cpu_to_le16('>') &&
-		c != cpu_to_le16(':') &&
-		c != cpu_to_le16('"') &&
-		c != cpu_to_le16('/' ) &&
-		c != cpu_to_le16('\\') &&
-		c != cpu_to_le16('|') &&
-		c != cpu_to_le16('?') &&
-		c != cpu_to_le16('*');
+	return le16_to_cpu(c) > 31 && c != cpu_to_le16('/') &&
+	       c != cpu_to_le16('<') && c != cpu_to_le16('>') &&
+	       c != cpu_to_le16(':') && c != cpu_to_le16('"') &&
+	       c != cpu_to_le16('/') && c != cpu_to_le16('\\') &&
+	       c != cpu_to_le16('|') && c != cpu_to_le16('?') &&
+	       c != cpu_to_le16('*');
 }
 
 /* Is the character valid in a filename on the current platform? */
 static inline bool
 is_valid_filename_char(utf16lechar c)
 {
-#ifdef _WIN32
+#  ifdef _WIN32
 	return is_valid_windows_filename_char(c);
-#else
+#  else
 	return c != cpu_to_le16('\0') && c != cpu_to_le16('/');
-#endif
+#  endif
 }
 
 /* Generate a random filename and return its length. */
 static int
-generate_random_filename(utf16lechar name[], int max_len,
-			 struct generation_context *ctx)
+generate_random_filename(utf16lechar name[],
+                         int max_len,
+                         struct generation_context *ctx)
 {
 	int len;
 
@@ -205,11 +201,10 @@ retry:
 
 /* The set of characters which are valid in short filenames. */
 static const char valid_short_name_chars[] = {
-	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-	'!', '#', '$', '%', '&', '\'', '(', ')', '-', '@', '^', '_', '`', '{',
-	'}', '~',
+	'A', 'B', 'C',  'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+	'N', 'O', 'P',  'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'0', '1', '2',  '3', '4', '5', '6', '7', '8', '9', '!', '#', '$',
+	'%', '&', '\'', '(', ')', '-', '@', '^', '_', '`', '{', '}', '~',
 	/* Note: Windows does not allow space and 128-255 in short filenames
 	 * (tested on both NTFS and FAT). */
 };
@@ -218,8 +213,8 @@ static int
 generate_short_name_component(utf16lechar p[], int len)
 {
 	for (int i = 0; i < len; i++) {
-		char c = valid_short_name_chars[rand32() %
-						ARRAY_LEN(valid_short_name_chars)];
+		char c = valid_short_name_chars
+			[rand32() % ARRAY_LEN(valid_short_name_chars)];
 		p[i] = cpu_to_le16(c);
 	}
 	return len;
@@ -236,15 +231,15 @@ generate_random_short_name(utf16lechar name[], struct generation_context *ctx)
 	 * characters are allowed.
 	 */
 	int base_len = 1 + (rand32() % 8);
-	int ext_len = rand32() % 4;
+	int ext_len  = rand32() % 4;
 	int total_len;
 
 	base_len = generate_short_name_component(name, base_len);
 
 	if (ext_len) {
 		name[base_len] = cpu_to_le16('.');
-		ext_len = generate_short_name_component(&name[base_len + 1],
-							ext_len);
+		ext_len   = generate_short_name_component(&name[base_len + 1],
+                                                        ext_len);
 		total_len = base_len + 1 + ext_len;
 	} else {
 		total_len = base_len;
@@ -253,37 +248,42 @@ generate_random_short_name(utf16lechar name[], struct generation_context *ctx)
 	return total_len;
 }
 
-
 static const struct {
 	u8 num_subauthorities;
 	u64 identifier_authority;
 	u32 subauthorities[6];
 } common_sids[] = {
-	{ 1, 0, {0}}, /* NULL_SID  */
-	{ 1, 1, {0}}, /* WORLD_SID */
-	{ 1, 2, {0}}, /* LOCAL_SID */
-	{ 1, 3, {0}}, /* CREATOR_OWNER_SID */
-	{ 1, 3, {1}}, /* CREATOR_GROUP_SID */
-	{ 1, 3, {2}}, /* CREATOR_OWNER_SERVER_SID */
-	{ 1, 3, {3}}, /* CREATOR_GROUP_SERVER_SID */
+	{ 1, 0, { 0 } }, /* NULL_SID  */
+	{ 1, 1, { 0 } }, /* WORLD_SID */
+	{ 1, 2, { 0 } }, /* LOCAL_SID */
+	{ 1, 3, { 0 } }, /* CREATOR_OWNER_SID */
+	{ 1, 3, { 1 } }, /* CREATOR_GROUP_SID */
+	{ 1, 3, { 2 } }, /* CREATOR_OWNER_SERVER_SID */
+	{ 1, 3, { 3 } }, /* CREATOR_GROUP_SERVER_SID */
 	// { 0, 5, {}},	 /* NT_AUTHORITY_SID */
-	{ 1, 5, {1}}, /* DIALUP_SID */
-	{ 1, 5, {2}}, /* NETWORK_SID */
-	{ 1, 5, {3}}, /* BATCH_SID */
-	{ 1, 5, {4}}, /* INTERACTIVE_SID */
-	{ 1, 5, {6}}, /* SERVICE_SID */
-	{ 1, 5, {7}}, /* ANONYMOUS_LOGON_SID */
-	{ 1, 5, {8}}, /* PROXY_SID */
-	{ 1, 5, {9}}, /* SERVER_LOGON_SID */
-	{ 1, 5, {10}}, /* SELF_SID */
-	{ 1, 5, {11}}, /* AUTHENTICATED_USER_SID */
-	{ 1, 5, {12}}, /* RESTRICTED_CODE_SID */
-	{ 1, 5, {13}}, /* TERMINAL_SERVER_SID */
-	{ 1, 5, {18}}, /* NT AUTHORITY\SYSTEM */
-	{ 1, 5, {19}}, /* NT AUTHORITY\LOCAL SERVICE */
-	{ 1, 5, {20}}, /* NT AUTHORITY\NETWORK SERVICE */
-	{ 5 ,80, {956008885, 3418522649, 1831038044, 1853292631, 2271478464}}, /* trusted installer  */
-	{ 2 ,5, {32, 544} } /* BUILTIN\ADMINISTRATORS  */
+	{ 1, 5, { 1 } }, /* DIALUP_SID */
+	{ 1, 5, { 2 } }, /* NETWORK_SID */
+	{ 1, 5, { 3 } }, /* BATCH_SID */
+	{ 1, 5, { 4 } }, /* INTERACTIVE_SID */
+	{ 1, 5, { 6 } }, /* SERVICE_SID */
+	{ 1, 5, { 7 } }, /* ANONYMOUS_LOGON_SID */
+	{ 1, 5, { 8 } }, /* PROXY_SID */
+	{ 1, 5, { 9 } }, /* SERVER_LOGON_SID */
+	{ 1, 5, { 10 } }, /* SELF_SID */
+	{ 1, 5, { 11 } }, /* AUTHENTICATED_USER_SID */
+	{ 1, 5, { 12 } }, /* RESTRICTED_CODE_SID */
+	{ 1, 5, { 13 } }, /* TERMINAL_SERVER_SID */
+	{ 1, 5, { 18 } }, /* NT AUTHORITY\SYSTEM */
+	{ 1, 5, { 19 } }, /* NT AUTHORITY\LOCAL SERVICE */
+	{ 1, 5, { 20 } }, /* NT AUTHORITY\NETWORK SERVICE */
+	{ 5,
+	  80,
+	  { 956008885,
+	    3418522649,
+	    1831038044,
+	    1853292631,
+	    2271478464 } }, /* trusted installer  */
+	{ 2, 5, { 32, 544 } } /* BUILTIN\ADMINISTRATORS  */
 };
 
 /* Generate a SID and return its size in bytes.  */
@@ -301,10 +301,12 @@ generate_random_sid(wimlib_SID *sid, struct generation_context *ctx)
 		sid->sub_authority_count = common_sids[r].num_subauthorities;
 		for (int i = 0; i < 6; i++) {
 			sid->identifier_authority[i] =
-				common_sids[r].identifier_authority >> (40 - i * 8);
+				common_sids[r].identifier_authority >>
+				(40 - i * 8);
 		}
 		for (int i = 0; i < common_sids[r].num_subauthorities; i++)
-			sid->sub_authority[i] = cpu_to_le32(common_sids[r].subauthorities[i]);
+			sid->sub_authority[i] =
+				cpu_to_le32(common_sids[r].subauthorities[i]);
 	} else {
 		/* Random SID  */
 
@@ -328,10 +330,10 @@ generate_random_acl(wimlib_ACL *acl, bool dacl, struct generation_context *ctx)
 
 	ace_count = rand32() % 16;
 
-	acl->revision = 2;
-	acl->sbz1 = 0;
+	acl->revision  = 2;
+	acl->sbz1      = 0;
 	acl->ace_count = cpu_to_le16(ace_count);
-	acl->sbz2 = 0;
+	acl->sbz2      = 0;
 
 	p = (u8 *)(acl + 1);
 
@@ -345,10 +347,10 @@ generate_random_acl(wimlib_ACL *acl, bool dacl, struct generation_context *ctx)
 		else
 			ace->hdr.type = 2;
 		ace->hdr.flags = rand8();
-		ace->mask = cpu_to_le32(rand32() & 0x001F01FF);
+		ace->mask      = cpu_to_le32(rand32() & 0x001F01FF);
 
 		p += offsetof(wimlib_ACCESS_ALLOWED_ACE, sid) +
-			generate_random_sid(&ace->sid, ctx);
+		     generate_random_sid(&ace->sid, ctx);
 		ace->hdr.size = cpu_to_le16(p - (u8 *)ace);
 	}
 
@@ -366,16 +368,15 @@ generate_random_security_descriptor(void *_desc, struct generation_context *ctx)
 
 	control = rand16();
 
-	control &= (wimlib_SE_DACL_AUTO_INHERITED |
-		    wimlib_SE_SACL_AUTO_INHERITED);
+	control &=
+		(wimlib_SE_DACL_AUTO_INHERITED | wimlib_SE_SACL_AUTO_INHERITED);
 
-	control |= wimlib_SE_SELF_RELATIVE |
-		   wimlib_SE_DACL_PRESENT |
-		   wimlib_SE_SACL_PRESENT;
+	control |= wimlib_SE_SELF_RELATIVE | wimlib_SE_DACL_PRESENT |
+	           wimlib_SE_SACL_PRESENT;
 
 	desc->revision = 1;
-	desc->sbz1 = 0;
-	desc->control = cpu_to_le16(control);
+	desc->sbz1     = 0;
+	desc->control  = cpu_to_le16(control);
 
 	p = (u8 *)(desc + 1);
 
@@ -405,45 +406,45 @@ generate_random_security_descriptor(void *_desc, struct generation_context *ctx)
 static bool
 am_root(void)
 {
-#ifdef _WIN32
+#  ifdef _WIN32
 	return false;
-#else
+#  else
 	return (getuid() == 0);
-#endif
+#  endif
 }
 
 static u32
 generate_uid(void)
 {
-#ifdef _WIN32
+#  ifdef _WIN32
 	return 0;
-#else
+#  else
 	if (am_root())
 		return rand32();
 	return getuid();
-#endif
+#  endif
 }
 
 static u32
 generate_gid(void)
 {
-#ifdef _WIN32
+#  ifdef _WIN32
 	return 0;
-#else
+#  else
 	if (am_root())
 		return rand32();
 	return getgid();
-#endif
+#  endif
 }
 
-#ifdef _WIN32
-#  ifndef S_IFLNK
-#    define S_IFLNK  0120000
+#  ifdef _WIN32
+#    ifndef S_IFLNK
+#      define S_IFLNK 0120000
+#    endif
+#    ifndef S_IFSOCK
+#      define S_IFSOCK 0140000
+#    endif
 #  endif
-#  ifndef S_IFSOCK
-#    define S_IFSOCK 0140000
-#  endif
-#endif
 
 static int
 set_random_unix_metadata(struct wim_inode *inode)
@@ -457,7 +458,7 @@ set_random_unix_metadata(struct wim_inode *inode)
 	else if (inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY)
 		dat.mode = S_IFDIR | 0700 | (rand32() % 07777);
 	else if (is_zero_hash(inode_get_hash_of_unnamed_data_stream(inode)) &&
-		 randbool() && am_root())
+	         randbool() && am_root())
 	{
 		dat.mode = rand32() % 07777;
 		switch (rand32() % 4) {
@@ -495,13 +496,13 @@ set_random_xattrs(struct wim_inode *inode)
 	struct wim_xattr_entry *entry = (void *)entries;
 	size_t entries_size;
 	struct wimlib_unix_data unix_data;
-#ifdef _WIN32
+#  ifdef _WIN32
 	const char *prefix = "";
-#else
+#  else
 	const char *prefix = "user.";
-#endif
+#  endif
 	static const char capability_name[] = "security.capability";
-	bool generated_capability_xattr = false;
+	bool generated_capability_xattr     = false;
 
 	/*
 	 * On Linux, xattrs in the "user" namespace are only permitted on
@@ -521,17 +522,18 @@ set_random_xattrs(struct wim_inode *inode)
 		int value_len = rand32() % 64;
 		u8 *p;
 
-	#ifdef _WIN32
+#  ifdef _WIN32
 		if (value_len == 0)
 			value_len++;
-	#endif
+#  endif
 
 		entry->value_len = cpu_to_le16(value_len);
-		entry->flags = 0;
+		entry->flags     = 0;
 
 		if (rand32() % 16 == 0 && am_root() &&
-		    !generated_capability_xattr) {
-			int name_len = sizeof(capability_name) - 1;
+		    !generated_capability_xattr)
+		{
+			int name_len    = sizeof(capability_name) - 1;
 			entry->name_len = name_len;
 			p = mempcpy(entry->name, capability_name, name_len + 1);
 			generated_capability_xattr = true;
@@ -539,15 +541,15 @@ set_random_xattrs(struct wim_inode *inode)
 			int name_len = 1 + rand32() % 64;
 
 			entry->name_len = strlen(prefix) + name_len;
-			p = mempcpy(entry->name, prefix, strlen(prefix));
+			p    = mempcpy(entry->name, prefix, strlen(prefix));
 			*p++ = 'A' + i;
 			for (int j = 1; j < name_len; j++) {
 				do {
-				#ifdef _WIN32
+#  ifdef _WIN32
 					*p = 'A' + rand8() % 26;
-				#else
+#  else
 					*p = rand8();
-				#endif
+#  endif
 				} while (*p == '\0');
 				p++;
 			}
@@ -571,21 +573,19 @@ set_random_xattrs(struct wim_inode *inode)
 static int
 set_random_metadata(struct wim_inode *inode, struct generation_context *ctx)
 {
-	u32 attrib = (rand32() & (FILE_ATTRIBUTE_READONLY |
-				  FILE_ATTRIBUTE_HIDDEN |
-				  FILE_ATTRIBUTE_SYSTEM |
-				  FILE_ATTRIBUTE_ARCHIVE |
-				  FILE_ATTRIBUTE_NOT_CONTENT_INDEXED |
-				  FILE_ATTRIBUTE_COMPRESSED |
-				  FILE_ATTRIBUTE_SPARSE_FILE));
+	u32 attrib = (rand32() &
+	              (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN |
+	               FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE |
+	               FILE_ATTRIBUTE_NOT_CONTENT_INDEXED |
+	               FILE_ATTRIBUTE_COMPRESSED | FILE_ATTRIBUTE_SPARSE_FILE));
 
 	/* File attributes  */
 	inode->i_attributes |= attrib;
 
 	/* Timestamps  */
-	inode->i_creation_time = generate_random_timestamp();
+	inode->i_creation_time    = generate_random_timestamp();
 	inode->i_last_access_time = generate_random_timestamp();
-	inode->i_last_write_time = generate_random_timestamp();
+	inode->i_last_write_time  = generate_random_timestamp();
 
 	/* Security descriptor  */
 	if (randbool()) {
@@ -596,8 +596,8 @@ set_random_metadata(struct wim_inode *inode, struct generation_context *ctx)
 
 		wimlib_assert(size <= sizeof(desc));
 
-		inode->i_security_id = sd_set_add_sd(ctx->params->sd_set,
-						     desc, size);
+		inode->i_security_id =
+			sd_set_add_sd(ctx->params->sd_set, desc, size);
 		if (unlikely(inode->i_security_id < 0))
 			return WIMLIB_ERR_NOMEM;
 	}
@@ -627,7 +627,6 @@ set_random_metadata(struct wim_inode *inode, struct generation_context *ctx)
 	}
 
 	return 0;
-
 }
 
 /* Choose a random size for generated file data.  We want to usually generate
@@ -664,7 +663,7 @@ select_stream_size(struct generation_context *ctx)
 static void
 generate_data(u8 *buffer, size_t size, struct generation_context *ctx)
 {
-	size_t mask = -1;
+	size_t mask           = -1;
 	size_t num_byte_fills = rand32() % 256;
 
 	if (size == 0)
@@ -678,14 +677,12 @@ generate_data(u8 *buffer, size_t size, struct generation_context *ctx)
 		u8 b = rand8();
 
 		size_t count = ((double)size / (double)num_byte_fills) *
-				((double)rand32() / 2e9);
+		               ((double)rand32() / 2e9);
 		size_t offset = rand32() & ~mask;
 
 		while (count--) {
-			buffer[(offset +
-				((rand32()) & mask)) % size] = b;
+			buffer[(offset + ((rand32()) & mask)) % size] = b;
 		}
-
 
 		if (rand32() % 4 == 0)
 			mask = (size_t)-1 << rand32() % 4;
@@ -694,7 +691,7 @@ generate_data(u8 *buffer, size_t size, struct generation_context *ctx)
 	/* Sometimes add a wave pattern */
 	if (rand32() % 8 == 0) {
 		double magnitude = rand32() % 128;
-		double scale = 1.0 / (1 + (rand32() % 256));
+		double scale     = 1.0 / (1 + (rand32() % 256));
 
 		for (size_t i = 0; i < size; i++)
 			buffer[i] += (int)(magnitude * cos(i * scale));
@@ -705,15 +702,16 @@ generate_data(u8 *buffer, size_t size, struct generation_context *ctx)
 		size_t num_holes = 1 + (rand32() % 16);
 		for (size_t i = 0; i < num_holes; i++) {
 			size_t hole_offset = rand32() % size;
-			size_t hole_len = min(size - hole_offset,
-					      size / (1 + (rand32() % 16)));
+			size_t hole_len    = min(size - hole_offset,
+                                              size / (1 + (rand32() % 16)));
 			memset(&buffer[hole_offset], 0, hole_len);
 		}
 	}
 }
 
 static noinline_for_stack int
-set_random_reparse_point(struct wim_inode *inode, struct generation_context *ctx)
+set_random_reparse_point(struct wim_inode *inode,
+                         struct generation_context *ctx)
 {
 	struct reparse_buffer_disk rpbuf;
 	size_t rpdatalen;
@@ -730,25 +728,27 @@ set_random_reparse_point(struct wim_inode *inode, struct generation_context *ctx
 		target_nchars = generate_random_filename(targets, 255, ctx);
 
 		rpbuf.link.substitute_name_offset = cpu_to_le16(0);
-		rpbuf.link.substitute_name_nbytes = cpu_to_le16(2*target_nchars);
-		rpbuf.link.print_name_offset = cpu_to_le16(2*(target_nchars + 1));
-		rpbuf.link.print_name_nbytes = cpu_to_le16(2*target_nchars);
-		targets[target_nchars] = cpu_to_le16(0);
-		memcpy(&targets[target_nchars + 1], targets, 2*target_nchars);
+		rpbuf.link.substitute_name_nbytes =
+			cpu_to_le16(2 * target_nchars);
+		rpbuf.link.print_name_offset =
+			cpu_to_le16(2 * (target_nchars + 1));
+		rpbuf.link.print_name_nbytes = cpu_to_le16(2 * target_nchars);
+		targets[target_nchars]       = cpu_to_le16(0);
+		memcpy(&targets[target_nchars + 1], targets, 2 * target_nchars);
 		targets[target_nchars + 1 + target_nchars] = cpu_to_le16(0);
 
 		rpbuf.link.symlink.flags = cpu_to_le32(SYMBOLIC_LINK_RELATIVE);
-		rpdatalen = ((u8 *)targets - rpbuf.rpdata) +
-				2*(target_nchars + 1 + target_nchars + 1);
+		rpdatalen                = ((u8 *)targets - rpbuf.rpdata) +
+		            2 * (target_nchars + 1 + target_nchars + 1);
 	} else {
 		rpdatalen = select_stream_size(ctx) % REPARSE_DATA_MAX_SIZE;
 		generate_data(rpbuf.rpdata, rpdatalen, ctx);
 
 		if (rpdatalen >= GUID_SIZE && randbool()) {
 			/* Non-Microsoft reparse tag (16-byte GUID required)  */
-			u8 *guid = rpbuf.rpdata;
-			guid[6] = (guid[6] & 0x0F) | 0x40;
-			guid[8] = (guid[8] & 0x3F) | 0x80;
+			u8 *guid             = rpbuf.rpdata;
+			guid[6]              = (guid[6] & 0x0F) | 0x40;
+			guid[8]              = (guid[8] & 0x3F) | 0x80;
 			inode->i_reparse_tag = 0x00000100;
 		} else {
 			/* Microsoft reparse tag  */
@@ -759,17 +759,21 @@ set_random_reparse_point(struct wim_inode *inode, struct generation_context *ctx
 
 	wimlib_assert(rpdatalen < REPARSE_DATA_MAX_SIZE);
 
-	if (!inode_add_stream_with_data(inode, STREAM_TYPE_REPARSE_POINT,
-					NO_STREAM_NAME, rpbuf.rpdata,
-					rpdatalen, ctx->params->blob_table))
+	if (!inode_add_stream_with_data(inode,
+	                                STREAM_TYPE_REPARSE_POINT,
+	                                NO_STREAM_NAME,
+	                                rpbuf.rpdata,
+	                                rpdatalen,
+	                                ctx->params->blob_table))
 		return WIMLIB_ERR_NOMEM;
 
 	return 0;
 }
 
 static int
-add_random_data_stream(struct wim_inode *inode, struct generation_context *ctx,
-		       const utf16lechar *stream_name)
+add_random_data_stream(struct wim_inode *inode,
+                       struct generation_context *ctx,
+                       const utf16lechar *stream_name)
 {
 	void *buffer = NULL;
 	size_t size;
@@ -784,8 +788,12 @@ add_random_data_stream(struct wim_inode *inode, struct generation_context *ctx,
 	}
 
 	ret = 0;
-	if (!inode_add_stream_with_data(inode, STREAM_TYPE_DATA, stream_name,
-					buffer, size, ctx->params->blob_table))
+	if (!inode_add_stream_with_data(inode,
+	                                STREAM_TYPE_DATA,
+	                                stream_name,
+	                                buffer,
+	                                size,
+	                                ctx->params->blob_table))
 		ret = WIMLIB_ERR_NOMEM;
 	FREE(buffer);
 	return ret;
@@ -806,7 +814,8 @@ set_random_streams(struct wim_inode *inode, struct generation_context *ctx)
 
 	/* Unnamed data stream (nondirectories and non-symlinks only)  */
 	if (!(inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY) &&
-	    !inode_is_symlink(inode)) {
+	    !inode_is_symlink(inode))
+	{
 		ret = add_random_data_stream(inode, ctx, NO_STREAM_NAME);
 		if (ret)
 			return ret;
@@ -815,7 +824,7 @@ set_random_streams(struct wim_inode *inode, struct generation_context *ctx)
 	/* Named data streams (sometimes)  */
 	r = rand32() % 256;
 	if (r > 230) {
-		utf16lechar stream_name[2] = {cpu_to_le16('a'), '\0'};
+		utf16lechar stream_name[2] = { cpu_to_le16('a'), '\0' };
 		r -= 230;
 		while (r--) {
 			ret = add_random_data_stream(inode, ctx, stream_name);
@@ -848,9 +857,9 @@ static u32
 select_num_children(u32 depth, struct generation_context *ctx)
 {
 	const double b = 1.01230;
-	u32 r = rand32() % 500;
+	u32 r          = rand32() % 500;
 	return ((pow(b, pow(b, r)) - 1) / pow(depth, 1.5)) +
-		(2 - exp(0.04/depth));
+	       (2 - exp(0.04 / depth));
 }
 
 static bool
@@ -858,12 +867,10 @@ is_name_valid_in_win32_namespace(const utf16lechar *name)
 {
 	const utf16lechar *p;
 
-	static const char * const reserved_names[] = {
-		 "CON",  "PRN",  "AUX",  "NUL",
-		 "COM1", "COM2", "COM3", "COM4", "COM5",
-		 "COM6", "COM7", "COM8", "COM9",
-		 "LPT1", "LPT2", "LPT3", "LPT4", "LPT5",
-		 "LPT6", "LPT7", "LPT8", "LPT9",
+	static const char *const reserved_names[] = {
+		"CON",  "PRN",  "AUX",  "NUL",  "COM1", "COM2", "COM3", "COM4",
+		"COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3",
+		"LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 	};
 
 	/* The name must be nonempty. */
@@ -881,7 +888,7 @@ is_name_valid_in_win32_namespace(const utf16lechar *name)
 	/* The name can't be one of the reserved names or be a reserved name
 	 * with an extension.  Case insensitive. */
 	for (size_t i = 0; i < ARRAY_LEN(reserved_names); i++) {
-		for (size_t j = 0; ; j++) {
+		for (size_t j = 0;; j++) {
 			u16 c1 = le16_to_cpu(name[j]);
 			u16 c2 = reserved_names[i][j];
 			if (c2 == '\0') {
@@ -898,8 +905,9 @@ is_name_valid_in_win32_namespace(const utf16lechar *name)
 }
 
 static int
-set_random_short_name(struct wim_dentry *dir, struct wim_dentry *child,
-		      struct generation_context *ctx)
+set_random_short_name(struct wim_dentry *dir,
+                      struct wim_dentry *child,
+                      struct generation_context *ctx)
 {
 	utf16lechar name[12 + 1];
 	int name_len;
@@ -916,9 +924,8 @@ retry:
 	 * the same directory.  */
 	do {
 		name_len = generate_random_short_name(name, ctx);
-	} while (get_dentry_child_with_utf16le_name(dir, name, name_len * 2,
-						    WIMLIB_CASE_INSENSITIVE));
-
+	} while (get_dentry_child_with_utf16le_name(
+		dir, name, name_len * 2, WIMLIB_CASE_INSENSITIVE));
 
 	/* Don't select a short name that is already used by another short name
 	 * within the same directory.  */
@@ -926,19 +933,24 @@ retry:
 	for (const utf16lechar *p = name; *p; p++)
 		hash = (hash * 31) + le16_to_cpu(*p);
 	FREE(child->d_short_name);
-	child->d_short_name = memdup(name, (name_len + 1) * 2);
+	child->d_short_name        = memdup(name, (name_len + 1) * 2);
 	child->d_short_name_nbytes = name_len * 2;
 
 	if (!child->d_short_name)
 		return WIMLIB_ERR_NOMEM;
 
-	bucket = &ctx->used_short_names[hash % ARRAY_LEN(ctx->used_short_names)];
+	bucket =
+		&ctx->used_short_names[hash % ARRAY_LEN(ctx->used_short_names)];
 
 	for (struct wim_dentry *d = *bucket; d != NULL;
-	     d = d->d_next_extraction_alias) {
-		if (!cmp_utf16le_strings(child->d_short_name, name_len,
-					 d->d_short_name, d->d_short_name_nbytes / 2,
-					 true)) {
+	     d                    = d->d_next_extraction_alias)
+	{
+		if (!cmp_utf16le_strings(child->d_short_name,
+		                         name_len,
+		                         d->d_short_name,
+		                         d->d_short_name_nbytes / 2,
+		                         true))
+		{
 			goto retry;
 		}
 	}
@@ -947,7 +959,7 @@ retry:
 		goto retry;
 
 	child->d_next_extraction_alias = *bucket;
-	*bucket = child;
+	*bucket                        = child;
 	return 0;
 }
 
@@ -964,8 +976,9 @@ inode_has_short_name(const struct wim_inode *inode)
 }
 
 static int
-generate_dentry_tree_recursive(struct wim_dentry *dir, u32 depth,
-			       struct generation_context *ctx)
+generate_dentry_tree_recursive(struct wim_dentry *dir,
+                               u32 depth,
+                               struct generation_context *ctx)
 {
 	u32 num_children = select_num_children(depth, ctx);
 	struct wim_dentry *child;
@@ -977,12 +990,11 @@ generate_dentry_tree_recursive(struct wim_dentry *dir, u32 depth,
 	 * directories themselves.  */
 
 	for (u32 i = 0; i < num_children; i++) {
-
 		/* Generate the next child dentry.  */
 		struct wim_inode *inode;
 		u64 ino;
 		bool is_directory = (rand32() % 16 <= 6);
-		bool is_reparse = (rand32() % 8 == 0);
+		bool is_reparse   = (rand32() % 8 == 0);
 		utf16lechar name[63 + 1]; /* for UNIX extraction: 63 * 4 <= 255 */
 		int name_len;
 		struct wim_dentry *duplicate;
@@ -1000,18 +1012,21 @@ generate_dentry_tree_recursive(struct wim_dentry *dir, u32 depth,
 			ino = select_inode_number(ctx);
 
 		/* Create the dentry. */
-		ret = inode_table_new_dentry(ctx->params->inode_table, NULL,
-					     ino, 0, ino == 0, &child);
+		ret = inode_table_new_dentry(ctx->params->inode_table,
+		                             NULL,
+		                             ino,
+		                             0,
+		                             ino == 0,
+		                             &child);
 		if (ret)
 			return ret;
 
 		/* Choose a filename that is unique within the directory.*/
 		do {
-			name_len = generate_random_filename(name,
-							    ARRAY_LEN(name) - 1,
-							    ctx);
-		} while (get_dentry_child_with_utf16le_name(dir, name, name_len * 2,
-							    WIMLIB_CASE_PLATFORM_DEFAULT));
+			name_len = generate_random_filename(
+				name, ARRAY_LEN(name) - 1, ctx);
+		} while (get_dentry_child_with_utf16le_name(
+			dir, name, name_len * 2, WIMLIB_CASE_PLATFORM_DEFAULT));
 
 		ret = dentry_set_name_utf16le(child, name, name_len * 2);
 		if (ret) {
@@ -1025,7 +1040,7 @@ generate_dentry_tree_recursive(struct wim_dentry *dir, u32 depth,
 
 		inode = child->d_inode;
 
-		if (inode->i_nlink > 1)  /* Existing inode?  */
+		if (inode->i_nlink > 1) /* Existing inode?  */
 			continue;
 
 		/* New inode; set attributes, metadata, and data.  */
@@ -1045,14 +1060,15 @@ generate_dentry_tree_recursive(struct wim_dentry *dir, u32 depth,
 
 		/* Recurse if it's a directory.  */
 		if (is_directory && !is_reparse) {
-			ret = generate_dentry_tree_recursive(child, depth + 1,
-							     ctx);
+			ret = generate_dentry_tree_recursive(
+				child, depth + 1, ctx);
 			if (ret)
 				return ret;
 		}
 	}
 
-	for_dentry_child(child, dir) {
+	for_dentry_child(child, dir)
+	{
 		/* sometimes generate a unique short name  */
 		if (randbool() && !inode_has_short_name(child->d_inode)) {
 			ret = set_random_short_name(dir, child, ctx);
@@ -1065,18 +1081,20 @@ generate_dentry_tree_recursive(struct wim_dentry *dir, u32 depth,
 }
 
 int
-generate_dentry_tree(struct wim_dentry **root_ret, const tchar *_ignored,
-		     struct scan_params *params)
+generate_dentry_tree(struct wim_dentry **root_ret,
+                     const tchar *_ignored,
+                     struct scan_params *params)
 {
 	int ret;
-	struct wim_dentry *root = NULL;
+	struct wim_dentry *root       = NULL;
 	struct generation_context ctx = {
 		.params = params,
 	};
 
 	ctx.metadata_only = ((rand32() % 8) != 0); /* usually metadata only  */
 
-	ret = inode_table_new_dentry(params->inode_table, NULL, 0, 0, true, &root);
+	ret = inode_table_new_dentry(
+		params->inode_table, NULL, 0, 0, true, &root);
 	if (!ret) {
 		root->d_inode->i_attributes = FILE_ATTRIBUTE_DIRECTORY;
 		ret = set_random_streams(root->d_inode, &ctx);
@@ -1096,21 +1114,21 @@ generate_dentry_tree(struct wim_dentry **root_ret, const tchar *_ignored,
  *                            File tree comparison                            *
  *----------------------------------------------------------------------------*/
 
-#define INDEX_NODE_TO_DENTRY(node)	\
-	((node) ? avl_tree_entry((node), struct wim_dentry, d_index_node) : NULL)
+#  define INDEX_NODE_TO_DENTRY(node) \
+    ((node) ? avl_tree_entry((node), struct wim_dentry, d_index_node) : NULL)
 
 static struct wim_dentry *
 dentry_first_child(struct wim_dentry *dentry)
 {
 	return INDEX_NODE_TO_DENTRY(
-			avl_tree_first_in_order(dentry->d_inode->i_children));
+		avl_tree_first_in_order(dentry->d_inode->i_children));
 }
 
 static struct wim_dentry *
 dentry_next_sibling(struct wim_dentry *dentry)
 {
 	return INDEX_NODE_TO_DENTRY(
-			avl_tree_next_in_order(&dentry->d_index_node));
+		avl_tree_next_in_order(&dentry->d_index_node));
 }
 
 /*
@@ -1121,31 +1139,37 @@ dentry_next_sibling(struct wim_dentry *dentry)
  * unverified corresponding inode in the other tree.
  */
 static int
-calc_corresponding_files_recursive(struct wim_dentry *d1, struct wim_dentry *d2,
-				   int cmp_flags)
+calc_corresponding_files_recursive(struct wim_dentry *d1,
+                                   struct wim_dentry *d2,
+                                   int cmp_flags)
 {
 	struct wim_dentry *child1;
 	struct wim_dentry *child2;
 	int ret;
 
 	/* Compare long filenames, case sensitively.  */
-	if (cmp_utf16le_strings(d1->d_name, d1->d_name_nbytes / 2,
-				d2->d_name, d2->d_name_nbytes / 2,
-				false))
+	if (cmp_utf16le_strings(d1->d_name,
+	                        d1->d_name_nbytes / 2,
+	                        d2->d_name,
+	                        d2->d_name_nbytes / 2,
+	                        false))
 	{
-		ERROR("Filename mismatch; path1=\"%"TS"\", path2=\"%"TS"\"",
-		      dentry_full_path(d1), dentry_full_path(d2));
+		ERROR("Filename mismatch; path1=\"%" TS "\", path2=\"%" TS "\"",
+		      dentry_full_path(d1),
+		      dentry_full_path(d2));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
 	/* Compare short filenames, case insensitively.  */
 	if (!(d2->d_short_name_nbytes == 0 &&
 	      (cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE)) &&
-	    cmp_utf16le_strings(d1->d_short_name, d1->d_short_name_nbytes / 2,
-				d2->d_short_name, d2->d_short_name_nbytes / 2,
-				true))
+	    cmp_utf16le_strings(d1->d_short_name,
+	                        d1->d_short_name_nbytes / 2,
+	                        d2->d_short_name,
+	                        d2->d_short_name_nbytes / 2,
+	                        true))
 	{
-		ERROR("Short name mismatch; path=\"%"TS"\"",
+		ERROR("Short name mismatch; path=\"%" TS "\"",
 		      dentry_full_path(d1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
@@ -1162,17 +1186,17 @@ calc_corresponding_files_recursive(struct wim_dentry *d1, struct wim_dentry *d2,
 	child1 = dentry_first_child(d1);
 	child2 = dentry_first_child(d2);
 	while (child1 || child2) {
-
 		if (!child1 || !child2) {
 			ERROR("Child count mismatch; "
-			      "path1=\"%"TS"\", path2=\"%"TS"\"",
-			      dentry_full_path(d1), dentry_full_path(d2));
+			      "path1=\"%" TS "\", path2=\"%" TS "\"",
+			      dentry_full_path(d1),
+			      dentry_full_path(d2));
 			return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 		}
 
 		/* Recurse on this pair of children.  */
-		ret = calc_corresponding_files_recursive(child1, child2,
-							 cmp_flags);
+		ret = calc_corresponding_files_recursive(
+			child1, child2, cmp_flags);
 		if (ret)
 			return ret;
 
@@ -1214,7 +1238,7 @@ check_hard_link(struct wim_dentry *dentry, void *_ignore)
 	const struct wim_inode *b = dentry->d_corresponding->d_inode;
 	if (a == b->i_corresponding && a->i_corresponding == b)
 		return 0;
-	ERROR("Hard link difference; path=%"TS"", dentry_full_path(dentry));
+	ERROR("Hard link difference; path=%" TS "", dentry_full_path(dentry));
 	return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 }
 
@@ -1222,29 +1246,30 @@ static const struct {
 	u32 flag;
 	const char *name;
 } file_attr_flags[] = {
-	{FILE_ATTRIBUTE_READONLY,	     "READONLY"},
-	{FILE_ATTRIBUTE_HIDDEN,		     "HIDDEN"},
-	{FILE_ATTRIBUTE_SYSTEM,		     "SYSTEM"},
-	{FILE_ATTRIBUTE_DIRECTORY,	     "DIRECTORY"},
-	{FILE_ATTRIBUTE_ARCHIVE,	     "ARCHIVE"},
-	{FILE_ATTRIBUTE_DEVICE,		     "DEVICE"},
-	{FILE_ATTRIBUTE_NORMAL,		     "NORMAL"},
-	{FILE_ATTRIBUTE_TEMPORARY,	     "TEMPORARY"},
-	{FILE_ATTRIBUTE_SPARSE_FILE,	     "SPARSE_FILE"},
-	{FILE_ATTRIBUTE_REPARSE_POINT,	     "REPARSE_POINT"},
-	{FILE_ATTRIBUTE_COMPRESSED,	     "COMPRESSED"},
-	{FILE_ATTRIBUTE_OFFLINE,	     "OFFLINE"},
-	{FILE_ATTRIBUTE_NOT_CONTENT_INDEXED, "NOT_CONTENT_INDEXED"},
-	{FILE_ATTRIBUTE_ENCRYPTED,	     "ENCRYPTED"},
-	{FILE_ATTRIBUTE_VIRTUAL,	     "VIRTUAL"},
+	{ FILE_ATTRIBUTE_READONLY, "READONLY" },
+	{ FILE_ATTRIBUTE_HIDDEN, "HIDDEN" },
+	{ FILE_ATTRIBUTE_SYSTEM, "SYSTEM" },
+	{ FILE_ATTRIBUTE_DIRECTORY, "DIRECTORY" },
+	{ FILE_ATTRIBUTE_ARCHIVE, "ARCHIVE" },
+	{ FILE_ATTRIBUTE_DEVICE, "DEVICE" },
+	{ FILE_ATTRIBUTE_NORMAL, "NORMAL" },
+	{ FILE_ATTRIBUTE_TEMPORARY, "TEMPORARY" },
+	{ FILE_ATTRIBUTE_SPARSE_FILE, "SPARSE_FILE" },
+	{ FILE_ATTRIBUTE_REPARSE_POINT, "REPARSE_POINT" },
+	{ FILE_ATTRIBUTE_COMPRESSED, "COMPRESSED" },
+	{ FILE_ATTRIBUTE_OFFLINE, "OFFLINE" },
+	{ FILE_ATTRIBUTE_NOT_CONTENT_INDEXED, "NOT_CONTENT_INDEXED" },
+	{ FILE_ATTRIBUTE_ENCRYPTED, "ENCRYPTED" },
+	{ FILE_ATTRIBUTE_VIRTUAL, "VIRTUAL" },
 };
 
 static int
 cmp_attributes(const struct wim_inode *inode1,
-	       const struct wim_inode *inode2, int cmp_flags)
+               const struct wim_inode *inode2,
+               int cmp_flags)
 {
 	const u32 changed = inode1->i_attributes ^ inode2->i_attributes;
-	const u32 set = inode2->i_attributes & ~inode1->i_attributes;
+	const u32 set     = inode2->i_attributes & ~inode1->i_attributes;
 	const u32 cleared = inode1->i_attributes & ~inode2->i_attributes;
 
 	/* NORMAL may change, but it must never be set along with other
@@ -1278,32 +1303,34 @@ cmp_attributes(const struct wim_inode *inode1,
 	/* COMPRESSED may change in UNIX and NTFS-3G modes.  (It *should* be
 	 * preserved in NTFS-3G mode, but it's not implemented yet.) */
 	if ((changed & FILE_ATTRIBUTE_COMPRESSED) &&
-	    !(cmp_flags & (WIMLIB_CMP_FLAG_UNIX_MODE |
-			   WIMLIB_CMP_FLAG_NTFS_3G_MODE)))
+	    !(cmp_flags &
+	      (WIMLIB_CMP_FLAG_UNIX_MODE | WIMLIB_CMP_FLAG_NTFS_3G_MODE)))
 		goto mismatch;
 
 	/* All other attributes can change in UNIX mode, but not in any other
 	 * mode. */
-	if ((changed & ~(FILE_ATTRIBUTE_NORMAL |
-			 FILE_ATTRIBUTE_DIRECTORY |
-			 FILE_ATTRIBUTE_REPARSE_POINT |
-			 FILE_ATTRIBUTE_SPARSE_FILE |
-			 FILE_ATTRIBUTE_COMPRESSED)) &&
+	if ((changed &
+	     ~(FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY |
+	       FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_SPARSE_FILE |
+	       FILE_ATTRIBUTE_COMPRESSED)) &&
 	    !(cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE))
 		goto mismatch;
 
 	return 0;
 
 mismatch:
-	ERROR("Attribute mismatch for %"TS": 0x%08"PRIx32" vs. 0x%08"PRIx32":",
-	      inode_any_full_path(inode1), inode1->i_attributes,
+	ERROR("Attribute mismatch for %" TS ": 0x%08" PRIx32 " vs. 0x%08" PRIx32
+	      ":",
+	      inode_any_full_path(inode1),
+	      inode1->i_attributes,
 	      inode2->i_attributes);
 	for (size_t i = 0; i < ARRAY_LEN(file_attr_flags); i++) {
 		u32 flag = file_attr_flags[i].flag;
 		if (changed & flag) {
-			fprintf(stderr, "\tFILE_ATTRIBUTE_%s was %s\n",
-				file_attr_flags[i].name,
-				(set & flag) ? "set" : "cleared");
+			fprintf(stderr,
+			        "\tFILE_ATTRIBUTE_%s was %s\n",
+			        file_attr_flags[i].name,
+			        (set & flag) ? "set" : "cleared");
 		}
 	}
 	return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
@@ -1313,28 +1340,28 @@ static void
 print_security_descriptor(const void *desc, size_t size, FILE *fp)
 {
 	print_byte_field(desc, size, fp);
-#ifdef _WIN32
+#  ifdef _WIN32
 	wchar_t *str = NULL;
 	ConvertSecurityDescriptorToStringSecurityDescriptorW(
-			(void *)desc,
-			SDDL_REVISION_1,
-			OWNER_SECURITY_INFORMATION |
-				GROUP_SECURITY_INFORMATION |
-				DACL_SECURITY_INFORMATION |
-				SACL_SECURITY_INFORMATION,
-			&str,
-			NULL);
+		(void *)desc,
+		SDDL_REVISION_1,
+		OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
+			DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION,
+		&str,
+		NULL);
 	if (str) {
 		fprintf(fp, " [ %ls ]", str);
 		LocalFree(str);
 	}
-#endif /* _WIN32 */
+#  endif /* _WIN32 */
 }
 
 static int
-cmp_security(const struct wim_inode *inode1, const struct wim_inode *inode2,
-	     const struct wim_image_metadata *imd1,
-	     const struct wim_image_metadata *imd2, int cmp_flags)
+cmp_security(const struct wim_inode *inode1,
+             const struct wim_inode *inode2,
+             const struct wim_image_metadata *imd1,
+             const struct wim_image_metadata *imd2,
+             int cmp_flags)
 {
 	/*
 	 * Unfortunately this has to be disabled on Windows for now, since
@@ -1346,13 +1373,19 @@ cmp_security(const struct wim_inode *inode1, const struct wim_inode *inode2,
 
 	if (inode_has_security_descriptor(inode1)) {
 		if (inode_has_security_descriptor(inode2)) {
-			const void *desc1 = imd1->security_data->descriptors[inode1->i_security_id];
-			const void *desc2 = imd2->security_data->descriptors[inode2->i_security_id];
-			size_t size1 = imd1->security_data->sizes[inode1->i_security_id];
-			size_t size2 = imd2->security_data->sizes[inode2->i_security_id];
+			const void *desc1 =
+				imd1->security_data
+					->descriptors[inode1->i_security_id];
+			const void *desc2 =
+				imd2->security_data
+					->descriptors[inode2->i_security_id];
+			size_t size1 = imd1->security_data
+			                       ->sizes[inode1->i_security_id];
+			size_t size2 = imd2->security_data
+			                       ->sizes[inode2->i_security_id];
 
 			if (size1 != size2 || memcmp(desc1, desc2, size1)) {
-				ERROR("Security descriptor of %"TS" differs!",
+				ERROR("Security descriptor of %" TS " differs!",
 				      inode_any_full_path(inode1));
 				fprintf(stderr, "desc1=");
 				print_security_descriptor(desc1, size1, stderr);
@@ -1362,15 +1395,17 @@ cmp_security(const struct wim_inode *inode1, const struct wim_inode *inode2,
 				return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 			}
 		} else if (!(cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE)) {
-			ERROR("%"TS" has a security descriptor in the first image but "
-			      "not in the second image!", inode_any_full_path(inode1));
+			ERROR("%" TS
+			      " has a security descriptor in the first image but "
+			      "not in the second image!",
+			      inode_any_full_path(inode1));
 			return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 		}
 	} else if (inode_has_security_descriptor(inode2)) {
 		/* okay --- consider it acceptable if a default security
 		 * descriptor was assigned  */
 		/*ERROR("%"TS" has a security descriptor in the second image but "*/
-		      /*"not in the first image!", inode_any_full_path(inode1));*/
+		/*"not in the first image!", inode_any_full_path(inode1));*/
 		/*return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;*/
 	}
 	return 0;
@@ -1378,7 +1413,8 @@ cmp_security(const struct wim_inode *inode1, const struct wim_inode *inode2,
 
 static int
 cmp_object_ids(const struct wim_inode *inode1,
-	       const struct wim_inode *inode2, int cmp_flags)
+               const struct wim_inode *inode2,
+               int cmp_flags)
 {
 	const void *objid1, *objid2;
 	u32 len1, len2;
@@ -1392,19 +1428,19 @@ cmp_object_ids(const struct wim_inode *inode1,
 	if (objid1 && !objid2) {
 		if (cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE)
 			return 0;
-		ERROR("%"TS" unexpectedly lost its object ID",
+		ERROR("%" TS " unexpectedly lost its object ID",
 		      inode_any_full_path(inode1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
 	if (!objid1 && objid2) {
-		ERROR("%"TS" unexpectedly gained an object ID",
+		ERROR("%" TS " unexpectedly gained an object ID",
 		      inode_any_full_path(inode1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
 	if (len1 != len2 || memcmp(objid1, objid2, len1) != 0) {
-		ERROR("Object ID of %"TS" differs",
+		ERROR("Object ID of %" TS " differs",
 		      inode_any_full_path(inode1));
 		fprintf(stderr, "objid1=");
 		print_byte_field(objid1, len1, stderr);
@@ -1419,7 +1455,8 @@ cmp_object_ids(const struct wim_inode *inode1,
 
 static int
 cmp_unix_metadata(const struct wim_inode *inode1,
-		  const struct wim_inode *inode2, int cmp_flags)
+                  const struct wim_inode *inode2,
+                  int cmp_flags)
 {
 	struct wimlib_unix_data dat1, dat2;
 	bool present1, present2;
@@ -1432,9 +1469,9 @@ cmp_unix_metadata(const struct wim_inode *inode1,
 
 	if (present1 && !present2) {
 		if (cmp_flags & (WIMLIB_CMP_FLAG_NTFS_3G_MODE |
-				 WIMLIB_CMP_FLAG_WINDOWS_MODE))
+		                 WIMLIB_CMP_FLAG_WINDOWS_MODE))
 			return 0;
-		ERROR("%"TS" unexpectedly lost its UNIX metadata",
+		ERROR("%" TS " unexpectedly lost its UNIX metadata",
 		      inode_any_full_path(inode1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
@@ -1442,18 +1479,24 @@ cmp_unix_metadata(const struct wim_inode *inode1,
 	if (!present1 && present2) {
 		if (cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE)
 			return 0;
-		ERROR("%"TS" unexpectedly gained UNIX metadata",
+		ERROR("%" TS " unexpectedly gained UNIX metadata",
 		      inode_any_full_path(inode1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
 	if (memcmp(&dat1, &dat2, sizeof(dat1)) != 0) {
-		ERROR("UNIX metadata of %"TS" differs: "
+		ERROR("UNIX metadata of %" TS " differs: "
 		      "[uid=%u, gid=%u, mode=0%o, rdev=%u] vs. "
 		      "[uid=%u, gid=%u, mode=0%o, rdev=%u]",
 		      inode_any_full_path(inode1),
-		      dat1.uid, dat1.gid, dat1.mode, dat1.rdev,
-		      dat2.uid, dat2.gid, dat2.mode, dat2.rdev);
+		      dat1.uid,
+		      dat1.gid,
+		      dat1.mode,
+		      dat1.rdev,
+		      dat2.uid,
+		      dat2.gid,
+		      dat2.mode,
+		      dat2.rdev);
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
@@ -1463,8 +1506,10 @@ cmp_unix_metadata(const struct wim_inode *inode1,
 static int
 cmp_xattr_names(const void *p1, const void *p2)
 {
-	const struct wim_xattr_entry *entry1 = *(const struct wim_xattr_entry **)p1;
-	const struct wim_xattr_entry *entry2 = *(const struct wim_xattr_entry **)p2;
+	const struct wim_xattr_entry *entry1 =
+		*(const struct wim_xattr_entry **)p1;
+	const struct wim_xattr_entry *entry2 =
+		*(const struct wim_xattr_entry **)p2;
 	int res;
 
 	res = entry1->name_len - entry2->name_len;
@@ -1476,12 +1521,13 @@ cmp_xattr_names(const void *p1, const void *p2)
 
 /* Validate and sort by name a list of extended attributes */
 static int
-parse_xattrs(const void *xattrs, u32 len,
-	     const struct wim_xattr_entry *entries[],
-	     u32 *num_entries_p)
+parse_xattrs(const void *xattrs,
+             u32 len,
+             const struct wim_xattr_entry *entries[],
+             u32 *num_entries_p)
 {
-	u32 limit = *num_entries_p;
-	u32 num_entries = 0;
+	u32 limit                           = *num_entries_p;
+	u32 num_entries                     = 0;
 	const struct wim_xattr_entry *entry = xattrs;
 
 	while ((void *)entry < xattrs + len) {
@@ -1494,7 +1540,7 @@ parse_xattrs(const void *xattrs, u32 len,
 			return WIMLIB_ERR_INVALID_XATTR;
 		}
 		entries[num_entries++] = entry;
-		entry = xattr_entry_next(entry);
+		entry                  = xattr_entry_next(entry);
 	}
 
 	if (num_entries == 0) {
@@ -1516,8 +1562,9 @@ parse_xattrs(const void *xattrs, u32 len,
 }
 
 static int
-cmp_xattrs(const struct wim_inode *inode1, const struct wim_inode *inode2,
-	   int cmp_flags)
+cmp_xattrs(const struct wim_inode *inode1,
+           const struct wim_inode *inode2,
+           int cmp_flags)
 {
 	const void *xattrs1, *xattrs2;
 	u32 len1, len2;
@@ -1530,11 +1577,11 @@ cmp_xattrs(const struct wim_inode *inode1, const struct wim_inode *inode2,
 	} else if (xattrs1 && !xattrs2) {
 		if (cmp_flags & WIMLIB_CMP_FLAG_NTFS_3G_MODE)
 			return 0;
-		ERROR("%"TS" unexpectedly lost its xattrs",
+		ERROR("%" TS " unexpectedly lost its xattrs",
 		      inode_any_full_path(inode1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	} else if (!xattrs1 && xattrs2) {
-		ERROR("%"TS" unexpectedly gained xattrs",
+		ERROR("%" TS " unexpectedly gained xattrs",
 		      inode_any_full_path(inode1));
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	} else {
@@ -1547,20 +1594,22 @@ cmp_xattrs(const struct wim_inode *inode1, const struct wim_inode *inode2,
 
 		ret = parse_xattrs(xattrs1, len1, entries1, &xattr_count1);
 		if (ret) {
-			ERROR("%"TS": invalid xattrs",
+			ERROR("%" TS ": invalid xattrs",
 			      inode_any_full_path(inode1));
 			return ret;
 		}
 		ret = parse_xattrs(xattrs2, len2, entries2, &xattr_count2);
 		if (ret) {
-			ERROR("%"TS": invalid xattrs",
+			ERROR("%" TS ": invalid xattrs",
 			      inode_any_full_path(inode2));
 			return ret;
 		}
 		if (xattr_count1 != xattr_count2) {
-			ERROR("%"TS": number of xattrs changed.  had %u "
-			      "before, now has %u", inode_any_full_path(inode1),
-			      xattr_count1, xattr_count2);
+			ERROR("%" TS ": number of xattrs changed.  had %u "
+			      "before, now has %u",
+			      inode_any_full_path(inode1),
+			      xattr_count1,
+			      xattr_count2);
 		}
 		for (u32 i = 0; i < xattr_count1; i++) {
 			const struct wim_xattr_entry *entry1 = entries1[i];
@@ -1569,14 +1618,16 @@ cmp_xattrs(const struct wim_inode *inode1, const struct wim_inode *inode2,
 			if (entry1->value_len != entry2->value_len ||
 			    entry1->name_len != entry2->name_len ||
 			    entry1->flags != entry2->flags ||
-			    memcmp(entry1->name, entry2->name,
-				   entry1->name_len) ||
+			    memcmp(entry1->name,
+			           entry2->name,
+			           entry1->name_len) ||
 			    memcmp(entry1->name + entry1->name_len + 1,
-				   entry2->name + entry2->name_len + 1,
-				   le16_to_cpu(entry1->value_len)))
+			           entry2->name + entry2->name_len + 1,
+			           le16_to_cpu(entry1->value_len)))
 			{
-				ERROR("xattr %.*s of %"TS" differs",
-				      entry1->name_len, entry1->name,
+				ERROR("xattr %.*s of %" TS " differs",
+				      entry1->name_len,
+				      entry1->name,
 				      inode_any_full_path(inode1));
 				return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 			}
@@ -1593,7 +1644,7 @@ static bool
 in_ext4_range(u64 ts)
 {
 	return ts >= time_t_to_wim_timestamp(-0x80000000LL) &&
-		ts < time_t_to_wim_timestamp(0x380000000LL);
+	       ts < time_t_to_wim_timestamp(0x380000000LL);
 }
 
 static bool
@@ -1608,37 +1659,50 @@ timestamps_differ(u64 ts1, u64 ts2, int cmp_flags)
 }
 
 static int
-cmp_timestamps(const struct wim_inode *inode1, const struct wim_inode *inode2,
-	       int cmp_flags)
+cmp_timestamps(const struct wim_inode *inode1,
+               const struct wim_inode *inode2,
+               int cmp_flags)
 {
 	if (timestamps_differ(inode1->i_creation_time,
-			      inode2->i_creation_time, cmp_flags) &&
-	    !(cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE)) {
-		ERROR("Creation time of %"TS" differs; %"PRIu64" != %"PRIu64,
+	                      inode2->i_creation_time,
+	                      cmp_flags) &&
+	    !(cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE))
+	{
+		ERROR("Creation time of %" TS " differs; %" PRIu64
+		      " != %" PRIu64,
 		      inode_any_full_path(inode1),
-		      inode1->i_creation_time, inode2->i_creation_time);
+		      inode1->i_creation_time,
+		      inode2->i_creation_time);
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
 	if (timestamps_differ(inode1->i_last_write_time,
-			      inode2->i_last_write_time, cmp_flags)) {
-		ERROR("Last write time of %"TS" differs; %"PRIu64" != %"PRIu64,
+	                      inode2->i_last_write_time,
+	                      cmp_flags))
+	{
+		ERROR("Last write time of %" TS " differs; %" PRIu64
+		      " != %" PRIu64,
 		      inode_any_full_path(inode1),
-		      inode1->i_last_write_time, inode2->i_last_write_time);
+		      inode1->i_last_write_time,
+		      inode2->i_last_write_time);
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
 	if (timestamps_differ(inode1->i_last_access_time,
-			      inode2->i_last_access_time, cmp_flags) &&
+	                      inode2->i_last_access_time,
+	                      cmp_flags) &&
 	    /*
 	     * On Windows, sometimes a file's last access time will end up as
 	     * the current time rather than the expected time.  Maybe caused by
 	     * some OS process scanning the files?
 	     */
-	    !(cmp_flags & WIMLIB_CMP_FLAG_WINDOWS_MODE)) {
-		ERROR("Last access time of %"TS" differs; %"PRIu64" != %"PRIu64,
+	    !(cmp_flags & WIMLIB_CMP_FLAG_WINDOWS_MODE))
+	{
+		ERROR("Last access time of %" TS " differs; %" PRIu64
+		      " != %" PRIu64,
 		      inode_any_full_path(inode1),
-		      inode1->i_last_access_time, inode2->i_last_access_time);
+		      inode1->i_last_access_time,
+		      inode2->i_last_access_time);
 		return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 	}
 
@@ -1646,9 +1710,11 @@ cmp_timestamps(const struct wim_inode *inode1, const struct wim_inode *inode2,
 }
 
 static int
-cmp_inodes(const struct wim_inode *inode1, const struct wim_inode *inode2,
-	   const struct wim_image_metadata *imd1,
-	   const struct wim_image_metadata *imd2, int cmp_flags)
+cmp_inodes(const struct wim_inode *inode1,
+           const struct wim_inode *inode2,
+           const struct wim_image_metadata *imd1,
+           const struct wim_image_metadata *imd2,
+           int cmp_flags)
 {
 	int ret;
 
@@ -1676,14 +1742,15 @@ cmp_inodes(const struct wim_inode *inode1, const struct wim_inode *inode2,
 			continue;
 
 		/* Get the corresponding stream from the second file  */
-		strm2 = inode_get_stream(inode2, strm1->stream_type, strm1->stream_name);
+		strm2 = inode_get_stream(
+			inode2, strm1->stream_type, strm1->stream_name);
 
 		if (!strm2) {
 			/* Corresponding stream not found  */
 			if (stream_is_named(strm1) &&
 			    (cmp_flags & WIMLIB_CMP_FLAG_UNIX_MODE))
 				continue;
-			ERROR("Stream of %"TS" is missing in second image; "
+			ERROR("Stream of %" TS " is missing in second image; "
 			      "type %d, named=%d, empty=%d",
 			      inode_any_full_path(inode1),
 			      strm1->stream_type,
@@ -1693,8 +1760,9 @@ cmp_inodes(const struct wim_inode *inode1, const struct wim_inode *inode2,
 		}
 
 		if (!hashes_equal(stream_hash(strm1), stream_hash(strm2))) {
-			ERROR("Stream of %"TS" differs; type %d",
-			      inode_any_full_path(inode1), strm1->stream_type);
+			ERROR("Stream of %" TS " differs; type %d",
+			      inode_any_full_path(inode1),
+			      strm1->stream_type);
 			return WIMLIB_ERR_IMAGES_ARE_DIFFERENT;
 		}
 	}
@@ -1724,7 +1792,8 @@ cmp_inodes(const struct wim_inode *inode1, const struct wim_inode *inode2,
 
 static int
 cmp_images(const struct wim_image_metadata *imd1,
-	   const struct wim_image_metadata *imd2, int cmp_flags)
+           const struct wim_image_metadata *imd2,
+           int cmp_flags)
 {
 	struct wim_dentry *root1 = imd1->root_dentry;
 	struct wim_dentry *root2 = imd2->root_dentry;
@@ -1744,8 +1813,8 @@ cmp_images(const struct wim_image_metadata *imd1,
 
 	/* Compare corresponding inodes.  */
 	image_for_each_inode(inode, imd1) {
-		ret = cmp_inodes(inode, inode->i_corresponding,
-				 imd1, imd2, cmp_flags);
+		ret = cmp_inodes(
+			inode, inode->i_corresponding, imd1, imd2, cmp_flags);
 		if (ret)
 			return ret;
 	}
@@ -1765,8 +1834,11 @@ load_image(WIMStruct *wim, int image, struct wim_image_metadata **imd_ret)
 }
 
 WIMLIBAPI int
-wimlib_compare_images(WIMStruct *wim1, int image1,
-		      WIMStruct *wim2, int image2, int cmp_flags)
+wimlib_compare_images(WIMStruct *wim1,
+                      int image1,
+                      WIMStruct *wim2,
+                      int image2,
+                      int cmp_flags)
 {
 	int ret;
 	struct wim_image_metadata *imd1, *imd2;

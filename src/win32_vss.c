@@ -22,18 +22,18 @@
 
 #ifdef _WIN32
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#  ifdef HAVE_CONFIG_H
+#    include "config.h"
+#  endif
 
-#include "wimlib/win32_common.h"
+#  include "wimlib/win32_common.h"
 
-#include <cguid.h>
+#  include <cguid.h>
 
-#include "wimlib/error.h"
-#include "wimlib/threads.h"
-#include "wimlib/util.h"
-#include "wimlib/win32_vss.h"
+#  include "wimlib/error.h"
+#  include "wimlib/threads.h"
+#  include "wimlib/util.h"
+#  include "wimlib/win32_vss.h"
 
 /*----------------------------------------------------------------------------*
  *                             VSS API declarations                           *
@@ -44,79 +44,88 @@ typedef LONGLONG VSS_TIMESTAMP;
 typedef WCHAR *VSS_PWSZ;
 
 typedef enum {
-	VSS_BT_UNDEFINED      = 0,
-	VSS_BT_FULL           = 1,
-	VSS_BT_INCREMENTAL    = 2,
-	VSS_BT_DIFFERENTIAL   = 3,
-	VSS_BT_LOG            = 4,
-	VSS_BT_COPY           = 5,
-	VSS_BT_OTHER          = 6,
+	VSS_BT_UNDEFINED    = 0,
+	VSS_BT_FULL         = 1,
+	VSS_BT_INCREMENTAL  = 2,
+	VSS_BT_DIFFERENTIAL = 3,
+	VSS_BT_LOG          = 4,
+	VSS_BT_COPY         = 5,
+	VSS_BT_OTHER        = 6,
 } VSS_BACKUP_TYPE;
 
 typedef enum {
-	VSS_SS_UNKNOWN                      = 0x00,
-	VSS_SS_PREPARING                    = 0x01,
-	VSS_SS_PROCESSING_PREPARE           = 0x02,
-	VSS_SS_PREPARED                     = 0x03,
-	VSS_SS_PROCESSING_PRECOMMIT         = 0x04,
-	VSS_SS_PRECOMMITTED                 = 0x05,
-	VSS_SS_PROCESSING_COMMIT            = 0x06,
-	VSS_SS_COMMITTED                    = 0x07,
-	VSS_SS_PROCESSING_POSTCOMMIT        = 0x08,
-	VSS_SS_PROCESSING_PREFINALCOMMIT    = 0x09,
-	VSS_SS_PREFINALCOMMITTED            = 0x0a,
-	VSS_SS_PROCESSING_POSTFINALCOMMIT   = 0x0b,
-	VSS_SS_CREATED                      = 0x0c,
-	VSS_SS_ABORTED                      = 0x0d,
-	VSS_SS_DELETED                      = 0x0e,
-	VSS_SS_POSTCOMMITTED                = 0x0f,
-	VSS_SS_COUNT                        = 0x10,
+	VSS_SS_UNKNOWN                    = 0x00,
+	VSS_SS_PREPARING                  = 0x01,
+	VSS_SS_PROCESSING_PREPARE         = 0x02,
+	VSS_SS_PREPARED                   = 0x03,
+	VSS_SS_PROCESSING_PRECOMMIT       = 0x04,
+	VSS_SS_PRECOMMITTED               = 0x05,
+	VSS_SS_PROCESSING_COMMIT          = 0x06,
+	VSS_SS_COMMITTED                  = 0x07,
+	VSS_SS_PROCESSING_POSTCOMMIT      = 0x08,
+	VSS_SS_PROCESSING_PREFINALCOMMIT  = 0x09,
+	VSS_SS_PREFINALCOMMITTED          = 0x0a,
+	VSS_SS_PROCESSING_POSTFINALCOMMIT = 0x0b,
+	VSS_SS_CREATED                    = 0x0c,
+	VSS_SS_ABORTED                    = 0x0d,
+	VSS_SS_DELETED                    = 0x0e,
+	VSS_SS_POSTCOMMITTED              = 0x0f,
+	VSS_SS_COUNT                      = 0x10,
 } VSS_SNAPSHOT_STATE;
 
 typedef enum {
-	VSS_VOLSNAP_ATTR_PERSISTENT             = 0x00000001,
-	VSS_VOLSNAP_ATTR_NO_AUTORECOVERY        = 0x00000002,
-	VSS_VOLSNAP_ATTR_CLIENT_ACCESSIBLE      = 0x00000004,
-	VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE        = 0x00000008,
-	VSS_VOLSNAP_ATTR_NO_WRITERS             = 0x00000010,
-	VSS_VOLSNAP_ATTR_TRANSPORTABLE          = 0x00000020,
-	VSS_VOLSNAP_ATTR_NOT_SURFACED           = 0x00000040,
-	VSS_VOLSNAP_ATTR_NOT_TRANSACTED         = 0x00000080,
-	VSS_VOLSNAP_ATTR_HARDWARE_ASSISTED      = 0x00010000,
-	VSS_VOLSNAP_ATTR_DIFFERENTIAL           = 0x00020000,
-	VSS_VOLSNAP_ATTR_PLEX                   = 0x00040000,
-	VSS_VOLSNAP_ATTR_IMPORTED               = 0x00080000,
-	VSS_VOLSNAP_ATTR_EXPOSED_LOCALLY        = 0x00100000,
-	VSS_VOLSNAP_ATTR_EXPOSED_REMOTELY       = 0x00200000,
-	VSS_VOLSNAP_ATTR_AUTORECOVER            = 0x00400000,
-	VSS_VOLSNAP_ATTR_ROLLBACK_RECOVERY      = 0x00800000,
-	VSS_VOLSNAP_ATTR_DELAYED_POSTSNAPSHOT   = 0x01000000,
-	VSS_VOLSNAP_ATTR_TXF_RECOVERY           = 0x02000000,
+	VSS_VOLSNAP_ATTR_PERSISTENT           = 0x00000001,
+	VSS_VOLSNAP_ATTR_NO_AUTORECOVERY      = 0x00000002,
+	VSS_VOLSNAP_ATTR_CLIENT_ACCESSIBLE    = 0x00000004,
+	VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE      = 0x00000008,
+	VSS_VOLSNAP_ATTR_NO_WRITERS           = 0x00000010,
+	VSS_VOLSNAP_ATTR_TRANSPORTABLE        = 0x00000020,
+	VSS_VOLSNAP_ATTR_NOT_SURFACED         = 0x00000040,
+	VSS_VOLSNAP_ATTR_NOT_TRANSACTED       = 0x00000080,
+	VSS_VOLSNAP_ATTR_HARDWARE_ASSISTED    = 0x00010000,
+	VSS_VOLSNAP_ATTR_DIFFERENTIAL         = 0x00020000,
+	VSS_VOLSNAP_ATTR_PLEX                 = 0x00040000,
+	VSS_VOLSNAP_ATTR_IMPORTED             = 0x00080000,
+	VSS_VOLSNAP_ATTR_EXPOSED_LOCALLY      = 0x00100000,
+	VSS_VOLSNAP_ATTR_EXPOSED_REMOTELY     = 0x00200000,
+	VSS_VOLSNAP_ATTR_AUTORECOVER          = 0x00400000,
+	VSS_VOLSNAP_ATTR_ROLLBACK_RECOVERY    = 0x00800000,
+	VSS_VOLSNAP_ATTR_DELAYED_POSTSNAPSHOT = 0x01000000,
+	VSS_VOLSNAP_ATTR_TXF_RECOVERY         = 0x02000000,
 } VSS_VOLUME_SNAPSHOT_ATTRIBUTES;
 
 typedef enum {
-	VSS_CTX_BACKUP                      = 0,
-	VSS_CTX_FILE_SHARE_BACKUP           = VSS_VOLSNAP_ATTR_NO_WRITERS,
-	VSS_CTX_NAS_ROLLBACK                = ( ( VSS_VOLSNAP_ATTR_PERSISTENT | VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE ) | VSS_VOLSNAP_ATTR_NO_WRITERS ),
-	VSS_CTX_APP_ROLLBACK                = ( VSS_VOLSNAP_ATTR_PERSISTENT | VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE ),
-	VSS_CTX_CLIENT_ACCESSIBLE           = ( ( ( VSS_VOLSNAP_ATTR_PERSISTENT | VSS_VOLSNAP_ATTR_CLIENT_ACCESSIBLE ) | VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE ) | VSS_VOLSNAP_ATTR_NO_WRITERS ),
-	VSS_CTX_CLIENT_ACCESSIBLE_WRITERS   = ( ( VSS_VOLSNAP_ATTR_PERSISTENT | VSS_VOLSNAP_ATTR_CLIENT_ACCESSIBLE ) | VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE ),
-	VSS_CTX_ALL                         = 0xffffffff,
+	VSS_CTX_BACKUP            = 0,
+	VSS_CTX_FILE_SHARE_BACKUP = VSS_VOLSNAP_ATTR_NO_WRITERS,
+	VSS_CTX_NAS_ROLLBACK      = ((VSS_VOLSNAP_ATTR_PERSISTENT |
+                                 VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE) |
+                                VSS_VOLSNAP_ATTR_NO_WRITERS),
+	VSS_CTX_APP_ROLLBACK      = (VSS_VOLSNAP_ATTR_PERSISTENT |
+                                VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE),
+	VSS_CTX_CLIENT_ACCESSIBLE = (((VSS_VOLSNAP_ATTR_PERSISTENT |
+	                               VSS_VOLSNAP_ATTR_CLIENT_ACCESSIBLE) |
+	                              VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE) |
+	                             VSS_VOLSNAP_ATTR_NO_WRITERS),
+	VSS_CTX_CLIENT_ACCESSIBLE_WRITERS =
+		((VSS_VOLSNAP_ATTR_PERSISTENT |
+	          VSS_VOLSNAP_ATTR_CLIENT_ACCESSIBLE) |
+	         VSS_VOLSNAP_ATTR_NO_AUTO_RELEASE),
+	VSS_CTX_ALL = 0xffffffff,
 } VSS_SNAPSHOT_CONTEXT;
 
 typedef struct {
-	VSS_ID             m_SnapshotId;
-	VSS_ID             m_SnapshotSetId;
-	LONG               m_lSnapshotsCount;
-	VSS_PWSZ           m_pwszSnapshotDeviceObject;
-	VSS_PWSZ           m_pwszOriginalVolumeName;
-	VSS_PWSZ           m_pwszOriginatingMachine;
-	VSS_PWSZ           m_pwszServiceMachine;
-	VSS_PWSZ           m_pwszExposedName;
-	VSS_PWSZ           m_pwszExposedPath;
-	VSS_ID             m_ProviderId;
-	LONG               m_lSnapshotAttributes;
-	VSS_TIMESTAMP      m_tsCreationTimestamp;
+	VSS_ID m_SnapshotId;
+	VSS_ID m_SnapshotSetId;
+	LONG m_lSnapshotsCount;
+	VSS_PWSZ m_pwszSnapshotDeviceObject;
+	VSS_PWSZ m_pwszOriginalVolumeName;
+	VSS_PWSZ m_pwszOriginatingMachine;
+	VSS_PWSZ m_pwszServiceMachine;
+	VSS_PWSZ m_pwszExposedName;
+	VSS_PWSZ m_pwszExposedPath;
+	VSS_ID m_ProviderId;
+	LONG m_lSnapshotAttributes;
+	VSS_TIMESTAMP m_tsCreationTimestamp;
 	VSS_SNAPSHOT_STATE m_eStatus;
 } VSS_SNAPSHOT_PROP;
 
@@ -129,9 +138,9 @@ typedef struct {
 struct IVssAsyncVTable {
 	void *QueryInterface;
 	void *AddRef;
-	ULONG (WINAPI *Release)(IVssAsync *this);
+	ULONG(WINAPI *Release)(IVssAsync *this);
 	void *Cancel;
-	HRESULT (WINAPI *Wait)(IVssAsync *this, DWORD dwMilliseconds);
+	HRESULT(WINAPI *Wait)(IVssAsync *this, DWORD dwMilliseconds);
 	void *QueryStatus;
 };
 
@@ -144,26 +153,27 @@ typedef struct {
 struct IVssBackupComponentsVTable {
 	void *QueryInterface;
 	void *AddRef;
-	ULONG (WINAPI *Release)(IVssBackupComponents *this);
+	ULONG(WINAPI *Release)(IVssBackupComponents *this);
 	void *GetWriterComponentsCount;
 	void *GetWriterComponents;
-	HRESULT (WINAPI *InitializeForBackup)(IVssBackupComponents *this,
-					      BSTR bstrXML);
-	HRESULT (WINAPI *SetBackupState)(IVssBackupComponents *this,
-					 BOOLEAN bSelectComponents,
-					 BOOLEAN bBackupBootableSystemState,
-					 VSS_BACKUP_TYPE backupType,
-					 BOOLEAN bPartialFileSupport);
+	HRESULT(WINAPI *InitializeForBackup)
+	(IVssBackupComponents *this, BSTR bstrXML);
+	HRESULT(WINAPI *SetBackupState)
+	(IVssBackupComponents *this,
+	 BOOLEAN bSelectComponents,
+	 BOOLEAN bBackupBootableSystemState,
+	 VSS_BACKUP_TYPE backupType,
+	 BOOLEAN bPartialFileSupport);
 	void *InitializeForRestore;
 	void *SetRestoreState;
-	HRESULT (WINAPI *GatherWriterMetadata)(IVssBackupComponents *this,
-					       IVssAsync **ppAsync);
+	HRESULT(WINAPI *GatherWriterMetadata)
+	(IVssBackupComponents *this, IVssAsync **ppAsync);
 	void *GetWriterMetadataCount;
 	void *GetWriterMetadata;
 	void *FreeWriterMetadata;
 	void *AddComponent;
-	HRESULT (WINAPI *PrepareForBackup)(IVssBackupComponents *this,
-					   IVssAsync **ppAsync);
+	HRESULT(WINAPI *PrepareForBackup)
+	(IVssBackupComponents *this, IVssAsync **ppAsync);
 	void *AbortBackup;
 	void *GatherWriterStatus;
 	void *GetWriterStatusCount;
@@ -184,22 +194,23 @@ struct IVssBackupComponentsVTable {
 	void *SetRangesFilePath;
 	void *PreRestore;
 	void *PostRestore;
-	HRESULT (WINAPI *SetContext)(IVssBackupComponents *this,
-				     LONG lContext);
-	HRESULT (WINAPI *StartSnapshotSet)(IVssBackupComponents *this,
-					   VSS_ID *pSnapshotSetId);
-	HRESULT (WINAPI *AddToSnapshotSet)(IVssBackupComponents *this,
-					   VSS_PWSZ pwszVolumeName,
-					   VSS_ID ProviderId,
-					   VSS_ID *pidSnapshot);
-	HRESULT (WINAPI *DoSnapshotSet)(IVssBackupComponents *this,
-					IVssAsync **ppAsync);
+	HRESULT(WINAPI *SetContext)(IVssBackupComponents *this, LONG lContext);
+	HRESULT(WINAPI *StartSnapshotSet)
+	(IVssBackupComponents *this, VSS_ID *pSnapshotSetId);
+	HRESULT(WINAPI *AddToSnapshotSet)
+	(IVssBackupComponents *this,
+	 VSS_PWSZ pwszVolumeName,
+	 VSS_ID ProviderId,
+	 VSS_ID *pidSnapshot);
+	HRESULT(WINAPI *DoSnapshotSet)
+	(IVssBackupComponents *this, IVssAsync **ppAsync);
 	void *DeleteSnapshots;
 	void *ImportSnapshots;
 	void *BreakSnapshotSet;
-	HRESULT (WINAPI *GetSnapshotProperties)(IVssBackupComponents *this,
-						VSS_ID SnapshotId,
-						VSS_SNAPSHOT_PROP *pprop);
+	HRESULT(WINAPI *GetSnapshotProperties)
+	(IVssBackupComponents *this,
+	 VSS_ID SnapshotId,
+	 VSS_SNAPSHOT_PROP *pprop);
 	void *Query;
 	void *IsVolumeSupported;
 	void *DisableWriterClasses;
@@ -219,13 +230,15 @@ static struct mutex vss_initialization_mutex = MUTEX_INITIALIZER;
 
 /* vssapi.dll  */
 static HANDLE hVssapi;
-static HRESULT (WINAPI *func_CreateVssBackupComponentsInternal)(IVssBackupComponents **ppBackup);
-static void (WINAPI *func_VssFreeSnapshotPropertiesInternal)(VSS_SNAPSHOT_PROP *pProp);
+static HRESULT(WINAPI *func_CreateVssBackupComponentsInternal)(
+	IVssBackupComponents **ppBackup);
+static void(WINAPI *func_VssFreeSnapshotPropertiesInternal)(
+	VSS_SNAPSHOT_PROP *pProp);
 
 /* ole32.dll  */
 static HANDLE hOle32;
-static void (WINAPI *func_CoInitialize)(LPVOID *pvReserved);
-static void (WINAPI *func_CoUninitialize)(void);
+static void(WINAPI *func_CoInitialize)(LPVOID *pvReserved);
+static void(WINAPI *func_CoUninitialize)(void);
 
 static bool
 vss_global_init_impl(void)
@@ -236,15 +249,15 @@ vss_global_init_impl(void)
 		goto err;
 	}
 
-	func_CreateVssBackupComponentsInternal =
-		(void *)GetProcAddress(hVssapi, "CreateVssBackupComponentsInternal");
+	func_CreateVssBackupComponentsInternal = (void *)GetProcAddress(
+		hVssapi, "CreateVssBackupComponentsInternal");
 	if (!func_CreateVssBackupComponentsInternal) {
 		ERROR("CreateVssBackupComponentsInternal() not found in vssapi.dll");
 		goto err_vssapi;
 	}
 
-	func_VssFreeSnapshotPropertiesInternal =
-		(void *)GetProcAddress(hVssapi, "VssFreeSnapshotPropertiesInternal");
+	func_VssFreeSnapshotPropertiesInternal = (void *)GetProcAddress(
+		hVssapi, "VssFreeSnapshotPropertiesInternal");
 	if (!func_VssFreeSnapshotPropertiesInternal) {
 		ERROR("VssFreeSnapshotPropertiesInternal() not found in vssapi.dll");
 		goto err_vssapi;
@@ -348,8 +361,9 @@ wait_and_release(IVssAsync *async)
 }
 
 static bool
-request_vss_snapshot(IVssBackupComponents *vss, wchar_t *volume,
-		     VSS_ID *snapshot_id)
+request_vss_snapshot(IVssBackupComponents *vss,
+                     wchar_t *volume,
+                     VSS_ID *snapshot_id)
 {
 	HRESULT res;
 	IVssAsync *async;
@@ -426,8 +440,9 @@ is_wow64(void)
  * in @snapshot_ret.
  */
 int
-vss_create_snapshot(const wchar_t *source, UNICODE_STRING *vss_path_ret,
-		    struct vss_snapshot **snapshot_ret)
+vss_create_snapshot(const wchar_t *source,
+                    UNICODE_STRING *vss_path_ret,
+                    struct vss_snapshot **snapshot_ret)
 {
 	wchar_t *source_abspath;
 	wchar_t volume[4];
@@ -444,9 +459,11 @@ vss_create_snapshot(const wchar_t *source, UNICODE_STRING *vss_path_ret,
 	}
 
 	if (source_abspath[0] == L'\0' || source_abspath[1] != L':' ||
-	    source_abspath[2] != L'\\') {
+	    source_abspath[2] != L'\\')
+	{
 		ERROR("\"%ls\" (full path \"%ls\"): Path format not recognized",
-		      source, source_abspath);
+		      source,
+		      source_abspath);
 		ret = WIMLIB_ERR_UNSUPPORTED;
 		goto err;
 	}
@@ -473,36 +490,40 @@ vss_create_snapshot(const wchar_t *source, UNICODE_STRING *vss_path_ret,
 	if (!request_vss_snapshot(vss, volume, &snapshot_id))
 		goto vss_err;
 
-	res = vss->vtable->GetSnapshotProperties(vss, snapshot_id, &snapshot->props);
+	res = vss->vtable->GetSnapshotProperties(
+		vss, snapshot_id, &snapshot->props);
 	if (FAILED(res)) {
 		ERROR("IVssBackupComponents.GetSnapshotProperties() error: %x",
 		      (u32)res);
 		goto vss_err;
 	}
 
-	if (wcsncmp(snapshot->props.m_pwszSnapshotDeviceObject, L"\\\\?\\", 4)) {
+	if (wcsncmp(snapshot->props.m_pwszSnapshotDeviceObject, L"\\\\?\\", 4))
+	{
 		ERROR("Unexpected volume shadow device path: %ls",
 		      snapshot->props.m_pwszSnapshotDeviceObject);
 		goto vss_err;
 	}
 
-	vss_path_ret->MaximumLength = sizeof(wchar_t) *
-		(wcslen(snapshot->props.m_pwszSnapshotDeviceObject) +
-		 1 + wcslen(&source_abspath[3]) + 1);
+	vss_path_ret->MaximumLength =
+		sizeof(wchar_t) *
+		(wcslen(snapshot->props.m_pwszSnapshotDeviceObject) + 1 +
+	         wcslen(&source_abspath[3]) + 1);
 	vss_path_ret->Length = vss_path_ret->MaximumLength - sizeof(wchar_t);
-	vss_path_ret->Buffer = HeapAlloc(GetProcessHeap(), 0,
-					 vss_path_ret->MaximumLength);
+	vss_path_ret->Buffer =
+		HeapAlloc(GetProcessHeap(), 0, vss_path_ret->MaximumLength);
 	if (!vss_path_ret->Buffer) {
 		ret = WIMLIB_ERR_NOMEM;
 		goto err;
 	}
 
-	wsprintf(vss_path_ret->Buffer, L"\\??\\%ls\\%ls",
-		 &snapshot->props.m_pwszSnapshotDeviceObject[4],
-		 &source_abspath[3]);
-	*snapshot_ret = &snapshot->base;
+	wsprintf(vss_path_ret->Buffer,
+	         L"\\??\\%ls\\%ls",
+	         &snapshot->props.m_pwszSnapshotDeviceObject[4],
+	         &source_abspath[3]);
+	*snapshot_ret         = &snapshot->base;
 	snapshot->base.refcnt = 1;
-	ret = 0;
+	ret                   = 0;
 	goto out;
 
 vss_err:
@@ -515,7 +536,8 @@ vss_err:
 	} else {
 		ERROR("A problem occurred while creating a VSS snapshot of "
 		      "\"%ls\".\n"
-		      "        Aborting the operation.", volume);
+		      "        Aborting the operation.",
+		      volume);
 	}
 err:
 	if (snapshot)

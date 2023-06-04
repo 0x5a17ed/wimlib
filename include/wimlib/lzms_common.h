@@ -26,23 +26,23 @@ lzms_get_slot(u32 value, const u32 slot_base_tab[], unsigned num_slots);
 static forceinline unsigned
 lzms_get_offset_slot(u32 offset)
 {
-	return lzms_get_slot(offset, lzms_offset_slot_base, LZMS_MAX_NUM_OFFSET_SYMS);
+	return lzms_get_slot(
+		offset, lzms_offset_slot_base, LZMS_MAX_NUM_OFFSET_SYMS);
 }
 
 /* Return the length slot for the specified length  */
 static forceinline unsigned
 lzms_get_length_slot(u32 length)
 {
-	return lzms_get_slot(length, lzms_length_slot_base, LZMS_NUM_LENGTH_SYMS);
+	return lzms_get_slot(
+		length, lzms_length_slot_base, LZMS_NUM_LENGTH_SYMS);
 }
 
 unsigned
 lzms_get_num_offset_slots(size_t uncompressed_size);
 
-
 /* Probability entry for use by the range coder when in a specific state  */
 struct lzms_probability_entry {
-
 	/* The number of zeroes in the most recent LZMS_PROBABILITY_DENOMINATOR
 	 * bits that have been decoded or encoded using this probability entry.
 	 * The probability of the next bit being 0 is this value over
@@ -74,32 +74,37 @@ lzms_init_probabilities(struct lzms_probabilites *probs);
 static forceinline void
 lzms_update_probability_entry(struct lzms_probability_entry *entry, int bit)
 {
-	STATIC_ASSERT(LZMS_PROBABILITY_DENOMINATOR == sizeof(entry->recent_bits) * 8);
+	STATIC_ASSERT(LZMS_PROBABILITY_DENOMINATOR ==
+	              sizeof(entry->recent_bits) * 8);
 
 #ifdef __x86_64__
 	if (__builtin_constant_p(bit)) {
 		/* Optimized implementation for x86_64 using carry flag  */
 		if (bit) {
-		       __asm__("shlq %[recent_bits]                          \n"
-			       "adcl $0xffffffff, %[num_recent_zero_bits]    \n"
-			       "orq $0x1, %[recent_bits]                     \n"
-			       : [recent_bits] "+r" (entry->recent_bits),
-				 [num_recent_zero_bits] "+mr" (entry->num_recent_zero_bits)
-			       :
-			       : "cc");
+			__asm__("shlq %[recent_bits]                          \n"
+			        "adcl $0xffffffff, %[num_recent_zero_bits]    \n"
+			        "orq $0x1, %[recent_bits]                     \n"
+			        : [recent_bits] "+r"(entry->recent_bits),
+			          [num_recent_zero_bits] "+mr"(
+					  entry->num_recent_zero_bits)
+			        :
+			        : "cc");
 		} else {
-		       __asm__("shlq %[recent_bits]                          \n"
-			       "adcl $0x0, %[num_recent_zero_bits]           \n"
-			       : [recent_bits] "+m" (entry->recent_bits),
-				 [num_recent_zero_bits] "+mr" (entry->num_recent_zero_bits)
-			       :
-			       : "cc");
+			__asm__("shlq %[recent_bits]                          \n"
+			        "adcl $0x0, %[num_recent_zero_bits]           \n"
+			        : [recent_bits] "+m"(entry->recent_bits),
+			          [num_recent_zero_bits] "+mr"(
+					  entry->num_recent_zero_bits)
+			        :
+			        : "cc");
 		}
 	} else
 #endif
 	{
-		s32 delta_zero_bits = (s32)(entry->recent_bits >>
-					    (LZMS_PROBABILITY_DENOMINATOR - 1)) - bit;
+		s32 delta_zero_bits =
+			(s32)(entry->recent_bits >>
+		              (LZMS_PROBABILITY_DENOMINATOR - 1)) -
+			bit;
 
 		entry->num_recent_zero_bits += delta_zero_bits;
 		entry->recent_bits = (entry->recent_bits << 1) | bit;

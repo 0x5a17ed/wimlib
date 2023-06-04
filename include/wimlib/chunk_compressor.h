@@ -57,19 +57,23 @@ struct chunk_compressor {
 	 * successfully retrieved, or %false if there are no chunks currently
 	 * being compressed.  */
 	bool (*get_compression_result)(struct chunk_compressor *,
-				       const void **, u32 *, u32 *);
+	                               const void **,
+	                               u32 *,
+	                               u32 *);
 };
-
 
 /* Functions that return implementations of the chunk_compressor interface.  */
 
 int
-new_parallel_chunk_compressor(int out_ctype, u32 out_chunk_size,
-			      unsigned num_threads, u64 max_memory,
-			      struct chunk_compressor **compressor_ret);
+new_parallel_chunk_compressor(int out_ctype,
+                              u32 out_chunk_size,
+                              unsigned num_threads,
+                              u64 max_memory,
+                              struct chunk_compressor **compressor_ret);
 
 int
-new_serial_chunk_compressor(int out_ctype, u32 out_chunk_size,
-			    struct chunk_compressor **compressor_ret);
+new_serial_chunk_compressor(int out_ctype,
+                            u32 out_chunk_size,
+                            struct chunk_compressor **compressor_ret);
 
 #endif /* _WIMLIB_CHUNK_COMPRESSOR_H  */

@@ -83,22 +83,22 @@
  * just use their platform's convention directly.
  */
 #ifdef _WIN32
-#  define main		wmain
-   typedef wchar_t	tchar;
-#  define _T(text)	L##text
-#  define T(text)	_T(text)
-#  define TS		"ls"
-#  define topen		_wopen
-#  define tstrcmp	wcscmp
-#  define tstrtol	wcstol
+#  define main wmain
+typedef wchar_t tchar;
+#  define _T(text) L##text
+#  define T(text)  _T(text)
+#  define TS       "ls"
+#  define topen    _wopen
+#  define tstrcmp  wcscmp
+#  define tstrtol  wcstol
 #else
-   typedef char		tchar;
-#  define T(text)	text
-#  define TS		"s"
-#  define topen		open
-#  define O_BINARY	0
-#  define tstrcmp	strcmp
-#  define tstrtol	strtol
+typedef char tchar;
+#  define T(text)  text
+#  define TS       "s"
+#  define topen    open
+#  define O_BINARY 0
+#  define tstrcmp  strcmp
+#  define tstrtol  strtol
 #endif
 
 static void
@@ -117,15 +117,18 @@ fatal_error(int err, const char *format, ...)
 }
 
 static void
-do_compress(int in_fd, const tchar *in_filename,
-	    int out_fd, const tchar *out_filename,
-	    uint32_t chunk_size, struct wimlib_compressor *compressor)
+do_compress(int in_fd,
+            const tchar *in_filename,
+            int out_fd,
+            const tchar *out_filename,
+            uint32_t chunk_size,
+            struct wimlib_compressor *compressor)
 {
 	char *ubuf = (char *)malloc(chunk_size);
 	char *cbuf = (char *)malloc(chunk_size - 1);
 	uint64_t chunk_num;
 
-	for (chunk_num = 1; ; chunk_num++) {
+	for (chunk_num = 1;; chunk_num++) {
 		int32_t bytes_read;
 		size_t csize;
 		char *out_buf;
@@ -137,44 +140,52 @@ do_compress(int in_fd, const tchar *in_filename,
 		if (bytes_read <= 0) {
 			if (bytes_read == 0)
 				break;
-			fatal_error(errno, "Error reading \"%" TS"\"",
-				    in_filename);
+			fatal_error(errno,
+			            "Error reading \"%" TS "\"",
+			            in_filename);
 		}
 
 		/* Compress the chunk.  */
 		usize = bytes_read;
 
-		csize = wimlib_compress(ubuf, usize, cbuf, usize - 1, compressor);
+		csize = wimlib_compress(
+			ubuf, usize, cbuf, usize - 1, compressor);
 		if (csize != 0) {
 			/* Chunk was compressed; use the compressed data.  */
-			out_buf = cbuf;
+			out_buf  = cbuf;
 			out_size = csize;
 		} else {
 			/* Chunk did not compress to less than original size;
 			 * use the uncompressed data.  */
-			out_buf = ubuf;
+			out_buf  = ubuf;
 			out_size = usize;
 		}
 
-		printf("Chunk %" PRIu64": %" PRIu32" => %" PRIu32" bytes\n",
-		       chunk_num, usize, out_size);
+		printf("Chunk %" PRIu64 ": %" PRIu32 " => %" PRIu32 " bytes\n",
+		       chunk_num,
+		       usize,
+		       out_size);
 
 		/* Output the uncompressed chunk size, the compressed chunk
 		 * size, then the chunk data.  Note: a real program would need
 		 * to output the chunk sizes in consistent endianness.  */
-		if (write(out_fd, &usize, sizeof(uint32_t)) != sizeof(uint32_t) ||
-		    write(out_fd, &out_size, sizeof(uint32_t)) != sizeof(uint32_t) ||
+		if (write(out_fd, &usize, sizeof(uint32_t)) !=
+		            sizeof(uint32_t) ||
+		    write(out_fd, &out_size, sizeof(uint32_t)) !=
+		            sizeof(uint32_t) ||
 		    write(out_fd, out_buf, out_size) != (int32_t)out_size)
 		{
-			fatal_error(errno, "Error writing to \"%" TS"\"",
-				    out_filename);
+			fatal_error(errno,
+			            "Error writing to \"%" TS "\"",
+			            out_filename);
 		}
 	}
 	free(ubuf);
 	free(cbuf);
 }
 
-int main(int argc, tchar **argv)
+int
+main(int argc, tchar **argv)
 {
 	const tchar *in_filename;
 	const tchar *out_filename;
@@ -187,12 +198,14 @@ int main(int argc, tchar **argv)
 	int ret;
 
 	if (argc < 3 || argc > 5) {
-		fprintf(stderr, "Usage: %" TS" INFILE OUTFILE "
-			"[LZX | XPRESS | LZMS] [chunk size]\n", argv[0]);
+		fprintf(stderr,
+		        "Usage: %" TS " INFILE OUTFILE "
+		        "[LZX | XPRESS | LZMS] [chunk size]\n",
+		        argv[0]);
 		return 2;
 	}
 
-	in_filename = argv[1];
+	in_filename  = argv[1];
 	out_filename = argv[2];
 
 	/* Parse compression type (optional)  */
@@ -205,8 +218,8 @@ int main(int argc, tchar **argv)
 			ctype = WIMLIB_COMPRESSION_TYPE_LZMS;
 		else
 			fatal_error(0,
-				    "Unrecognized compression type \"%" TS"\"",
-				    argv[3]);
+			            "Unrecognized compression type \"%" TS "\"",
+			            argv[3]);
 	}
 	/* Parse chunk size (optional).  */
 	if (argc >= 5)
@@ -215,35 +228,41 @@ int main(int argc, tchar **argv)
 	/* Open input file and output file.  */
 	in_fd = topen(in_filename, O_RDONLY | O_BINARY);
 	if (in_fd < 0)
-		fatal_error(errno, "Failed to open \"%" TS"\"", in_filename);
-	out_fd = topen(out_filename, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY,
-		       0644);
+		fatal_error(errno, "Failed to open \"%" TS "\"", in_filename);
+	out_fd = topen(
+		out_filename, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY, 0644);
 	if (out_fd < 0)
-		fatal_error(errno, "Failed to open \"%" TS"s\"", out_filename);
+		fatal_error(errno, "Failed to open \"%" TS "s\"", out_filename);
 
 	/* Create a compressor for the compression type and chunk size with the
 	 * default parameters.  */
 	ret = wimlib_create_compressor(ctype, chunk_size, 0, &compressor);
 	if (ret != 0)
-		fatal_error(0, "Failed to create compressor: %" TS,
-			    wimlib_get_error_string((enum wimlib_error_code)ret));
+		fatal_error(
+			0,
+			"Failed to create compressor: %" TS,
+			wimlib_get_error_string((enum wimlib_error_code)ret));
 
 	ctype32 = (uint32_t)ctype;
 	/* Write compression type and chunk size to the file.  */
 	if (write(out_fd, &ctype32, sizeof(uint32_t)) != sizeof(uint32_t) ||
 	    write(out_fd, &chunk_size, sizeof(uint32_t)) != sizeof(uint32_t))
 	{
-		fatal_error(errno, "Error writing to \"%" TS"\"", out_filename);
+		fatal_error(
+			errno, "Error writing to \"%" TS "\"", out_filename);
 	}
 
 	/* Compress and write the data.  */
-	do_compress(in_fd, in_filename,
-		    out_fd, out_filename,
-		    chunk_size, compressor);
+	do_compress(in_fd,
+	            in_filename,
+	            out_fd,
+	            out_filename,
+	            chunk_size,
+	            compressor);
 
 	/* Cleanup and return.  */
 	if (close(out_fd))
-		fatal_error(errno, "Error closing \"%" TS"\"", out_filename);
+		fatal_error(errno, "Error closing \"%" TS "\"", out_filename);
 	wimlib_free_compressor(compressor);
 	return 0;
 }

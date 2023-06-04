@@ -14,8 +14,8 @@ fuzz_utf8_roundtrip(const u8 *in, size_t insize)
 	char *result;
 	size_t result_size;
 
-	ret = wimlib_utf8_to_utf16le((const char *)in, insize,
-				     &utf16, &utf16_size);
+	ret = wimlib_utf8_to_utf16le(
+		(const char *)in, insize, &utf16, &utf16_size);
 	if (ret) {
 		assert(ret == WIMLIB_ERR_INVALID_UTF8_STRING);
 		return;
@@ -63,7 +63,8 @@ fuzz_utf16_roundtrip(const u8 *in, size_t insize)
 }
 
 /* Fuzz character encoding conversion. */
-int LLVMFuzzerTestOneInput(const u8 *in, size_t insize)
+int
+LLVMFuzzerTestOneInput(const u8 *in, size_t insize)
 {
 	int which;
 

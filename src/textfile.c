@@ -39,8 +39,8 @@
 static int
 stdin_get_contents(void **buf_ret, size_t *bufsize_ret)
 {
-	char *buf = NULL;
-	size_t filled = 0;
+	char *buf       = NULL;
+	size_t filled   = 0;
 	size_t capacity = 0;
 
 	do {
@@ -48,12 +48,13 @@ stdin_get_contents(void **buf_ret, size_t *bufsize_ret)
 		char *new_buf;
 
 		if (new_capacity <= capacity ||
-		    !(new_buf = REALLOC(buf, new_capacity))) {
+		    !(new_buf = REALLOC(buf, new_capacity)))
+		{
 			ERROR("Too much data sent on stdin!");
 			FREE(buf);
 			return WIMLIB_ERR_INVALID_PARAM;
 		}
-		buf = new_buf;
+		buf      = new_buf;
 		capacity = new_capacity;
 		filled += fread(&buf[filled], 1, capacity - filled, stdin);
 	} while (filled == capacity);
@@ -63,7 +64,7 @@ stdin_get_contents(void **buf_ret, size_t *bufsize_ret)
 		FREE(buf);
 		return WIMLIB_ERR_READ;
 	}
-	*buf_ret = buf;
+	*buf_ret     = buf;
 	*bufsize_ret = filled;
 	return 0;
 }
@@ -80,11 +81,11 @@ read_file_contents(const tchar *path, void **buf_ret, size_t *bufsize_ret)
 
 	raw_fd = topen(path, O_RDONLY | O_BINARY);
 	if (raw_fd < 0) {
-		ERROR_WITH_ERRNO("Can't open \"%"TS"\"", path);
+		ERROR_WITH_ERRNO("Can't open \"%" TS "\"", path);
 		return WIMLIB_ERR_OPEN;
 	}
 	if (fstat(raw_fd, &st)) {
-		ERROR_WITH_ERRNO("Can't stat \"%"TS"\"", path);
+		ERROR_WITH_ERRNO("Can't stat \"%" TS "\"", path);
 		close(raw_fd);
 		return WIMLIB_ERR_STAT;
 	}
@@ -92,29 +93,31 @@ read_file_contents(const tchar *path, void **buf_ret, size_t *bufsize_ret)
 	    (buf = MALLOC(st.st_size)) == NULL)
 	{
 		close(raw_fd);
-		ERROR("Not enough memory to read \"%"TS"\"", path);
+		ERROR("Not enough memory to read \"%" TS "\"", path);
 		return WIMLIB_ERR_NOMEM;
 	}
 
 	filedes_init(&fd, raw_fd);
-	ret = full_read(&fd, buf, st.st_size);
+	ret        = full_read(&fd, buf, st.st_size);
 	errno_save = errno;
 	filedes_close(&fd);
 	errno = errno_save;
 	if (ret) {
-		ERROR_WITH_ERRNO("Error reading \"%"TS"\"", path);
+		ERROR_WITH_ERRNO("Error reading \"%" TS "\"", path);
 		FREE(buf);
 		return ret;
 	}
 
-	*buf_ret = buf;
+	*buf_ret     = buf;
 	*bufsize_ret = st.st_size;
 	return 0;
 }
 
 static int
-translate_text_buffer(const u8 *buf_raw, size_t bufsize_raw,
-		      tchar **tstr_ret, size_t *tstr_nchars_ret)
+translate_text_buffer(const u8 *buf_raw,
+                      size_t bufsize_raw,
+                      tchar **tstr_ret,
+                      size_t *tstr_nchars_ret)
 {
 	size_t offset_raw;
 	bool utf8;
@@ -124,47 +127,39 @@ translate_text_buffer(const u8 *buf_raw, size_t bufsize_raw,
 
 	/* Guess the encoding: UTF-8 or UTF-16LE.  (Something weirder and you're
 	 * out of luck, sorry...)  */
-	if (bufsize_raw >= 2 &&
-	    buf_raw[0] == 0xFF &&
-	    buf_raw[1] == 0xFE)
-	{
-		utf8 = false;
+	if (bufsize_raw >= 2 && buf_raw[0] == 0xFF && buf_raw[1] == 0xFE) {
+		utf8       = false;
 		offset_raw = 2;
-	}
-	else if (bufsize_raw >= 2 &&
-		 buf_raw[0] <= 0x7F &&
-		 buf_raw[1] == 0x00)
+	} else if (bufsize_raw >= 2 && buf_raw[0] <= 0x7F && buf_raw[1] == 0x00)
 	{
-		utf8 = false;
+		utf8       = false;
 		offset_raw = 0;
-	}
-	else if (bufsize_raw >= 3 &&
-		 buf_raw[0] == 0xEF &&
-		 buf_raw[1] == 0xBB &&
-		 buf_raw[2] == 0xBF)
+	} else if (bufsize_raw >= 3 && buf_raw[0] == 0xEF &&
+	           buf_raw[1] == 0xBB && buf_raw[2] == 0xBF)
 	{
-		utf8 = true;
+		utf8       = true;
 		offset_raw = 3;
-	}
-	else
-	{
-		utf8 = true;
+	} else {
+		utf8       = true;
 		offset_raw = 0;
 	}
 
 	if (utf8) {
 		ret = utf8_to_tstr((const char *)(buf_raw + offset_raw),
-				   bufsize_raw - offset_raw,
-				   &buf_tstr, &bufsize_tstr);
+		                   bufsize_raw - offset_raw,
+		                   &buf_tstr,
+		                   &bufsize_tstr);
 	} else {
-		ret = utf16le_to_tstr((const utf16lechar *)(buf_raw + offset_raw),
-				      bufsize_raw - offset_raw,
-				      &buf_tstr, &bufsize_tstr);
+		ret = utf16le_to_tstr(
+			(const utf16lechar *)(buf_raw + offset_raw),
+			bufsize_raw - offset_raw,
+			&buf_tstr,
+			&bufsize_tstr);
 	}
 	if (ret)
 		return ret;
 
-	*tstr_ret = buf_tstr;
+	*tstr_ret        = buf_tstr;
 	*tstr_nchars_ret = bufsize_tstr / sizeof(tchar);
 	return 0;
 }
@@ -177,28 +172,33 @@ string_list_append(struct string_list *list, tchar *str)
 	if (list->num_strings == num_alloc_strings) {
 		tchar **new_strings;
 
-		num_alloc_strings = max(num_alloc_strings * 3 / 2,
-					num_alloc_strings + 4);
-		new_strings = REALLOC(list->strings,
-				      sizeof(list->strings[0]) * num_alloc_strings);
+		num_alloc_strings =
+			max(num_alloc_strings * 3 / 2, num_alloc_strings + 4);
+		new_strings =
+			REALLOC(list->strings,
+		                sizeof(list->strings[0]) * num_alloc_strings);
 		if (!new_strings)
 			return WIMLIB_ERR_NOMEM;
-		list->strings = new_strings;
+		list->strings           = new_strings;
 		list->num_alloc_strings = num_alloc_strings;
 	}
 	list->strings[list->num_strings++] = str;
 	return 0;
 }
 
-#define NOT_IN_SECTION		-1
-#define IN_UNKNOWN_SECTION	-2
+#define NOT_IN_SECTION     -1
+#define IN_UNKNOWN_SECTION -2
 
 static int
-parse_text_file(const tchar *path, tchar *buf, size_t buflen,
-		const struct text_file_section *pos_sections,
-		int num_pos_sections, int flags, line_mangle_t mangle_line)
+parse_text_file(const tchar *path,
+                tchar *buf,
+                size_t buflen,
+                const struct text_file_section *pos_sections,
+                int num_pos_sections,
+                int flags,
+                line_mangle_t mangle_line)
 {
-	int current_section = NOT_IN_SECTION;
+	int current_section      = NOT_IN_SECTION;
 	bool have_named_sections = false;
 	tchar *p;
 	tchar *nl;
@@ -221,7 +221,7 @@ parse_text_file(const tchar *path, tchar *buf, size_t buflen,
 			break;
 
 		line_begin = p;
-		line_end = nl;
+		line_end   = nl;
 
 		/* Ignore leading whitespace.  */
 		while (line_begin < nl && istspace(*line_begin))
@@ -234,21 +234,21 @@ parse_text_file(const tchar *path, tchar *buf, size_t buflen,
 		line_len = line_end - line_begin;
 
 		/* Ignore comments and empty lines.  */
-		if (line_len == 0 || *line_begin == T(';') || *line_begin == T('#'))
+		if (line_len == 0 || *line_begin == T(';') ||
+		    *line_begin == T('#'))
 			continue;
 
 		line_begin[line_len] = T('\0');
 
 		/* Check for beginning of new section.  */
 		if (line_begin[0] == T('[') &&
-		    line_begin[line_len - 1] == T(']') &&
-		    have_named_sections)
+		    line_begin[line_len - 1] == T(']') && have_named_sections)
 		{
 			line_begin[line_len - 1] = T('\0');
-			current_section = IN_UNKNOWN_SECTION;
+			current_section          = IN_UNKNOWN_SECTION;
 			for (int i = 0; i < num_pos_sections; i++) {
 				if (!tstrcmp(line_begin + 1,
-					     pos_sections[i].name))
+				             pos_sections[i].name))
 				{
 					current_section = i;
 					break;
@@ -257,8 +257,12 @@ parse_text_file(const tchar *path, tchar *buf, size_t buflen,
 			line_begin[line_len - 1] = T(']');
 			if (current_section < 0) {
 				if (!(flags & LOAD_TEXT_FILE_NO_WARNINGS)) {
-					WARNING("%"TS":%lu: Unrecognized section \"%"TS"\"",
-						path, line_no, line_begin);
+					WARNING("%" TS
+					        ":%lu: Unrecognized section \"%" TS
+					        "\"",
+					        path,
+					        line_no,
+					        line_begin);
 				}
 			}
 			continue;
@@ -267,15 +271,18 @@ parse_text_file(const tchar *path, tchar *buf, size_t buflen,
 		if (current_section < 0) {
 			if (current_section == NOT_IN_SECTION) {
 				if (!(flags & LOAD_TEXT_FILE_NO_WARNINGS)) {
-					WARNING("%"TS":%lu: Not in a bracketed section!",
-						path, line_no);
+					WARNING("%" TS
+					        ":%lu: Not in a bracketed section!",
+					        path,
+					        line_no);
 				}
 			}
 			continue;
 		}
 
 		if (flags & LOAD_TEXT_FILE_REMOVE_QUOTES) {
-			if (line_begin[0] == T('"') || line_begin[0] == T('\'')) {
+			if (line_begin[0] == T('"') || line_begin[0] == T('\''))
+			{
 				tchar quote = line_begin[0];
 				if (line_len >= 2 &&
 				    line_begin[line_len - 1] == quote)
@@ -294,7 +301,7 @@ parse_text_file(const tchar *path, tchar *buf, size_t buflen,
 		}
 
 		ret = string_list_append(pos_sections[current_section].strings,
-					 line_begin);
+		                         line_begin);
 		if (ret)
 			return ret;
 	}
@@ -337,15 +344,18 @@ parse_text_file(const tchar *path, tchar *buf, size_t buflen,
  * LOAD_TEXT_FILE_NO_WARNINGS is specified.
  */
 int
-load_text_file(const tchar *path, const void *buf, size_t bufsize,
-	       void **mem_ret,
-	       const struct text_file_section *pos_sections,
-	       int num_pos_sections,
-	       int flags, line_mangle_t mangle_line)
+load_text_file(const tchar *path,
+               const void *buf,
+               size_t bufsize,
+               void **mem_ret,
+               const struct text_file_section *pos_sections,
+               int num_pos_sections,
+               int flags,
+               line_mangle_t mangle_line)
 {
 	int ret;
 	bool is_filemode = (buf == NULL);
-	bool is_stdin = (is_filemode && path == NULL);
+	bool is_stdin    = (is_filemode && path == NULL);
 	tchar *tstr;
 	size_t tstr_nchars;
 
@@ -370,8 +380,12 @@ load_text_file(const tchar *path, const void *buf, size_t bufsize,
 	tstr[tstr_nchars++] = T('\n');
 
 	ret = parse_text_file(is_stdin ? T("<stdin>") : path,
-			      tstr, tstr_nchars, pos_sections,
-			      num_pos_sections, flags, mangle_line);
+	                      tstr,
+	                      tstr_nchars,
+	                      pos_sections,
+	                      num_pos_sections,
+	                      flags,
+	                      mangle_line);
 	if (ret) {
 		for (int i = 0; i < num_pos_sections; i++)
 			FREE(pos_sections[i].strings->strings);

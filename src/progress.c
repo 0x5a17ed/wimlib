@@ -27,7 +27,9 @@
 
 int
 report_error(wimlib_progress_func_t progfunc,
-	     void *progctx, int error_code, const tchar *path)
+             void *progctx,
+             int error_code,
+             const tchar *path)
 {
 	int ret;
 	union wimlib_progress_info progress;
@@ -38,14 +40,14 @@ report_error(wimlib_progress_func_t progfunc,
 	    error_code == WIMLIB_ERR_UNKNOWN_PROGRESS_STATUS)
 		return error_code;
 
-	progress.handle_error.path = path;
-	progress.handle_error.error_code = error_code;
+	progress.handle_error.path        = path;
+	progress.handle_error.error_code  = error_code;
 	progress.handle_error.will_ignore = false;
 
 	cookie = progress_get_win32_path(path);
 
-	ret = call_progress(progfunc, WIMLIB_PROGRESS_MSG_HANDLE_ERROR,
-			    &progress, progctx);
+	ret = call_progress(
+		progfunc, WIMLIB_PROGRESS_MSG_HANDLE_ERROR, &progress, progctx);
 
 	progress_put_win32_path(cookie);
 

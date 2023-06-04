@@ -128,53 +128,52 @@ dentry_out_total_length(const struct wim_dentry *dentry);
 
 int
 for_dentry_in_tree(struct wim_dentry *root,
-		   int (*visitor)(struct wim_dentry *, void *), void *args);
+                   int (*visitor)(struct wim_dentry *, void *),
+                   void *args);
 
 /* Iterate through each @child dentry of the @dir directory inode in
  * collation order.  */
-#define for_inode_child(child, dir)					\
-	avl_tree_for_each_in_order((child), (dir)->i_children,		\
-				   struct wim_dentry, d_index_node)
+#define for_inode_child(child, dir) \
+  avl_tree_for_each_in_order(       \
+	  (child), (dir)->i_children, struct wim_dentry, d_index_node)
 
 /* Iterate through each @child dentry of the @parent dentry in
  * collation order.  */
 #define for_dentry_child(child, parent) \
-	for_inode_child((child), (parent)->d_inode)
+  for_inode_child((child), (parent)->d_inode)
 
 /* Iterate through each @child dentry of the @dir directory inode in
  * postorder (safe for freeing the child dentries).  */
-#define for_inode_child_postorder(child, dir)				\
-	avl_tree_for_each_in_postorder((child), (dir)->i_children,	\
-				       struct wim_dentry, d_index_node)
+#define for_inode_child_postorder(child, dir) \
+  avl_tree_for_each_in_postorder(             \
+	  (child), (dir)->i_children, struct wim_dentry, d_index_node)
 
 /* Iterate through each @child dentry of the @parent dentry in
  * postorder (safe for freeing the child dentries).  */
 #define for_dentry_child_postorder(child, parent) \
-	for_inode_child_postorder((child), (parent)->d_inode)
+  for_inode_child_postorder((child), (parent)->d_inode)
 
 /* Get any child dentry of the @dir directory inode.  Requires
  * inode_has_children(@dir) == true.  */
-#define inode_any_child(dir)	\
-	avl_tree_entry((dir)->i_children, struct wim_dentry, d_index_node)
+#define inode_any_child(dir) \
+  avl_tree_entry((dir)->i_children, struct wim_dentry, d_index_node)
 
 /* Get any child dentry of the @parent dentry.  Requires
  * dentry_has_children(@parent) == true.  */
-#define dentry_any_child(parent) \
-	inode_any_child((parent)->d_inode)
+#define dentry_any_child(parent) inode_any_child((parent)->d_inode)
 
 struct wim_dentry *
 dentry_get_first_ci_match(struct wim_dentry *dentry);
 
 struct wim_dentry *
 dentry_get_next_ci_match(struct wim_dentry *dentry,
-			 struct wim_dentry *ci_match);
+                         struct wim_dentry *ci_match);
 
 /* Iterate through all other dentries which have the same case insensitive name
  * as the one given.  */
-#define dentry_for_each_ci_match(ci_match, dentry)			\
-	for ((ci_match) = dentry_get_first_ci_match((dentry));		\
-	     (ci_match);						\
-	     (ci_match) = dentry_get_next_ci_match((dentry), (ci_match)))
+#define dentry_for_each_ci_match(ci_match, dentry)                   \
+  for ((ci_match) = dentry_get_first_ci_match((dentry)); (ci_match); \
+       (ci_match) = dentry_get_next_ci_match((dentry), (ci_match)))
 
 void
 calculate_subdir_offsets(struct wim_dentry *root, u64 *subdir_offset_p);
@@ -183,25 +182,28 @@ int
 dentry_set_name(struct wim_dentry *dentry, const tchar *name);
 
 int
-dentry_set_name_utf16le(struct wim_dentry *dentry, const utf16lechar *name,
-			size_t name_nbytes);
+dentry_set_name_utf16le(struct wim_dentry *dentry,
+                        const utf16lechar *name,
+                        size_t name_nbytes);
 
 struct wim_dentry *
 get_dentry(WIMStruct *wim, const tchar *path, CASE_SENSITIVITY_TYPE case_type);
 
 struct wim_dentry *
-get_dentry_child_with_name(const struct wim_dentry *dentry, const tchar *name,
-			   CASE_SENSITIVITY_TYPE case_type);
+get_dentry_child_with_name(const struct wim_dentry *dentry,
+                           const tchar *name,
+                           CASE_SENSITIVITY_TYPE case_type);
 
 struct wim_dentry *
 get_dentry_child_with_utf16le_name(const struct wim_dentry *dentry,
-				   const utf16lechar *name,
-				   size_t name_nbytes,
-				   CASE_SENSITIVITY_TYPE case_type);
+                                   const utf16lechar *name,
+                                   size_t name_nbytes,
+                                   CASE_SENSITIVITY_TYPE case_type);
 
 struct wim_dentry *
-get_parent_dentry(WIMStruct *wim, const tchar *path,
-		  CASE_SENSITIVITY_TYPE case_type);
+get_parent_dentry(WIMStruct *wim,
+                  const tchar *path,
+                  CASE_SENSITIVITY_TYPE case_type);
 
 int
 calculate_dentry_full_path(struct wim_dentry *dentry);
@@ -210,12 +212,14 @@ tchar *
 dentry_full_path(struct wim_dentry *dentry);
 
 int
-new_dentry_with_new_inode(const tchar *name, bool set_timestamps,
-			  struct wim_dentry **dentry_ret);
+new_dentry_with_new_inode(const tchar *name,
+                          bool set_timestamps,
+                          struct wim_dentry **dentry_ret);
 
 int
-new_dentry_with_existing_inode(const tchar *name, struct wim_inode *inode,
-			       struct wim_dentry **dentry_ret);
+new_dentry_with_existing_inode(const tchar *name,
+                               struct wim_inode *inode,
+                               struct wim_dentry **dentry_ret);
 
 int
 new_filler_directory(struct wim_dentry **dentry_ret);
@@ -235,14 +239,18 @@ dentry_add_child(struct wim_dentry *parent, struct wim_dentry *child);
 struct update_command_journal;
 
 int
-rename_wim_path(WIMStruct *wim, const tchar *from, const tchar *to,
-		CASE_SENSITIVITY_TYPE case_type, bool noreplace,
-		struct update_command_journal *j);
-
+rename_wim_path(WIMStruct *wim,
+                const tchar *from,
+                const tchar *to,
+                CASE_SENSITIVITY_TYPE case_type,
+                bool noreplace,
+                struct update_command_journal *j);
 
 int
-read_dentry_tree(const u8 *buf, size_t buf_len,
-		 u64 root_offset, struct wim_dentry **root_ret);
+read_dentry_tree(const u8 *buf,
+                 size_t buf_len,
+                 u64 root_offset,
+                 struct wim_dentry **root_ret);
 
 u8 *
 write_dentry_tree(struct wim_dentry *root, u8 *p);

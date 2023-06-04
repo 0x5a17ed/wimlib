@@ -38,7 +38,7 @@ struct wimlib_compressor {
 	size_t max_block_size;
 };
 
-static const struct compressor_ops * const compressor_ops[] = {
+static const struct compressor_ops *const compressor_ops[] = {
 	[WIMLIB_COMPRESSION_TYPE_XPRESS] = &xpress_compressor_ops,
 	[WIMLIB_COMPRESSION_TYPE_LZX]    = &lzx_compressor_ops,
 	[WIMLIB_COMPRESSION_TYPE_LZMS]   = &lzms_compressor_ops,
@@ -53,9 +53,8 @@ static unsigned int default_compression_levels[ARRAY_LEN(compressor_ops)];
 static bool
 compressor_ctype_valid(int ctype)
 {
-	return (ctype >= 0 &&
-		ctype < ARRAY_LEN(compressor_ops) &&
-		compressor_ops[ctype] != NULL);
+	return (ctype >= 0 && ctype < ARRAY_LEN(compressor_ops) &&
+	        compressor_ops[ctype] != NULL);
 }
 
 WIMLIBAPI int
@@ -75,8 +74,8 @@ wimlib_set_default_compression_level(int ctype, unsigned int compression_level)
 
 WIMLIBAPI u64
 wimlib_get_compressor_needed_memory(enum wimlib_compression_type ctype,
-				    size_t max_block_size,
-				    unsigned int compression_level)
+                                    size_t max_block_size,
+                                    unsigned int compression_level)
 {
 	bool destructive;
 	const struct compressor_ops *ops;
@@ -102,8 +101,8 @@ wimlib_get_compressor_needed_memory(enum wimlib_compression_type ctype,
 		compression_level = DEFAULT_COMPRESSION_LEVEL;
 
 	if (ops->get_needed_memory) {
-		size = ops->get_needed_memory(max_block_size, compression_level,
-					      destructive);
+		size = ops->get_needed_memory(
+			max_block_size, compression_level, destructive);
 
 		/* 0 is never valid and indicates an invalid max_block_size.  */
 		if (size == 0)
@@ -116,9 +115,9 @@ wimlib_get_compressor_needed_memory(enum wimlib_compression_type ctype,
 
 WIMLIBAPI int
 wimlib_create_compressor(enum wimlib_compression_type ctype,
-			 size_t max_block_size,
-			 unsigned int compression_level,
-			 struct wimlib_compressor **c_ret)
+                         size_t max_block_size,
+                         unsigned int compression_level,
+                         struct wimlib_compressor **c_ret)
 {
 	bool destructive;
 	struct wimlib_compressor *c;
@@ -146,9 +145,9 @@ wimlib_create_compressor(enum wimlib_compression_type ctype,
 	c = MALLOC(sizeof(*c));
 	if (c == NULL)
 		return WIMLIB_ERR_NOMEM;
-	c->ops = compressor_ops[ctype];
-	c->private = NULL;
-	c->ctype = ctype;
+	c->ops            = compressor_ops[ctype];
+	c->private        = NULL;
+	c->ctype          = ctype;
 	c->max_block_size = max_block_size;
 	if (c->ops->create_compressor) {
 		if (compression_level == 0)
@@ -157,9 +156,9 @@ wimlib_create_compressor(enum wimlib_compression_type ctype,
 			compression_level = DEFAULT_COMPRESSION_LEVEL;
 
 		ret = c->ops->create_compressor(max_block_size,
-						compression_level,
-						destructive,
-						&c->private);
+		                                compression_level,
+		                                destructive,
+		                                &c->private);
 		if (ret) {
 			FREE(c);
 			return ret;
@@ -170,16 +169,21 @@ wimlib_create_compressor(enum wimlib_compression_type ctype,
 }
 
 WIMLIBAPI size_t
-wimlib_compress(const void *uncompressed_data, size_t uncompressed_size,
-		void *compressed_data, size_t compressed_size_avail,
-		struct wimlib_compressor *c)
+wimlib_compress(const void *uncompressed_data,
+                size_t uncompressed_size,
+                void *compressed_data,
+                size_t compressed_size_avail,
+                struct wimlib_compressor *c)
 {
-	if (unlikely(uncompressed_size == 0 || uncompressed_size > c->max_block_size))
+	if (unlikely(uncompressed_size == 0 ||
+	             uncompressed_size > c->max_block_size))
 		return 0;
 
-	return c->ops->compress(uncompressed_data, uncompressed_size,
-				compressed_data, compressed_size_avail,
-				c->private);
+	return c->ops->compress(uncompressed_data,
+	                        uncompressed_size,
+	                        compressed_data,
+	                        compressed_size_avail,
+	                        c->private);
 }
 
 WIMLIBAPI void

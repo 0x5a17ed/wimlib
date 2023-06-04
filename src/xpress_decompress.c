@@ -22,7 +22,6 @@
  * along with this file; if not, see https://www.gnu.org/licenses/.
  */
 
-
 /*
  * The XPRESS compression format is an LZ77 and Huffman-code based algorithm.
  * That means it is fairly similar to LZX compression, but XPRESS is simpler, so
@@ -78,24 +77,29 @@
 
 struct xpress_decompressor {
 	union {
-		DECODE_TABLE(decode_table, XPRESS_NUM_SYMBOLS,
-			     XPRESS_TABLEBITS, XPRESS_MAX_CODEWORD_LEN);
+		DECODE_TABLE(decode_table,
+		             XPRESS_NUM_SYMBOLS,
+		             XPRESS_TABLEBITS,
+		             XPRESS_MAX_CODEWORD_LEN);
 		u8 lens[XPRESS_NUM_SYMBOLS];
 	};
-	DECODE_TABLE_WORKING_SPACE(working_space, XPRESS_NUM_SYMBOLS,
-				   XPRESS_MAX_CODEWORD_LEN);
+	DECODE_TABLE_WORKING_SPACE(working_space,
+	                           XPRESS_NUM_SYMBOLS,
+	                           XPRESS_MAX_CODEWORD_LEN);
 } __attribute__((aligned(DECODE_TABLE_ALIGNMENT)));
 
 static int
-xpress_decompress(const void *restrict compressed_data, size_t compressed_size,
-		  void *restrict uncompressed_data, size_t uncompressed_size,
-		  void *restrict _d)
+xpress_decompress(const void *restrict compressed_data,
+                  size_t compressed_size,
+                  void *restrict uncompressed_data,
+                  size_t uncompressed_size,
+                  void *restrict _d)
 {
-	struct xpress_decompressor *d  = _d;
-	const u8 * const in_begin = compressed_data;
-	u8 * const out_begin = uncompressed_data;
-	u8 *out_next = out_begin;
-	u8 * const out_end = out_begin + uncompressed_size;
+	struct xpress_decompressor *d = _d;
+	const u8 *const in_begin      = compressed_data;
+	u8 *const out_begin           = uncompressed_data;
+	u8 *out_next                  = out_begin;
+	u8 *const out_end             = out_begin + uncompressed_size;
 	struct input_bitstream is;
 
 	/* Read the Huffman codeword lengths.  */
@@ -107,16 +111,19 @@ xpress_decompress(const void *restrict compressed_data, size_t compressed_size,
 	}
 
 	/* Build a decoding table for the Huffman code.  */
-	if (make_huffman_decode_table(d->decode_table, XPRESS_NUM_SYMBOLS,
-				      XPRESS_TABLEBITS, d->lens,
-				      XPRESS_MAX_CODEWORD_LEN,
-				      d->working_space))
+	if (make_huffman_decode_table(d->decode_table,
+	                              XPRESS_NUM_SYMBOLS,
+	                              XPRESS_TABLEBITS,
+	                              d->lens,
+	                              XPRESS_MAX_CODEWORD_LEN,
+	                              d->working_space))
 		return -1;
 
 	/* Decode the matches and literals.  */
 
-	init_input_bitstream(&is, in_begin + XPRESS_NUM_SYMBOLS / 2,
-			     compressed_size - XPRESS_NUM_SYMBOLS / 2);
+	init_input_bitstream(&is,
+	                     in_begin + XPRESS_NUM_SYMBOLS / 2,
+	                     compressed_size - XPRESS_NUM_SYMBOLS / 2);
 
 	while (out_next != out_end) {
 		unsigned sym;
@@ -124,20 +131,22 @@ xpress_decompress(const void *restrict compressed_data, size_t compressed_size,
 		u32 length;
 		u32 offset;
 
-		sym = read_huffsym(&is, d->decode_table,
-				   XPRESS_TABLEBITS, XPRESS_MAX_CODEWORD_LEN);
+		sym = read_huffsym(&is,
+		                   d->decode_table,
+		                   XPRESS_TABLEBITS,
+		                   XPRESS_MAX_CODEWORD_LEN);
 		if (sym < XPRESS_NUM_CHARS) {
 			/* Literal  */
 			*out_next++ = sym;
 		} else {
 			/* Match  */
-			length = sym & 0xf;
+			length      = sym & 0xf;
 			log2_offset = (sym >> 4) & 0xf;
 
 			bitstream_ensure_bits(&is, 16);
 
 			offset = ((u32)1 << log2_offset) |
-				 bitstream_pop_bits(&is, log2_offset);
+			         bitstream_pop_bits(&is, log2_offset);
 
 			if (length == 0xf) {
 				length += bitstream_read_byte(&is);
@@ -146,9 +155,12 @@ xpress_decompress(const void *restrict compressed_data, size_t compressed_size,
 			}
 			length += XPRESS_MIN_MATCH_LEN;
 
-			if (unlikely(lz_copy(length, offset,
-					     out_begin, out_next, out_end,
-					     XPRESS_MIN_MATCH_LEN)))
+			if (unlikely(lz_copy(length,
+			                     offset,
+			                     out_begin,
+			                     out_next,
+			                     out_end,
+			                     XPRESS_MIN_MATCH_LEN)))
 				return -1;
 
 			out_next += length;
@@ -181,6 +193,6 @@ xpress_free_decompressor(void *_d)
 
 const struct decompressor_ops xpress_decompressor_ops = {
 	.create_decompressor = xpress_create_decompressor,
-	.decompress	     = xpress_decompress,
+	.decompress          = xpress_decompress,
 	.free_decompressor   = xpress_free_decompressor,
 };

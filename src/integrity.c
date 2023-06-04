@@ -51,12 +51,14 @@ struct integrity_table {
 	u32 size;
 	u32 num_entries;
 	u32 chunk_size;
-	u8  sha1sums[][20];
+	u8 sha1sums[][20];
 } __attribute__((packed));
 
 static int
-calculate_chunk_sha1(struct filedes *in_fd, size_t this_chunk_size,
-		     off_t offset, u8 sha1_md[])
+calculate_chunk_sha1(struct filedes *in_fd,
+                     size_t this_chunk_size,
+                     off_t offset,
+                     u8 sha1_md[])
 {
 	u8 buf[BUFFER_SIZE];
 	struct sha1_ctx ctx;
@@ -68,10 +70,10 @@ calculate_chunk_sha1(struct filedes *in_fd, size_t this_chunk_size,
 	sha1_init(&ctx);
 	do {
 		bytes_to_read = min(bytes_remaining, sizeof(buf));
-		ret = full_pread(in_fd, buf, bytes_to_read, offset);
+		ret           = full_pread(in_fd, buf, bytes_to_read, offset);
 		if (ret) {
 			ERROR_WITH_ERRNO("Read error while calculating "
-					 "integrity checksums");
+			                 "integrity checksums");
 			return ret;
 		}
 		sha1_update(&ctx, buf, bytes_to_read);
@@ -81,7 +83,6 @@ calculate_chunk_sha1(struct filedes *in_fd, size_t this_chunk_size,
 	sha1_final(&ctx, sha1_md);
 	return 0;
 }
-
 
 /*
  * read_integrity_table: -  Reads the integrity table from a WIM file.
@@ -106,8 +107,9 @@ calculate_chunk_sha1(struct filedes *in_fd, size_t this_chunk_size,
  *	WIMLIB_ERR_UNEXPECTED_END_OF_FILE
  */
 int
-read_integrity_table(WIMStruct *wim, u64 num_checked_bytes,
-		     struct integrity_table **table_ret)
+read_integrity_table(WIMStruct *wim,
+                     u64 num_checked_bytes,
+                     struct integrity_table **table_ret)
 {
 	void *buf;
 	struct integrity_table *table;
@@ -129,7 +131,8 @@ read_integrity_table(WIMStruct *wim, u64 num_checked_bytes,
 	if (table->size != wim->hdr.integrity_table_reshdr.uncompressed_size ||
 	    table->size != (u64)table->num_entries * SHA1_HASH_SIZE + 12 ||
 	    table->chunk_size == 0 ||
-	    table->num_entries != DIV_ROUND_UP(num_checked_bytes, table->chunk_size))
+	    table->num_entries !=
+	            DIV_ROUND_UP(num_checked_bytes, table->chunk_size))
 	{
 		FREE(table);
 		return WIMLIB_ERR_INVALID_INTEGRITY_TABLE;
@@ -172,12 +175,12 @@ read_integrity_table(WIMStruct *wim, u64 num_checked_bytes,
  */
 static int
 calculate_integrity_table(struct filedes *in_fd,
-			  off_t new_check_end,
-			  const struct integrity_table *old_table,
-			  off_t old_check_end,
-			  struct integrity_table **integrity_table_ret,
-			  wimlib_progress_func_t progfunc,
-			  void *progctx)
+                          off_t new_check_end,
+                          const struct integrity_table *old_table,
+                          off_t old_check_end,
+                          struct integrity_table **integrity_table_ret,
+                          wimlib_progress_func_t progfunc,
+                          void *progctx)
 {
 	int ret;
 	size_t chunk_size = INTEGRITY_CHUNK_SIZE;
@@ -193,15 +196,16 @@ calculate_integrity_table(struct filedes *in_fd,
 			chunk_size = old_table->chunk_size;
 	}
 
-
 	u64 old_check_bytes = old_check_end - WIM_HEADER_DISK_SIZE;
 	u64 new_check_bytes = new_check_end - WIM_HEADER_DISK_SIZE;
 
 	u32 old_num_chunks = DIV_ROUND_UP(old_check_bytes, chunk_size);
 	u32 new_num_chunks = DIV_ROUND_UP(new_check_bytes, chunk_size);
 
-	size_t old_last_chunk_size = MODULO_NONZERO(old_check_bytes, chunk_size);
-	size_t new_last_chunk_size = MODULO_NONZERO(new_check_bytes, chunk_size);
+	size_t old_last_chunk_size =
+		MODULO_NONZERO(old_check_bytes, chunk_size);
+	size_t new_last_chunk_size =
+		MODULO_NONZERO(new_check_bytes, chunk_size);
 
 	size_t new_table_size = 12 + new_num_chunks * SHA1_HASH_SIZE;
 
@@ -209,8 +213,8 @@ calculate_integrity_table(struct filedes *in_fd,
 	if (!new_table)
 		return WIMLIB_ERR_NOMEM;
 	new_table->num_entries = new_num_chunks;
-	new_table->size = new_table_size;
-	new_table->chunk_size = chunk_size;
+	new_table->size        = new_table_size;
+	new_table->chunk_size  = chunk_size;
 
 	u64 offset = WIM_HEADER_DISK_SIZE;
 	union wimlib_progress_info progress;
@@ -222,8 +226,10 @@ calculate_integrity_table(struct filedes *in_fd,
 	progress.integrity.chunk_size       = chunk_size;
 	progress.integrity.filename         = NULL;
 
-	ret = call_progress(progfunc, WIMLIB_PROGRESS_MSG_CALC_INTEGRITY,
-			    &progress, progctx);
+	ret = call_progress(progfunc,
+	                    WIMLIB_PROGRESS_MSG_CALC_INTEGRITY,
+	                    &progress,
+	                    progctx);
 	if (ret)
 		goto out_free_new_table;
 
@@ -233,17 +239,21 @@ calculate_integrity_table(struct filedes *in_fd,
 			this_chunk_size = new_last_chunk_size;
 		else
 			this_chunk_size = chunk_size;
-		if (old_table &&
-		    ((this_chunk_size == chunk_size && i < old_num_chunks - 1) ||
-		      (i == old_num_chunks - 1 && this_chunk_size == old_last_chunk_size)))
+		if (old_table && ((this_chunk_size == chunk_size &&
+		                   i < old_num_chunks - 1) ||
+		                  (i == old_num_chunks - 1 &&
+		                   this_chunk_size == old_last_chunk_size)))
 		{
 			/* Can use SHA1 message digest from old integrity table
 			 * */
-			copy_hash(new_table->sha1sums[i], old_table->sha1sums[i]);
+			copy_hash(new_table->sha1sums[i],
+			          old_table->sha1sums[i]);
 		} else {
 			/* Calculate the SHA1 message digest of this chunk */
-			ret = calculate_chunk_sha1(in_fd, this_chunk_size,
-						   offset, new_table->sha1sums[i]);
+			ret = calculate_chunk_sha1(in_fd,
+			                           this_chunk_size,
+			                           offset,
+			                           new_table->sha1sums[i]);
 			if (ret)
 				goto out_free_new_table;
 		}
@@ -251,8 +261,10 @@ calculate_integrity_table(struct filedes *in_fd,
 
 		progress.integrity.completed_chunks++;
 		progress.integrity.completed_bytes += this_chunk_size;
-		ret = call_progress(progfunc, WIMLIB_PROGRESS_MSG_CALC_INTEGRITY,
-				    &progress, progctx);
+		ret = call_progress(progfunc,
+		                    WIMLIB_PROGRESS_MSG_CALC_INTEGRITY,
+		                    &progress,
+		                    progctx);
 		if (ret)
 			goto out_free_new_table;
 	}
@@ -295,9 +307,9 @@ out_free_new_table:
  */
 int
 write_integrity_table(WIMStruct *wim,
-		      off_t new_blob_table_end,
-		      off_t old_blob_table_end,
-		      struct integrity_table *old_table)
+                      off_t new_blob_table_end,
+                      off_t old_blob_table_end,
+                      struct integrity_table *old_table)
 {
 	struct integrity_table *new_table;
 	int ret;
@@ -305,27 +317,34 @@ write_integrity_table(WIMStruct *wim,
 
 	wimlib_assert(old_blob_table_end <= new_blob_table_end);
 
-	ret = calculate_integrity_table(&wim->out_fd, new_blob_table_end,
-					old_table, old_blob_table_end,
-					&new_table, wim->progfunc, wim->progctx);
+	ret = calculate_integrity_table(&wim->out_fd,
+	                                new_blob_table_end,
+	                                old_table,
+	                                old_blob_table_end,
+	                                &new_table,
+	                                wim->progfunc,
+	                                wim->progctx);
 	if (ret)
 		return ret;
 
 	new_table_size = new_table->size;
 
-	new_table->size        = (_force_attr u32)cpu_to_le32(new_table->size);
-	new_table->num_entries = (_force_attr u32)cpu_to_le32(new_table->num_entries);
-	new_table->chunk_size  = (_force_attr u32)cpu_to_le32(new_table->chunk_size);
+	new_table->size = (_force_attr u32)cpu_to_le32(new_table->size);
+	new_table->num_entries =
+		(_force_attr u32)cpu_to_le32(new_table->num_entries);
+	new_table->chunk_size =
+		(_force_attr u32)cpu_to_le32(new_table->chunk_size);
 
-	ret = write_wim_resource_from_buffer(new_table,
-					     new_table_size,
-					     false,
-					     &wim->out_fd,
-					     WIMLIB_COMPRESSION_TYPE_NONE,
-					     0,
-					     &wim->out_hdr.integrity_table_reshdr,
-					     NULL,
-					     0);
+	ret = write_wim_resource_from_buffer(
+		new_table,
+		new_table_size,
+		false,
+		&wim->out_fd,
+		WIMLIB_COMPRESSION_TYPE_NONE,
+		0,
+		&wim->out_hdr.integrity_table_reshdr,
+		NULL,
+		0);
 	FREE(new_table);
 	return ret;
 }
@@ -352,10 +371,12 @@ write_integrity_table(WIMStruct *wim,
  *	-1 (WIM_INTEGRITY_NOT_OK) if the WIM failed the integrity check.
  */
 static int
-verify_integrity(struct filedes *in_fd, const tchar *filename,
-		 const struct integrity_table *table,
-		 u64 bytes_to_check,
-		 wimlib_progress_func_t progfunc, void *progctx)
+verify_integrity(struct filedes *in_fd,
+                 const tchar *filename,
+                 const struct integrity_table *table,
+                 u64 bytes_to_check,
+                 wimlib_progress_func_t progfunc,
+                 void *progctx)
 {
 	int ret;
 	u64 offset = WIM_HEADER_DISK_SIZE;
@@ -369,8 +390,10 @@ verify_integrity(struct filedes *in_fd, const tchar *filename,
 	progress.integrity.chunk_size       = table->chunk_size;
 	progress.integrity.filename         = filename;
 
-	ret = call_progress(progfunc, WIMLIB_PROGRESS_MSG_VERIFY_INTEGRITY,
-			    &progress, progctx);
+	ret = call_progress(progfunc,
+	                    WIMLIB_PROGRESS_MSG_VERIFY_INTEGRITY,
+	                    &progress,
+	                    progctx);
 	if (ret)
 		return ret;
 
@@ -378,11 +401,12 @@ verify_integrity(struct filedes *in_fd, const tchar *filename,
 		size_t this_chunk_size;
 		if (i == table->num_entries - 1)
 			this_chunk_size = MODULO_NONZERO(bytes_to_check,
-							 table->chunk_size);
+			                                 table->chunk_size);
 		else
 			this_chunk_size = table->chunk_size;
 
-		ret = calculate_chunk_sha1(in_fd, this_chunk_size, offset, sha1_md);
+		ret = calculate_chunk_sha1(
+			in_fd, this_chunk_size, offset, sha1_md);
 		if (ret)
 			return ret;
 
@@ -393,14 +417,15 @@ verify_integrity(struct filedes *in_fd, const tchar *filename,
 		progress.integrity.completed_chunks++;
 		progress.integrity.completed_bytes += this_chunk_size;
 
-		ret = call_progress(progfunc, WIMLIB_PROGRESS_MSG_VERIFY_INTEGRITY,
-				    &progress, progctx);
+		ret = call_progress(progfunc,
+		                    WIMLIB_PROGRESS_MSG_VERIFY_INTEGRITY,
+		                    &progress,
+		                    progctx);
 		if (ret)
 			return ret;
 	}
 	return WIM_INTEGRITY_OK;
 }
-
 
 /*
  * check_wim_integrity():
@@ -433,7 +458,7 @@ check_wim_integrity(WIMStruct *wim)
 		return WIM_INTEGRITY_NONEXISTENT;
 
 	end_blob_table_offset = wim->hdr.blob_table_reshdr.offset_in_wim +
-				wim->hdr.blob_table_reshdr.size_in_wim;
+	                        wim->hdr.blob_table_reshdr.size_in_wim;
 
 	if (end_blob_table_offset < WIM_HEADER_DISK_SIZE) {
 		ERROR("WIM blob table ends before WIM header ends!");
@@ -445,8 +470,12 @@ check_wim_integrity(WIMStruct *wim)
 	ret = read_integrity_table(wim, bytes_to_check, &table);
 	if (ret)
 		return ret;
-	ret = verify_integrity(&wim->in_fd, wim->filename, table,
-			       bytes_to_check, wim->progfunc, wim->progctx);
+	ret = verify_integrity(&wim->in_fd,
+	                       wim->filename,
+	                       table,
+	                       bytes_to_check,
+	                       wim->progfunc,
+	                       wim->progctx);
 	FREE(table);
 	return ret;
 }

@@ -33,8 +33,8 @@
 #include "wimlib/types.h"
 #include "wimlib/util.h"
 
-#define SHA1_HASH_SIZE	20
-#define SHA1_BLOCK_SIZE	64
+#define SHA1_HASH_SIZE  20
+#define SHA1_BLOCK_SIZE 64
 
 struct sha1_ctx {
 	u64 bytecount;
@@ -56,7 +56,7 @@ sha1(const void *data, size_t len, u8 hash[SHA1_HASH_SIZE]);
 
 extern const u8 zero_hash[SHA1_HASH_SIZE];
 
-#define SHA1_HASH_STRING_LEN	(2 * SHA1_HASH_SIZE + 1)
+#define SHA1_HASH_STRING_LEN (2 * SHA1_HASH_SIZE + 1)
 void
 sprint_hash(const u8 hash[SHA1_HASH_SIZE], tchar strbuf[SHA1_HASH_STRING_LEN]);
 

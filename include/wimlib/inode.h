@@ -56,7 +56,6 @@ extern const utf16lechar NO_STREAM_NAME[1];
  * even named data streams as well.
  */
 struct wim_inode_stream {
-
 	/* The name of the stream or NO_STREAM_NAME.  */
 	utf16lechar *stream_name;
 
@@ -94,7 +93,6 @@ struct wim_inode_stream {
  * of hard links.
  */
 struct wim_inode {
-
 	/*
 	 * The collection of streams for this inode.  'i_streams' points to
 	 * either 'i_embedded_streams' or an allocated array.
@@ -184,12 +182,12 @@ struct wim_inode {
 			 * hard links or not.  */
 			struct wim_dentry *i_first_extraction_alias;
 
-		#ifdef WITH_NTFS_3G
+#ifdef WITH_NTFS_3G
 			/* In NTFS-3G extraction mode, this is set to the Master
 			 * File Table (MFT) number of the NTFS file that was
 			 * created for this inode.  */
 			u64 i_mft_no;
-		#endif
+#endif
 		};
 
 		/* Used during WIM writing with
@@ -228,7 +226,7 @@ struct wim_inode {
 
 /* Optional extra data for a WIM inode  */
 struct wim_inode_extra {
-	size_t size;	/* Size of the extra data in bytes  */
+	size_t size; /* Size of the extra data in bytes  */
 	u8 data[] __attribute__((aligned(8))); /* The extra data  */
 };
 
@@ -237,15 +235,15 @@ struct wim_inode_extra {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4
  * Here we only define the ones of interest to us.
  */
-#define WIM_IO_REPARSE_TAG_MOUNT_POINT		0xA0000003
-#define WIM_IO_REPARSE_TAG_SYMLINK		0xA000000C
-#define WIM_IO_REPARSE_TAG_DEDUP		0x80000013
-#define WIM_IO_REPARSE_TAG_WOF			0x80000017
+#define WIM_IO_REPARSE_TAG_MOUNT_POINT 0xA0000003
+#define WIM_IO_REPARSE_TAG_SYMLINK     0xA000000C
+#define WIM_IO_REPARSE_TAG_DEDUP       0x80000013
+#define WIM_IO_REPARSE_TAG_WOF         0x80000017
 
 /* Flags for the rp_flags field.  Currently the only known flag is NOT_FIXED,
  * which indicates that the target of the absolute symbolic link or junction was
  * not changed when it was stored.  */
-#define WIM_RP_FLAG_NOT_FIXED		   0x0001
+#define WIM_RP_FLAG_NOT_FIXED 0x0001
 
 /* Windows file attribute flags  */
 #define FILE_ATTRIBUTE_READONLY            0x00000001
@@ -269,16 +267,15 @@ new_inode(struct wim_dentry *dentry, bool set_timestamps);
 
 /* Iterate through each alias of the specified inode.  */
 #define inode_for_each_dentry(dentry, inode) \
-	hlist_for_each_entry((dentry), &(inode)->i_alias_list, d_alias_node)
+  hlist_for_each_entry((dentry), &(inode)->i_alias_list, d_alias_node)
 
 /* Return an alias of the specified inode.  */
 #define inode_any_dentry(inode) \
-	hlist_entry(inode->i_alias_list.first, struct wim_dentry, d_alias_node)
+  hlist_entry(inode->i_alias_list.first, struct wim_dentry, d_alias_node)
 
 /* Return the full path of an alias of the specified inode, or NULL if a full
  * path could not be determined.  */
-#define inode_any_full_path(inode) \
-	dentry_full_path(inode_any_dentry(inode))
+#define inode_any_full_path(inode) dentry_full_path(inode_any_dentry(inode))
 
 void
 d_associate(struct wim_dentry *dentry, struct wim_inode *inode);
@@ -298,9 +295,9 @@ inode_dec_num_opened_fds(struct wim_inode *inode);
 static inline bool
 inode_is_directory(const struct wim_inode *inode)
 {
-	return (inode->i_attributes & (FILE_ATTRIBUTE_DIRECTORY |
-				       FILE_ATTRIBUTE_REPARSE_POINT))
-			== FILE_ATTRIBUTE_DIRECTORY;
+	return (inode->i_attributes &
+	        (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) ==
+	       FILE_ATTRIBUTE_DIRECTORY;
 }
 
 /* Is the inode a symbolic link?
@@ -309,9 +306,9 @@ inode_is_directory(const struct wim_inode *inode)
 static inline bool
 inode_is_symlink(const struct wim_inode *inode)
 {
-	return (inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT)
-		&& (inode->i_reparse_tag == WIM_IO_REPARSE_TAG_SYMLINK ||
-		    inode->i_reparse_tag == WIM_IO_REPARSE_TAG_MOUNT_POINT);
+	return (inode->i_attributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+	       (inode->i_reparse_tag == WIM_IO_REPARSE_TAG_SYMLINK ||
+	        inode->i_reparse_tag == WIM_IO_REPARSE_TAG_MOUNT_POINT);
 }
 
 /* Does the inode have children?  Currently (based on read_dentry_tree() as well
@@ -331,8 +328,9 @@ inode_has_security_descriptor(const struct wim_inode *inode)
 }
 
 struct wim_inode_stream *
-inode_get_stream(const struct wim_inode *inode, int stream_type,
-		 const utf16lechar *stream_name);
+inode_get_stream(const struct wim_inode *inode,
+                 int stream_type,
+                 const utf16lechar *stream_name);
 
 struct wim_inode_stream *
 inode_get_unnamed_stream(const struct wim_inode *inode, int stream_type);
@@ -344,30 +342,36 @@ inode_get_unnamed_data_stream(const struct wim_inode *inode)
 }
 
 struct wim_inode_stream *
-inode_add_stream(struct wim_inode *inode, int stream_type,
-		 const utf16lechar *stream_name, struct blob_descriptor *blob);
+inode_add_stream(struct wim_inode *inode,
+                 int stream_type,
+                 const utf16lechar *stream_name,
+                 struct blob_descriptor *blob);
 
 void
 inode_replace_stream_blob(struct wim_inode *inode,
-			  struct wim_inode_stream *strm,
-			  struct blob_descriptor *new_blob,
-			  struct blob_table *blob_table);
+                          struct wim_inode_stream *strm,
+                          struct blob_descriptor *new_blob,
+                          struct blob_table *blob_table);
 
 bool
 inode_replace_stream_data(struct wim_inode *inode,
-			  struct wim_inode_stream *strm,
-			  const void *data, size_t size,
-			  struct blob_table *blob_table);
+                          struct wim_inode_stream *strm,
+                          const void *data,
+                          size_t size,
+                          struct blob_table *blob_table);
 
 bool
 inode_add_stream_with_data(struct wim_inode *inode,
-			   int stream_type, const utf16lechar *stream_name,
-			   const void *data, size_t size,
-			   struct blob_table *blob_table);
+                           int stream_type,
+                           const utf16lechar *stream_name,
+                           const void *data,
+                           size_t size,
+                           struct blob_table *blob_table);
 
 void
-inode_remove_stream(struct wim_inode *inode, struct wim_inode_stream *strm,
-		    struct blob_table *blob_table);
+inode_remove_stream(struct wim_inode *inode,
+                    struct wim_inode_stream *strm,
+                    struct blob_table *blob_table);
 
 static inline struct blob_descriptor *
 stream_blob_resolved(const struct wim_inode_stream *strm)
@@ -398,18 +402,20 @@ bool
 inode_has_named_data_stream(const struct wim_inode *inode);
 
 int
-inode_resolve_streams(struct wim_inode *inode, struct blob_table *table,
-		      bool force);
+inode_resolve_streams(struct wim_inode *inode,
+                      struct blob_table *table,
+                      bool force);
 
 int
 blob_not_found_error(const struct wim_inode *inode, const u8 *hash);
 
 struct blob_descriptor *
-stream_blob(const struct wim_inode_stream *strm, const struct blob_table *table);
+stream_blob(const struct wim_inode_stream *strm,
+            const struct blob_table *table);
 
 struct blob_descriptor *
 inode_get_blob_for_unnamed_data_stream(const struct wim_inode *inode,
-				       const struct blob_table *blob_table);
+                                       const struct blob_table *blob_table);
 
 struct blob_descriptor *
 inode_get_blob_for_unnamed_data_stream_resolved(const struct wim_inode *inode);

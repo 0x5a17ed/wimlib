@@ -30,25 +30,32 @@
 
 int
 read_path_list_file(const tchar *listfile,
-		    tchar ***paths_ret, size_t *num_paths_ret,
-		    void **mem_ret)
+                    tchar ***paths_ret,
+                    size_t *num_paths_ret,
+                    void **mem_ret)
 {
 	STRING_LIST(paths);
 	struct text_file_section tmp = {
-		.name = T(""),
+		.name    = T(""),
 		.strings = &paths,
 	};
 	void *buf;
 	int ret;
 
-	ret = load_text_file(listfile, NULL, 0, &buf, &tmp, 1,
-			     LOAD_TEXT_FILE_REMOVE_QUOTES |
-			     LOAD_TEXT_FILE_ALLOW_STDIN, NULL);
+	ret = load_text_file(listfile,
+	                     NULL,
+	                     0,
+	                     &buf,
+	                     &tmp,
+	                     1,
+	                     LOAD_TEXT_FILE_REMOVE_QUOTES |
+	                             LOAD_TEXT_FILE_ALLOW_STDIN,
+	                     NULL);
 	if (ret)
 		return ret;
 
-	*paths_ret = paths.strings;
+	*paths_ret     = paths.strings;
 	*num_paths_ret = paths.num_strings;
-	*mem_ret = buf;
+	*mem_ret       = buf;
 	return 0;
 }

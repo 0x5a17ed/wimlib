@@ -1,7 +1,8 @@
 #include "../fuzzer.h"
 
 /* Fuzz decompression. */
-int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
+int
+LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 {
 	int ctype;
 	struct wimlib_decompressor *d;

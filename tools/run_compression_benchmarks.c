@@ -8,20 +8,23 @@
 #include "wimlib.h"
 #include "wimgapi_wrapper.h"
 
-#define ARRAY_LEN(A)	(sizeof(A) / sizeof((A)[0]))
+#define ARRAY_LEN(A) (sizeof(A) / sizeof((A)[0]))
 
-#define VOLUME		L"E:\\"
-#define INFILE		L"in.wim"
-#define IN_IMAGE	1
-#define OUTFILE		L"out.wim"
-#define TMPDIR		L"."
-#define OUTDIR		L"t"
+#define VOLUME   L"E:\\"
+#define INFILE   L"in.wim"
+#define IN_IMAGE 1
+#define OUTFILE  L"out.wim"
+#define TMPDIR   L"."
+#define OUTDIR   L"t"
 
 static void
 fatal_wimlib_error(const wchar_t *msg, int err)
 {
-	fwprintf(stderr, L"Error %ls: wimlib error code %d: %ls\n", msg,
-		 err, wimlib_get_error_string(err));
+	fwprintf(stderr,
+	         L"Error %ls: wimlib error code %d: %ls\n",
+	         msg,
+	         err,
+	         wimlib_get_error_string(err));
 	exit(1);
 }
 
@@ -30,8 +33,13 @@ get_win32_error_string(DWORD err)
 {
 	static wchar_t buf[1024];
 	buf[0] = L'\0';
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, 0,
-		      buf, ARRAY_LEN(buf), NULL);
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
+	              NULL,
+	              err,
+	              0,
+	              buf,
+	              ARRAY_LEN(buf),
+	              NULL);
 	return buf;
 }
 
@@ -39,8 +47,11 @@ static void
 fatal_win32_error(const wchar_t *msg)
 {
 	DWORD err = GetLastError();
-	fwprintf(stderr, L"Error %ls: Win32 error code %u: %ls\n", msg,
-		 err, get_win32_error_string(err));
+	fwprintf(stderr,
+	         L"Error %ls: Win32 error code %u: %ls\n",
+	         msg,
+	         err,
+	         get_win32_error_string(err));
 	exit(1);
 }
 
@@ -54,8 +65,13 @@ sync_volume(void)
 
 	wsprintf(path, L"\\\\.\\%lc:", VOLUME[0]);
 
-	h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_VALID_FLAGS,
-		       NULL, OPEN_EXISTING, 0, NULL);
+	h = CreateFile(path,
+	               GENERIC_WRITE,
+	               FILE_SHARE_VALID_FLAGS,
+	               NULL,
+	               OPEN_EXISTING,
+	               0,
+	               NULL);
 
 	if (!FlushFileBuffers(h))
 		fatal_win32_error(L"Unable to sync volume " VOLUME);
@@ -97,7 +113,8 @@ verify_output_wim_with_wimlib(void)
 	ret = wimlib_open_wim(OUTFILE, 0, &wim);
 	if (ret) {
 		fatal_wimlib_error(L"opening output WIM for verification with "
-				   "wimlib", ret);
+		                   "wimlib",
+		                   ret);
 	}
 
 	ret = wimlib_verify_wim(wim, 0);
@@ -113,18 +130,22 @@ verify_output_wim_with_wimgapi(void)
 	HANDLE hWim;
 	HANDLE hImage;
 
-	hWim = WIMCreateFile(OUTFILE, WIM_GENERIC_READ, WIM_OPEN_EXISTING,
-			     WIM_FLAG_SOLID, 0, NULL);
+	hWim = WIMCreateFile(OUTFILE,
+	                     WIM_GENERIC_READ,
+	                     WIM_OPEN_EXISTING,
+	                     WIM_FLAG_SOLID,
+	                     0,
+	                     NULL);
 	if (!hWim) {
 		fatal_win32_error(L"opening output WIM for verification with "
-				  "WIMGAPI");
+		                  "WIMGAPI");
 	}
 	WIMSetTemporaryPath(hWim, TMPDIR);
 
 	hImage = WIMLoadImage(hWim, 1);
 	if (!hImage) {
 		fatal_win32_error(L"loading WIM image for verification with "
-				  "WIMGAPI");
+		                  "WIMGAPI");
 	}
 
 	CreateDirectory(OUTDIR, NULL);
@@ -136,7 +157,6 @@ verify_output_wim_with_wimgapi(void)
 	WIMCloseHandle(hWim);
 }
 
-
 static void
 verify_output_wim(void)
 {
@@ -147,13 +167,19 @@ verify_output_wim(void)
 static void
 end_test(const char *description)
 {
-	uint64_t end_time_ms = GetTickCount64();
-	HANDLE h = CreateFile(OUTFILE, 0, FILE_SHARE_VALID_FLAGS, NULL,
-			      OPEN_EXISTING, 0, NULL);
-	LARGE_INTEGER compressed_size = {.QuadPart = -1};
+	uint64_t end_time_ms          = GetTickCount64();
+	HANDLE h                      = CreateFile(OUTFILE,
+                              0,
+                              FILE_SHARE_VALID_FLAGS,
+                              NULL,
+                              OPEN_EXISTING,
+                              0,
+                              NULL);
+	LARGE_INTEGER compressed_size = { .QuadPart = -1 };
 	GetFileSizeEx(h, &compressed_size);
 	CloseHandle(h);
-	printf("%s: %"PRIu64" in %.1fs\n", description,
+	printf("%s: %" PRIu64 " in %.1fs\n",
+	       description,
 	       compressed_size.QuadPart,
 	       (double)(end_time_ms - start_time_ms) / 1000);
 
@@ -169,50 +195,50 @@ static const struct wimlib_test_spec {
 } wimlib_test_specs[] = {
 	{
 		.description = "wimlib, LZMS (solid)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_LZMS,
-		.solid = true,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_LZMS,
+		.solid       = true,
 	},
 	{
 		.description = "wimlib, LZMS (non-solid)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_LZMS,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_LZMS,
 	},
 	{
 		.description = "wimlib, LZX (slow)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_LZX,
-		.level = 100,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_LZX,
+		.level       = 100,
 	},
 	{
 		.description = "wimlib, LZX (normal)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_LZX,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_LZX,
 	},
 	{
 		.description = "wimlib, LZX (quick)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_LZX,
-		.level = 20,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_LZX,
+		.level       = 20,
 	},
 	{
 		.description = "wimlib, XPRESS (slow)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_XPRESS,
-		.level = 80,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_XPRESS,
+		.level       = 80,
 	},
 	{
 		.description = "wimlib, XPRESS",
-		.ctype = WIMLIB_COMPRESSION_TYPE_XPRESS,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_XPRESS,
 	},
 	{
 		.description = "wimlib, \"WIMBoot\" (slow)",
-		.ctype = WIMLIB_COMPRESSION_TYPE_XPRESS,
-		.level = 80,
-		.chunk_size = 4096,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_XPRESS,
+		.level       = 80,
+		.chunk_size  = 4096,
 	},
 	{
 		.description = "wimlib, \"WIMBoot\"",
-		.ctype = WIMLIB_COMPRESSION_TYPE_XPRESS,
-		.chunk_size = 4096,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_XPRESS,
+		.chunk_size  = 4096,
 	},
 	{
 		.description = "wimlib, None",
-		.ctype = WIMLIB_COMPRESSION_TYPE_NONE,
+		.ctype       = WIMLIB_COMPRESSION_TYPE_NONE,
 	},
 };
 
@@ -223,25 +249,25 @@ static const struct wimgapi_test_spec {
 	bool wimboot;
 } wimgapi_test_specs[] = {
 	{
-		.description = "WIMGAPI, LZMS (solid)",
+		.description     = "WIMGAPI, LZMS (solid)",
 		.compressionType = WIM_COMPRESS_LZMS,
-		.solid = true,
+		.solid           = true,
 	},
 	{
-		.description = "WIMGAPI, LZX",
+		.description     = "WIMGAPI, LZX",
 		.compressionType = WIM_COMPRESS_LZX,
 	},
 	{
-		.description = "WIMGAPI, XPRESS",
+		.description     = "WIMGAPI, XPRESS",
 		.compressionType = WIM_COMPRESS_XPRESS,
 	},
 	{
-		.description = "WIMGAPI, \"WIMBoot\"",
+		.description     = "WIMGAPI, \"WIMBoot\"",
 		.compressionType = WIM_COMPRESS_XPRESS,
-		.wimboot = true,
+		.wimboot         = true,
 	},
 	{
-		.description = "WIMGAPI, None",
+		.description     = "WIMGAPI, None",
 		.compressionType = WIM_COMPRESS_NONE,
 	},
 };
@@ -264,10 +290,10 @@ run_wimlib_test(const struct wimlib_test_spec *testspec)
 
 	if (testspec->level) {
 		ret = wimlib_set_default_compression_level(testspec->ctype,
-							   testspec->level);
+		                                           testspec->level);
 		if (ret) {
 			fatal_wimlib_error(L"setting wimlib compression level",
-					   ret);
+			                   ret);
 		}
 	}
 
@@ -277,24 +303,25 @@ run_wimlib_test(const struct wimlib_test_spec *testspec)
 
 	if (testspec->solid) {
 		ret = wimlib_set_output_pack_compression_type(out,
-							      testspec->ctype);
+		                                              testspec->ctype);
 		if (ret) {
 			fatal_wimlib_error(L"setting wimlib solid compression "
-					   "type", ret);
+			                   "type",
+			                   ret);
 		}
 	}
 
 	if (testspec->chunk_size) {
 		if (testspec->solid) {
-			ret = wimlib_set_output_pack_chunk_size(out,
-							testspec->chunk_size);
+			ret = wimlib_set_output_pack_chunk_size(
+				out, testspec->chunk_size);
 		} else {
-			ret = wimlib_set_output_chunk_size(out,
-							   testspec->chunk_size);
+			ret = wimlib_set_output_chunk_size(
+				out, testspec->chunk_size);
 		}
 		if (ret) {
 			fatal_wimlib_error(L"setting wimlib output chunk size",
-					   ret);
+			                   ret);
 		}
 	}
 
@@ -302,8 +329,11 @@ run_wimlib_test(const struct wimlib_test_spec *testspec)
 	if (ret)
 		fatal_wimlib_error(L"exporting image with wimlib", ret);
 
-	ret = wimlib_write(out, OUTFILE, WIMLIB_ALL_IMAGES,
-			   (testspec->solid ? WIMLIB_WRITE_FLAG_SOLID : 0), 0);
+	ret = wimlib_write(out,
+	                   OUTFILE,
+	                   WIMLIB_ALL_IMAGES,
+	                   (testspec->solid ? WIMLIB_WRITE_FLAG_SOLID : 0),
+	                   0);
 	if (ret)
 		fatal_wimlib_error(L"writing output WIM with wimlib", ret);
 
@@ -322,8 +352,8 @@ run_wimgapi_test(const struct wimgapi_test_spec *testspec)
 
 	begin_test();
 
-	hInWim = WIMCreateFile(INFILE, WIM_GENERIC_READ, WIM_OPEN_EXISTING,
-			       0, 0, NULL);
+	hInWim = WIMCreateFile(
+		INFILE, WIM_GENERIC_READ, WIM_OPEN_EXISTING, 0, 0, NULL);
 
 	if (!hInWim)
 		fatal_win32_error(L"opening input WIM with WIMGAPI");
@@ -338,8 +368,12 @@ run_wimgapi_test(const struct wimgapi_test_spec *testspec)
 		flags |= WIM_FLAG_SOLID;
 	if (testspec->wimboot)
 		flags |= WIM_FLAG_WIM_BOOT;
-	hOutWim = WIMCreateFile(OUTFILE, WIM_GENERIC_WRITE, WIM_CREATE_ALWAYS,
-				flags, testspec->compressionType, NULL);
+	hOutWim = WIMCreateFile(OUTFILE,
+	                        WIM_GENERIC_WRITE,
+	                        WIM_CREATE_ALWAYS,
+	                        flags,
+	                        testspec->compressionType,
+	                        NULL);
 	if (!hOutWim)
 		fatal_win32_error(L"opening output WIM with WIMGAPI");
 

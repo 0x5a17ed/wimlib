@@ -9,9 +9,9 @@
  */
 static inline int
 call_progress(wimlib_progress_func_t progfunc,
-	      enum wimlib_progress_msg msg,
-	      union wimlib_progress_info *info,
-	      void *progctx)
+              enum wimlib_progress_msg msg,
+              union wimlib_progress_info *info,
+              void *progctx)
 {
 	if (progfunc) {
 		enum wimlib_progress_status status;
@@ -32,7 +32,9 @@ call_progress(wimlib_progress_func_t progfunc,
 
 int
 report_error(wimlib_progress_func_t progfunc,
-	     void *progctx, int error_code, const tchar *path);
+             void *progctx,
+             int error_code,
+             const tchar *path);
 
 /* Rate-limiting of byte-count based progress messages: update *next_progress_p
  * to the value that completed_bytes needs to reach before the next progress
@@ -48,8 +50,8 @@ set_next_progress(u64 completed_bytes, u64 total_bytes, u64 *next_progress_p)
 		 *	- OR all bytes have been processed.
 		 */
 		*next_progress_p = min(min(completed_bytes + total_bytes / 128,
-					   completed_bytes + 5000000),
-				       total_bytes);
+		                           completed_bytes + 5000000),
+		                       total_bytes);
 	} else {
 		/* Last message has been sent.  */
 		*next_progress_p = ~0;

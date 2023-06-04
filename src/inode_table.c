@@ -35,11 +35,11 @@
 int
 init_inode_table(struct wim_inode_table *table, size_t capacity)
 {
-	capacity = roundup_pow_of_2(capacity);
+	capacity     = roundup_pow_of_2(capacity);
 	table->array = CALLOC(capacity, sizeof(table->array[0]));
 	if (!table->array)
 		return WIMLIB_ERR_NOMEM;
-	table->filled = 0;
+	table->filled   = 0;
 	table->capacity = capacity;
 	INIT_HLIST_HEAD(&table->extra_inodes);
 	return 0;
@@ -56,8 +56,8 @@ destroy_inode_table(struct wim_inode_table *table)
 void
 enlarge_inode_table(struct wim_inode_table *table)
 {
-	const size_t old_capacity = table->capacity;
-	const size_t new_capacity = old_capacity * 2;
+	const size_t old_capacity    = table->capacity;
+	const size_t new_capacity    = old_capacity * 2;
 	struct hlist_head *old_array = table->array;
 	struct hlist_head *new_array;
 	struct wim_inode *inode;
@@ -66,13 +66,16 @@ enlarge_inode_table(struct wim_inode_table *table)
 	new_array = CALLOC(new_capacity, sizeof(struct hlist_head));
 	if (!new_array)
 		return;
-	table->array = new_array;
+	table->array    = new_array;
 	table->capacity = new_capacity;
 	for (size_t i = 0; i < old_capacity; i++) {
-		hlist_for_each_entry_safe(inode, tmp, &old_array[i], i_hlist_node) {
-			hlist_add_head(&inode->i_hlist_node,
-				       &new_array[hash_inode(table, inode->i_ino,
-							     inode->i_devno)]);
+		hlist_for_each_entry_safe(
+			inode, tmp, &old_array[i], i_hlist_node)
+		{
+			hlist_add_head(
+				&inode->i_hlist_node,
+				&new_array[hash_inode(
+					table, inode->i_ino, inode->i_devno)]);
 		}
 	}
 	FREE(old_array);
@@ -113,9 +116,12 @@ enlarge_inode_table(struct wim_inode_table *table)
  * resulting from a failed string conversion.
  */
 int
-inode_table_new_dentry(struct wim_inode_table *table, const tchar *name,
-		       u64 ino, u64 devno, bool noshare,
-		       struct wim_dentry **dentry_ret)
+inode_table_new_dentry(struct wim_inode_table *table,
+                       const tchar *name,
+                       u64 ino,
+                       u64 devno,
+                       bool noshare,
+                       struct wim_dentry **dentry_ret)
 {
 	struct wim_dentry *dentry;
 	struct wim_inode *inode;
@@ -133,13 +139,13 @@ inode_table_new_dentry(struct wim_inode_table *table, const tchar *name,
 				continue;
 			if (inode->i_attributes & FILE_ATTRIBUTE_DIRECTORY) {
 				WARNING("Not honoring directory hard link "
-					"of \"%"TS"\"",
-					inode_any_full_path(inode));
+				        "of \"%" TS "\"",
+				        inode_any_full_path(inode));
 				continue;
 			}
 			/* Inode found; use it.  */
-			return new_dentry_with_existing_inode(name, inode,
-							      dentry_ret);
+			return new_dentry_with_existing_inode(
+				name, inode, dentry_ret);
 		}
 
 		/* Inode not found; create it.  */
@@ -148,8 +154,8 @@ inode_table_new_dentry(struct wim_inode_table *table, const tchar *name,
 	ret = new_dentry_with_new_inode(name, false, &dentry);
 	if (ret)
 		return ret;
-	inode = dentry->d_inode;
-	inode->i_ino = ino;
+	inode          = dentry->d_inode;
+	inode->i_ino   = ino;
 	inode->i_devno = devno;
 	hlist_add_head(&inode->i_hlist_node, list);
 	if (list != &table->extra_inodes)
@@ -167,7 +173,7 @@ inode_table_new_dentry(struct wim_inode_table *table, const tchar *name,
  */
 void
 inode_table_prepare_inode_list(struct wim_inode_table *table,
-			       struct hlist_head *head)
+                               struct hlist_head *head)
 {
 	struct wim_inode *inode;
 	struct hlist_node *tmp;
@@ -180,12 +186,16 @@ inode_table_prepare_inode_list(struct wim_inode_table *table,
 	/* Assign inode numbers to the new inodes and move them to the image's
 	 * inode list. */
 	for (size_t i = 0; i < table->capacity; i++) {
-		hlist_for_each_entry_safe(inode, tmp, &table->array[i], i_hlist_node) {
+		hlist_for_each_entry_safe(
+			inode, tmp, &table->array[i], i_hlist_node)
+		{
 			inode->i_ino = cur_ino++;
 			hlist_add_head(&inode->i_hlist_node, head);
 		}
 	}
-	hlist_for_each_entry_safe(inode, tmp, &table->extra_inodes, i_hlist_node) {
+	hlist_for_each_entry_safe(
+		inode, tmp, &table->extra_inodes, i_hlist_node)
+	{
 		inode->i_ino = cur_ino++;
 		hlist_add_head(&inode->i_hlist_node, head);
 	}

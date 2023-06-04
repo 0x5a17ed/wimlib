@@ -10,7 +10,7 @@ write_file(const char *path, const void *data, size_t size)
 	int fd;
 	ssize_t res;
 
-	fd = open(path, O_WRONLY|O_TRUNC|O_CREAT, 0600);
+	fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0600);
 	assert(fd >= 0);
 	res = write(fd, data, size);
 	assert(res == size);
@@ -18,7 +18,8 @@ write_file(const char *path, const void *data, size_t size)
 }
 
 /* Fuzz set_windows_specific_info() in xml_windows.c. */
-int LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
+int
+LLVMFuzzerTestOneInput(const uint8_t *in, size_t insize)
 {
 	WIMStruct *wim;
 	int ret;

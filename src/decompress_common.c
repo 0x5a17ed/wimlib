@@ -123,16 +123,19 @@
  * Returns 0 on success, or -1 if the lengths do not form a valid prefix code.
  */
 int
-make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
-			  unsigned table_bits, const u8 lens[],
-			  unsigned max_codeword_len, u16 working_space[])
+make_huffman_decode_table(u16 decode_table[],
+                          unsigned num_syms,
+                          unsigned table_bits,
+                          const u8 lens[],
+                          unsigned max_codeword_len,
+                          u16 working_space[])
 {
-	u16 * const len_counts = &working_space[0];
-	u16 * const offsets = &working_space[1 * (max_codeword_len + 1)];
-	u16 * const sorted_syms = &working_space[2 * (max_codeword_len + 1)];
-	s32 remainder = 1;
-	void *entry_ptr = decode_table;
-	unsigned codeword_len = 1;
+	u16 *const len_counts  = &working_space[0];
+	u16 *const offsets     = &working_space[1 * (max_codeword_len + 1)];
+	u16 *const sorted_syms = &working_space[2 * (max_codeword_len + 1)];
+	s32 remainder          = 1;
+	void *entry_ptr        = decode_table;
+	unsigned codeword_len  = 1;
 	unsigned sym_idx;
 	unsigned codeword;
 	unsigned subtable_pos;
@@ -202,9 +205,11 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 
 #ifdef __SSE2__
 	/* Fill entries one 128-bit vector (8 entries) at a time. */
-	for (unsigned stores_per_loop = (1U << (table_bits - codeword_len)) /
-				    (sizeof(__m128i) / sizeof(decode_table[0]));
-	     stores_per_loop != 0; codeword_len++, stores_per_loop >>= 1)
+	for (unsigned stores_per_loop =
+	             (1U << (table_bits - codeword_len)) /
+	             (sizeof(__m128i) / sizeof(decode_table[0]));
+	     stores_per_loop != 0;
+	     codeword_len++, stores_per_loop >>= 1)
 	{
 		unsigned end_sym_idx = sym_idx + len_counts[codeword_len];
 		for (; sym_idx < end_sym_idx; sym_idx++) {
@@ -212,9 +217,8 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 			 * type already has __attribute__((may_alias)), so using
 			 * it to access an array of u16 will not violate strict
 			 * aliasing.  */
-			__m128i v = _mm_set1_epi16(
-				MAKE_DECODE_TABLE_ENTRY(sorted_syms[sym_idx],
-							codeword_len));
+			__m128i v  = _mm_set1_epi16(MAKE_DECODE_TABLE_ENTRY(
+                                sorted_syms[sym_idx], codeword_len));
 			unsigned n = stores_per_loop;
 			do {
 				*(__m128i *)entry_ptr = v;
@@ -227,23 +231,22 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 #ifdef __GNUC__
 	/* Fill entries one word (2 or 4 entries) at a time. */
 	for (unsigned stores_per_loop = (1U << (table_bits - codeword_len)) /
-					(WORDBYTES / sizeof(decode_table[0]));
-	     stores_per_loop != 0; codeword_len++, stores_per_loop >>= 1)
+	                                (WORDBYTES / sizeof(decode_table[0]));
+	     stores_per_loop != 0;
+	     codeword_len++, stores_per_loop >>= 1)
 	{
 		unsigned end_sym_idx = sym_idx + len_counts[codeword_len];
 		for (; sym_idx < end_sym_idx; sym_idx++) {
-
 			/* Accessing the array of u16 as u32 or u64 would
 			 * violate strict aliasing and would require compiling
 			 * the code with -fno-strict-aliasing to guarantee
 			 * correctness.  To work around this problem, use the
 			 * gcc 'may_alias' extension.  */
-			typedef machine_word_t
-				__attribute__((may_alias)) aliased_word_t;
-			aliased_word_t v = repeat_u16(
-				MAKE_DECODE_TABLE_ENTRY(sorted_syms[sym_idx],
-							codeword_len));
-			unsigned n = stores_per_loop;
+			typedef machine_word_t __attribute__((may_alias))
+			aliased_word_t;
+			aliased_word_t v = repeat_u16(MAKE_DECODE_TABLE_ENTRY(
+				sorted_syms[sym_idx], codeword_len));
+			unsigned n       = stores_per_loop;
 			do {
 				*(aliased_word_t *)entry_ptr = v;
 				entry_ptr += sizeof(v);
@@ -254,12 +257,13 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 
 	/* Fill entries one at a time. */
 	for (unsigned stores_per_loop = (1U << (table_bits - codeword_len));
-	     stores_per_loop != 0; codeword_len++, stores_per_loop >>= 1)
+	     stores_per_loop != 0;
+	     codeword_len++, stores_per_loop >>= 1)
 	{
 		unsigned end_sym_idx = sym_idx + len_counts[codeword_len];
 		for (; sym_idx < end_sym_idx; sym_idx++) {
 			u16 v = MAKE_DECODE_TABLE_ENTRY(sorted_syms[sym_idx],
-							codeword_len);
+			                                codeword_len);
 			unsigned n = stores_per_loop;
 			do {
 				*(u16 *)entry_ptr = v;
@@ -273,9 +277,9 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 		return 0;
 
 	/* At least one subtable is required.  Process the remaining symbols. */
-	codeword = ((u16 *)entry_ptr - decode_table) << 1;
-	subtable_pos = 1U << table_bits;
-	subtable_bits = table_bits;
+	codeword        = ((u16 *)entry_ptr - decode_table) << 1;
+	subtable_pos    = 1U << table_bits;
+	subtable_bits   = table_bits;
 	subtable_prefix = -1;
 	do {
 		while (len_counts[codeword_len] == 0) {
@@ -289,7 +293,6 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 		 * codeword don't match the prefix for the previous subtable, or
 		 * if this will be the first subtable. */
 		if (prefix != subtable_prefix) {
-
 			subtable_prefix = prefix;
 
 			/*
@@ -305,10 +308,10 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 			 * code is complete.
 			 */
 			subtable_bits = codeword_len - table_bits;
-			remainder = (s32)1 << subtable_bits;
+			remainder     = (s32)1 << subtable_bits;
 			for (;;) {
-				remainder -= len_counts[table_bits +
-							subtable_bits];
+				remainder -=
+					len_counts[table_bits + subtable_bits];
 				if (remainder <= 0)
 					break;
 				subtable_bits++;
@@ -320,16 +323,15 @@ make_huffman_decode_table(u16 decode_table[], unsigned num_syms,
 			 * start of the subtable and the number of bits with
 			 * which the subtable is indexed (the log base 2 of the
 			 * number of entries it contains).  */
-			decode_table[subtable_prefix] =
-				MAKE_DECODE_TABLE_ENTRY(subtable_pos,
-							subtable_bits);
+			decode_table[subtable_prefix] = MAKE_DECODE_TABLE_ENTRY(
+				subtable_pos, subtable_bits);
 		}
 
 		/* Fill the subtable entries for this symbol. */
-		u16 entry = MAKE_DECODE_TABLE_ENTRY(sorted_syms[sym_idx],
-						    codeword_len - table_bits);
-		unsigned n = 1U << (subtable_bits - (codeword_len -
-						     table_bits));
+		u16 entry  = MAKE_DECODE_TABLE_ENTRY(sorted_syms[sym_idx],
+                                                    codeword_len - table_bits);
+		unsigned n = 1U
+		             << (subtable_bits - (codeword_len - table_bits));
 		do {
 			decode_table[subtable_pos++] = entry;
 		} while (--n);
